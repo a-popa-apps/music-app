@@ -1,5 +1,96 @@
 @import "tailwindcss";
 
+@theme {
+  --color-surface: #faf9f7;
+  --color-surface-dim: #dadad8;
+  --color-surface-bright: #faf9f7;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #f4f3f1;
+  --color-surface-container: #efeeec;
+  --color-surface-container-high: #e9e8e6;
+  --color-surface-container-highest: #e3e2e0;
+  --color-on-surface: #1a1c1b;
+  --color-on-surface-variant: #444748;
+  --color-inverse-surface: #2f3130;
+  --color-inverse-on-surface: #f1f1ef;
+  --color-outline: #747878;
+  --color-outline-variant: #c4c7c7;
+
+  --color-primary: #000000;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #111111;
+  --color-on-primary-container: #a3a3a3;
+
+  --color-secondary: #ab3500;
+  --color-on-secondary: #ffffff;
+  --color-secondary-container: #ff6b35;
+  --color-on-secondary-container: #5d1900;
+
+  --color-tertiary-container: #1d1b1a;
+  --color-on-tertiary-container: #a3a3a3;
+
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --text-display-hero: 72px;
+  --text-display-hero--line-height: 76px;
+  --text-display-hero--letter-spacing: -0.04em;
+  --text-display-hero--font-weight: 800;
+
+  --text-display-hero-mobile: 40px;
+  --text-display-hero-mobile--line-height: 44px;
+  --text-display-hero-mobile--letter-spacing: -0.03em;
+  --text-display-hero-mobile--font-weight: 800;
+
+  --text-headline-xl: 44px;
+  --text-headline-xl--line-height: 48px;
+  --text-headline-xl--letter-spacing: -0.03em;
+  --text-headline-xl--font-weight: 700;
+
+  --text-headline-lg: 28px;
+  --text-headline-lg--line-height: 32px;
+  --text-headline-lg--letter-spacing: -0.025em;
+  --text-headline-lg--font-weight: 700;
+
+  --text-headline-sm: 18px;
+  --text-headline-sm--line-height: 24px;
+  --text-headline-sm--letter-spacing: -0.015em;
+  --text-headline-sm--font-weight: 600;
+
+  --text-body-lg: 18px;
+  --text-body-lg--line-height: 28px;
+  --text-body-lg--letter-spacing: -0.01em;
+
+  --text-body-md: 14px;
+  --text-body-md--line-height: 22px;
+
+  --text-body-sm: 12px;
+  --text-body-sm--line-height: 18px;
+
+  --text-meta-numeric: 13px;
+  --text-meta-numeric--line-height: 16px;
+  --text-meta-numeric--letter-spacing: -0.02em;
+  --text-meta-numeric--font-weight: 500;
+
+  --text-meta-badge: 11px;
+  --text-meta-badge--line-height: 14px;
+  --text-meta-badge--letter-spacing: 0.04em;
+  --text-meta-badge--font-weight: 600;
+
+  --radius: 1rem;
+}
+
 body {
   margin: 0;
+  font-family: var(--font-sans);
+  background-color: var(--color-surface);
+  color: var(--color-on-surface);
+}
+
+.material-symbols-outlined {
+  font-variation-settings:
+    "FILL" 0,
+    "wght" 400,
+    "GRAD" 0,
+    "opsz" 24;
 }

@@ -4,7 +4,21 @@
 **Design Approach:** Playful minimalism with music-industry credibility  
 **Platform:** Web (desktop-first, mobile-responsive)  
 **Framework:** React 18 + TypeScript + Tailwind CSS  
-**Design Tool:** Figma  
+**Design Tool:** Google Stitch (superseded Figma for this project)
+
+> **Status: superseded.** The actual landing page was generated with Google
+> Stitch and implemented directly in `frontend/src/components/`. The
+> canonical design tokens now live in
+> `stitch_quickie_dj_track_organizer/DESIGN.md` and
+> `frontend/src/index.css` (Tailwind v4 `@theme` block) — those are the
+> source of truth, not the color/typography/component specs below, which
+> are kept for historical reference only. Key differences: the accent
+> orange is still `#FF6B35`, but color tokens are now named
+> `surface`/`on-surface`/`secondary-container` etc. (Material-style
+> naming) instead of `black`/`white`/`accent`; typography adds
+> `JetBrains Mono` for all BPM/key/technical metadata; and the page
+> architecture (hero → how-it-works → live upload demo → features →
+> pricing → FAQ → footer) matches Part 3 below, now actually built.  
 
 ---
 
