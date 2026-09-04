@@ -3,8 +3,10 @@ import json
 import zipfile
 
 from fastapi import HTTPException, UploadFile
+from fastapi.concurrency import run_in_threadpool
 
 from .detect_bpm import detect_bpm
+from .detect_key import detect_key
 
 ALLOWED_EXTENSIONS = {".mp3", ".wav", ".flac", ".aiff", ".aif", ".ogg", ".aac"}
 MAX_FILES = 25
@@ -45,13 +47,24 @@ async def build_zip(files: list[UploadFile]) -> bytes:
     with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
         for file in files:
             name = file.filename or "track"
+            suffix = "." + name.rsplit(".", 1)[-1].lower() if "." in name else ""
             content = await file.read()
             zip_file.writestr(name, content)
 
+            entry: dict = {}
             try:
-                manifest[name] = {"bpm": detect_bpm(content)}
+                entry["bpm"] = await run_in_threadpool(detect_bpm, content)
             except Exception as e:
-                manifest[name] = {"bpm": None, "error": str(e)}
+                entry["bpm"] = None
+                entry["bpm_error"] = str(e)
+
+            try:
+                entry.update(await run_in_threadpool(detect_key, content, suffix))
+            except Exception as e:
+                entry["key"] = None
+                entry["key_error"] = str(e)
+
+            manifest[name] = entry
 
         zip_file.writestr("quickie-manifest.json", json.dumps(manifest, indent=2))
 
