@@ -5,6 +5,7 @@ from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 
+from .detect_bpm import warm_up
 from .process_audio import build_zip, validate_files
 
 app = FastAPI(title="Quickie Backend")
@@ -15,6 +16,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.on_event("startup")
+def startup():
+    # Pay numba's one-time JIT compile cost at boot, not on the first upload.
+    warm_up()
 
 
 @app.get("/health")
