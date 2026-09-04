@@ -1,3 +1,6 @@
+import essentia.standard as es
+import librosa
+import mutagen
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -13,4 +16,9 @@ app.add_middleware(
 
 @app.get("/health")
 def health():
-    return {"status": "ok"}
+    return {
+        "status": "ok",
+        "librosa": librosa.__version__,
+        "essentia": es.__file__ is not None,
+        "mutagen": mutagen.version_string,
+    }
