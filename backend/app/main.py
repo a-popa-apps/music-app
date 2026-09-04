@@ -1,8 +1,11 @@
 import essentia.standard as es
 import librosa
 import mutagen
-from fastapi import FastAPI
+from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
+
+from .process_audio import build_zip, validate_files
 
 app = FastAPI(title="Quickie Backend")
 
@@ -22,3 +25,14 @@ def health():
         "essentia": es.__file__ is not None,
         "mutagen": mutagen.version_string,
     }
+
+
+@app.post("/process")
+async def process(files: list[UploadFile] = File(...)):
+    validate_files(files)
+    zip_bytes = await build_zip(files)
+    return Response(
+        content=zip_bytes,
+        media_type="application/zip",
+        headers={"Content-Disposition": "attachment; filename=quickie-export.zip"},
+    )
