@@ -1,4 +1,6 @@
 import { useState } from "react"
+import { Link } from "react-router-dom"
+import { useAuth } from "../hooks/useAuth"
 
 const NAV_LINKS = [
   { label: "How it works", href: "#how-it-works" },
@@ -9,6 +11,8 @@ const NAV_LINKS = [
 
 export function Header() {
   const [menuOpen, setMenuOpen] = useState(false)
+  const { user, isVerified, logOut } = useAuth()
+  const loggedIn = user && isVerified
 
   return (
     <header className="fixed top-0 z-50 w-full bg-surface/90 shadow-[0_1px_8px_rgba(0,0,0,0.03)] backdrop-blur-xl">
@@ -30,12 +34,26 @@ export function Header() {
           ))}
         </nav>
         <div className="flex items-center gap-2">
-          <a
-            href="#pricing"
-            className="inline-flex items-center justify-center rounded-full bg-primary px-6 py-2 text-body-sm font-semibold text-on-primary transition-all hover:bg-inverse-surface"
-          >
-            Go Pro
-          </a>
+          {loggedIn ? (
+            <div className="hidden items-center gap-3 md:flex">
+              <span className="text-body-sm text-on-surface-variant">
+                {user.email}
+              </span>
+              <button
+                onClick={() => logOut()}
+                className="inline-flex items-center justify-center rounded-full border border-outline-variant px-6 py-2 text-body-sm font-semibold text-on-surface transition-all hover:bg-surface-container-low"
+              >
+                Log out
+              </button>
+            </div>
+          ) : (
+            <Link
+              to="/auth"
+              className="inline-flex items-center justify-center rounded-full bg-primary px-6 py-2 text-body-sm font-semibold text-on-primary transition-all hover:bg-inverse-surface"
+            >
+              Sign In
+            </Link>
+          )}
           <button
             onClick={() => setMenuOpen((open) => !open)}
             aria-label="Toggle menu"
@@ -59,6 +77,27 @@ export function Header() {
               {link.label}
             </a>
           ))}
+          {loggedIn ? (
+            <div className="flex items-center justify-between px-2 py-3">
+              <span className="text-body-sm text-on-surface-variant">
+                {user.email}
+              </span>
+              <button
+                onClick={() => logOut()}
+                className="text-body-sm font-semibold text-on-surface underline"
+              >
+                Log out
+              </button>
+            </div>
+          ) : (
+            <Link
+              to="/auth"
+              onClick={() => setMenuOpen(false)}
+              className="rounded px-2 py-3 text-body-md font-semibold text-on-surface hover:bg-surface-container-low"
+            >
+              Sign In
+            </Link>
+          )}
         </nav>
       )}
     </header>

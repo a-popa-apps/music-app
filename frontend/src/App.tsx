@@ -1,3 +1,4 @@
+import { Route, Routes } from "react-router-dom"
 import { FAQ } from "./components/FAQ"
 import { Features } from "./components/Features"
 import { Footer } from "./components/Footer"
@@ -6,8 +7,9 @@ import { Hero } from "./components/Hero"
 import { HowItWorks } from "./components/HowItWorks"
 import { Pricing } from "./components/Pricing"
 import { UploadDemo } from "./components/UploadDemo"
+import { AuthPage } from "./pages/AuthPage"
 
-function App() {
+function Landing() {
   return (
     <>
       <Header />
@@ -21,6 +23,15 @@ function App() {
       </main>
       <Footer />
     </>
+  )
+}
+
+function App() {
+  return (
+    <Routes>
+      <Route path="/" element={<Landing />} />
+      <Route path="/auth" element={<AuthPage />} />
+    </Routes>
   )
 }
 
