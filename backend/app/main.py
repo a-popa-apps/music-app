@@ -5,10 +5,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from pydantic import BaseModel
 
-from .auth import get_app, get_current_user
+from .auth import delete_user, get_app, get_current_user
 from .detect_bpm import warm_up
 from .process_audio import build_zip, validate_files
-from .profile_store import get_settings, save_settings
+from .profile_store import delete_settings, get_settings, save_settings
 from .rate_limit import enforce_rate_limit
 
 app = FastAPI(title="Quickie Backend")
@@ -67,6 +67,14 @@ def update_profile(update: ProfileUpdate, request: Request):
         return save_settings(uid, payload)
     except ValueError as e:
         raise HTTPException(400, str(e))
+
+
+@app.delete("/profile")
+def delete_account(request: Request):
+    uid = _require_user(request)
+    delete_settings(uid)
+    delete_user(uid)
+    return {"status": "deleted"}
 
 
 @app.post("/process")

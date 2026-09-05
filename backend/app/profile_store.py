@@ -60,3 +60,7 @@ def save_settings(uid: str, settings: dict) -> dict:
     }
     _users_collection().document(uid).set(update, merge=True)
     return get_settings(uid)
+
+
+def delete_settings(uid: str) -> None:
+    _users_collection().document(uid).delete()

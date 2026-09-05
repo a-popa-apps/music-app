@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react"
-import { Navigate } from "react-router-dom"
+import { Navigate, useNavigate } from "react-router-dom"
 import { Header } from "../components/Header"
 import { COUNTRIES } from "../data/countries"
 import { useAuth } from "../hooks/useAuth"
-import { getProfile, saveProfile, type ProfileSettings } from "../services/api"
+import { deleteAccount, getProfile, saveProfile, type ProfileSettings } from "../services/api"
 import { previewFilename, unknownPlaceholders } from "../utils/filenameTemplate"
 
 const ROLES: { value: string; label: string }[] = [
@@ -34,7 +34,8 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 export function ProfileDetails() {
-  const { user, isVerified, loading: authLoading } = useAuth()
+  const { user, isVerified, loading: authLoading, logOut } = useAuth()
+  const navigate = useNavigate()
 
   const [settings, setSettings] = useState<ProfileSettings | null>(null)
   const [savedSettings, setSavedSettings] = useState<ProfileSettings | null>(null)
@@ -43,6 +44,7 @@ export function ProfileDetails() {
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
   const [showDiscogsHelp, setShowDiscogsHelp] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     if (!user) return
@@ -138,6 +140,26 @@ export function ProfileDetails() {
   }
 
   const isDirty = JSON.stringify(settings) !== JSON.stringify(savedSettings)
+
+  async function handleDeleteAccount() {
+    if (!user) return
+    const confirmed = window.confirm(
+      "Delete your account? This permanently removes your profile and saved settings, and cannot be undone."
+    )
+    if (!confirmed) return
+
+    setDeleting(true)
+    setError(null)
+    try {
+      const token = await user.getIdToken()
+      await deleteAccount(token)
+      await logOut()
+      navigate("/")
+    } catch {
+      setError("Couldn't delete your account. Try again.")
+      setDeleting(false)
+    }
+  }
 
   return (
     <>
@@ -350,6 +372,21 @@ export function ProfileDetails() {
           >
             {saving ? "Saving..." : saved ? "Saved!" : "Save"}
           </button>
+
+          <div className="flex flex-col gap-3 rounded border border-red-200 bg-red-50 p-6">
+            <h2 className="text-headline-sm text-red-700">Danger Zone</h2>
+            <p className="text-body-sm text-red-700/80">
+              Permanently delete your account and all saved settings. This cannot be
+              undone.
+            </p>
+            <button
+              onClick={handleDeleteAccount}
+              disabled={deleting}
+              className="self-start rounded-full border border-red-600 px-6 py-2 text-body-sm font-semibold text-red-700 transition-colors hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {deleting ? "Deleting..." : "Delete Account"}
+            </button>
+          </div>
         </div>
       </div>
       </div>

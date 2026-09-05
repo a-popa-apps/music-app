@@ -46,3 +46,10 @@ def get_current_user(request: Request) -> str | None:
         return decoded["uid"]
     except Exception:
         return None
+
+
+def delete_user(uid: str) -> None:
+    app = get_app()
+    if app is None:
+        raise RuntimeError("Firebase is not configured")
+    firebase_auth.delete_user(uid, app=app)

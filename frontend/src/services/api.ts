@@ -47,6 +47,14 @@ export async function saveProfile(
   return res.json()
 }
 
+export async function deleteAccount(idToken: string): Promise<void> {
+  const res = await fetch(`${BACKEND_URL}/profile`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${idToken}` },
+  })
+  if (!res.ok) throw new Error(`Failed to delete account: ${res.status}`)
+}
+
 export async function uploadAndProcess(files: File[]): Promise<Blob> {
   const formData = new FormData()
   files.forEach((file) => formData.append("files", file))
