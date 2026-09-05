@@ -9,8 +9,9 @@ from fastapi import HTTPException, UploadFile
 from fastapi.concurrency import run_in_threadpool
 
 from .audio_io import SAMPLE_RATE, load_audio
-from .clean_filename import clean_filename
+from .clean_filename import clean_filename, split_artist_title
 from .detect_bpm import detect_bpm
+from .detect_genre import detect_genre
 from .detect_key import detect_key
 from .playlist import build_playlist
 from .write_tags import write_tags
@@ -47,7 +48,9 @@ def validate_files(files: list[UploadFile]) -> None:
             )
 
 
-def _analyze_and_tag(content: bytes, suffix: str) -> tuple[bytes, dict]:
+def _analyze_and_tag(
+    content: bytes, suffix: str, artist: str | None, title: str | None
+) -> tuple[bytes, dict]:
     try:
         audio = load_audio(content, suffix)
     except Exception as e:
@@ -75,8 +78,16 @@ def _analyze_and_tag(content: bytes, suffix: str) -> tuple[bytes, dict]:
 
     del audio
 
+    genre = None
     try:
-        tagged_content = write_tags(content, suffix, bpm=bpm, camelot=camelot)
+        genre = detect_genre(artist, title)
+        entry["genre"] = genre
+    except Exception as e:
+        entry["genre"] = None
+        entry["genre_error"] = f"{type(e).__name__}: {e}"
+
+    try:
+        tagged_content = write_tags(content, suffix, bpm=bpm, camelot=camelot, genre=genre)
     except Exception as e:
         tagged_content = content
         entry["tag_error"] = f"{type(e).__name__}: {e}"
@@ -109,10 +120,11 @@ async def build_zip(files: list[UploadFile]) -> bytes:
             original_name = file.filename or "track"
             name = _dedupe(clean_filename(original_name), seen_names)
             suffix = "." + name.rsplit(".", 1)[-1].lower() if "." in name else ""
+            artist, title = split_artist_title(name)
             content = await file.read()
 
             tagged_content, entry = await run_in_threadpool(
-                _analyze_and_tag, content, suffix
+                _analyze_and_tag, content, suffix, artist, title
             )
             zip_file.writestr(name, tagged_content)
 

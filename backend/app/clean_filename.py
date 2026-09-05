@@ -112,3 +112,14 @@ def clean_filename(filename: str) -> str:
         result = f"{result} ({version_tag})"
 
     return result + ext
+
+
+def split_artist_title(cleaned_name: str) -> tuple[str | None, str | None]:
+    """Recover artist/title from an already-cleaned "Artist - Title (Version)"
+    name, for genre lookups. Returns (None, None) if it isn't in that shape."""
+    stem = cleaned_name.rsplit(".", 1)[0]
+    stem = re.sub(r"\s*\([^)]*\)\s*$", "", stem)
+    parts = DASH_SPLIT.split(stem, maxsplit=1)
+    if len(parts) == 2 and parts[0] and parts[1]:
+        return parts[0], parts[1]
+    return None, None
