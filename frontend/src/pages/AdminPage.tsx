@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { Navigate } from "react-router-dom"
+import { Navigate, useNavigate } from "react-router-dom"
 import { Header } from "../components/Header"
 import { useAuth } from "../hooks/useAuth"
 import { useIsAdmin } from "../hooks/useIsAdmin"
@@ -17,7 +17,7 @@ import {
   type DiscountCode,
 } from "../services/api"
 
-const TABS = ["Users", "Stats", "Discount Codes", "Billing"] as const
+const TABS = ["Stats", "Users", "Discounts", "Billing"] as const
 type Tab = (typeof TABS)[number]
 
 const PERCENT_OPTIONS = [25, 50, 75, 100]
@@ -31,6 +31,7 @@ function Card({ children }: { children: React.ReactNode }) {
 }
 
 function UsersTab({ token, currentUid }: { token: string; currentUid: string }) {
+  const navigate = useNavigate()
   const [users, setUsers] = useState<AdminUser[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busyUid, setBusyUid] = useState<string | null>(null)
@@ -102,8 +103,8 @@ function UsersTab({ token, currentUid }: { token: string; currentUid: string }) 
         <table className="w-full text-left text-body-sm">
           <thead>
             <tr className="border-b border-outline-variant text-on-surface-variant">
-              <th className="py-2 pr-4">Email</th>
               <th className="py-2 pr-4">Name</th>
+              <th className="py-2 pr-4">Email</th>
               <th className="py-2 pr-4">Plan</th>
               <th className="py-2 pr-4">Admin</th>
               <th className="py-2 pr-4"></th>
@@ -111,12 +112,14 @@ function UsersTab({ token, currentUid }: { token: string; currentUid: string }) 
           </thead>
           <tbody>
             {users.map((u) => (
-              <tr key={u.uid} className="border-b border-outline-variant/50">
-                <td className="py-2 pr-4 text-on-surface">{u.email}</td>
-                <td className="py-2 pr-4 text-on-surface-variant">
-                  {u.name || u.artist_name || "—"}
-                </td>
-                <td className="py-2 pr-4">
+              <tr
+                key={u.uid}
+                onClick={() => navigate(`/admin/users/${u.uid}`)}
+                className="cursor-pointer border-b border-outline-variant/50 hover:bg-surface-container-low"
+              >
+                <td className="py-2 pr-4 text-on-surface">{u.name || u.artist_name || "—"}</td>
+                <td className="py-2 pr-4 text-on-surface-variant">{u.email}</td>
+                <td className="py-2 pr-4" onClick={(e) => e.stopPropagation()}>
                   <select
                     value={u.plan}
                     disabled={busyUid === u.uid}
@@ -127,7 +130,7 @@ function UsersTab({ token, currentUid }: { token: string; currentUid: string }) 
                     <option value="pro">Pro</option>
                   </select>
                 </td>
-                <td className="py-2 pr-4">
+                <td className="py-2 pr-4" onClick={(e) => e.stopPropagation()}>
                   <button
                     type="button"
                     role="switch"
@@ -145,7 +148,7 @@ function UsersTab({ token, currentUid }: { token: string; currentUid: string }) 
                     />
                   </button>
                 </td>
-                <td className="py-2 pr-4">
+                <td className="py-2 pr-4" onClick={(e) => e.stopPropagation()}>
                   <button
                     onClick={() => handleDelete(u)}
                     disabled={busyUid === u.uid}
@@ -376,7 +379,7 @@ function BillingTab({ token }: { token: string }) {
 export function AdminPage() {
   const { user, isVerified, loading: authLoading } = useAuth()
   const { isAdmin, loading: adminLoading } = useIsAdmin()
-  const [tab, setTab] = useState<Tab>("Users")
+  const [tab, setTab] = useState<Tab>("Stats")
   const [token, setToken] = useState<string | null>(null)
 
   useEffect(() => {
@@ -435,9 +438,9 @@ export function AdminPage() {
             ))}
           </div>
 
-          {tab === "Users" && <UsersTab token={token} currentUid={user!.uid} />}
           {tab === "Stats" && <StatsTab token={token} />}
-          {tab === "Discount Codes" && <DiscountCodesTab token={token} />}
+          {tab === "Users" && <UsersTab token={token} currentUid={user!.uid} />}
+          {tab === "Discounts" && <DiscountCodesTab token={token} />}
           {tab === "Billing" && <BillingTab token={token} />}
         </div>
       </div>

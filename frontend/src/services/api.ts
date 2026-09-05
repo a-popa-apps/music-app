@@ -130,6 +130,31 @@ export async function deleteUserAsAdmin(idToken: string, uid: string): Promise<v
   if (!res.ok) throw new Error(`Failed to delete user: ${res.status}`)
 }
 
+export async function getUserProfileAsAdmin(
+  idToken: string,
+  uid: string
+): Promise<ProfileSettings> {
+  const res = await fetch(`${BACKEND_URL}/admin/users/${uid}/profile`, {
+    headers: adminHeaders(idToken),
+  })
+  if (!res.ok) throw new Error(`Failed to load profile: ${res.status}`)
+  return res.json()
+}
+
+export async function saveUserProfileAsAdmin(
+  idToken: string,
+  uid: string,
+  settings: Partial<Omit<ProfileSettings, "plan" | "is_admin">>
+): Promise<ProfileSettings> {
+  const res = await fetch(`${BACKEND_URL}/admin/users/${uid}/profile`, {
+    method: "PUT",
+    headers: adminHeaders(idToken),
+    body: JSON.stringify(settings),
+  })
+  if (!res.ok) throw new Error(`Failed to save profile: ${res.status}`)
+  return res.json()
+}
+
 export async function getAdminStats(idToken: string): Promise<AdminStats> {
   const res = await fetch(`${BACKEND_URL}/admin/stats`, { headers: adminHeaders(idToken) })
   if (!res.ok) throw new Error(`Failed to load stats: ${res.status}`)

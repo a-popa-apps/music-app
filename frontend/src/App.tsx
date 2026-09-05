@@ -8,6 +8,7 @@ import { HowItWorks } from "./components/HowItWorks"
 import { Pricing } from "./components/Pricing"
 import { UploadDemo } from "./components/UploadDemo"
 import { AdminPage } from "./pages/AdminPage"
+import { AdminUserDetail } from "./pages/AdminUserDetail"
 import { AuthPage } from "./pages/AuthPage"
 import { NotFound } from "./pages/NotFound"
 import { PrivacyPage } from "./pages/PrivacyPage"
@@ -38,6 +39,7 @@ function App() {
       <Route path="/auth" element={<AuthPage />} />
       <Route path="/profile" element={<ProfileDetails />} />
       <Route path="/admin" element={<AdminPage />} />
+      <Route path="/admin/users/:uid" element={<AdminUserDetail />} />
       <Route path="/terms" element={<TermsPage />} />
       <Route path="/privacy" element={<PrivacyPage />} />
       <Route path="*" element={<NotFound />} />

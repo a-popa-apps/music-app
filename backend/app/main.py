@@ -126,6 +126,22 @@ def admin_delete_user(uid: str, request: Request):
     return {"status": "deleted"}
 
 
+@app.get("/admin/users/{uid}/profile")
+def admin_read_user_profile(uid: str, request: Request):
+    _require_admin(request)
+    return get_settings(uid)
+
+
+@app.put("/admin/users/{uid}/profile")
+def admin_update_user_profile(uid: str, update: ProfileUpdate, request: Request):
+    _require_admin(request)
+    payload = {k: v for k, v in update.model_dump().items() if v is not None}
+    try:
+        return save_settings(uid, payload)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+
 @app.get("/admin/stats")
 def admin_stats(request: Request):
     _require_admin(request)
