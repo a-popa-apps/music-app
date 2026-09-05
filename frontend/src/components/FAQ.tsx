@@ -29,14 +29,14 @@ export function FAQ() {
   return (
     <section
       id="faq"
-      className="w-full bg-surface-container-low px-4 py-16 lg:px-12"
+      className="w-full bg-tertiary-container px-4 py-16 lg:px-12"
     >
       <div className="mx-auto flex max-w-4xl flex-col gap-12">
         <div className="flex flex-col gap-1 text-center">
           <span className="font-mono text-meta-badge font-bold uppercase tracking-wider text-secondary-container">
             Clear Answers
           </span>
-          <h2 className="text-headline-xl tracking-tight text-on-surface">
+          <h2 className="text-headline-xl tracking-tight text-white">
             Frequently Asked Questions
           </h2>
         </div>
@@ -47,15 +47,15 @@ export function FAQ() {
             return (
               <div
                 key={faq.question}
-                className="rounded bg-surface-container-lowest p-6 shadow-sm"
+                className="rounded border border-white/10 bg-white/10 p-6 backdrop-blur-md"
               >
                 <button
                   onClick={() => setOpenIndex(isOpen ? null : i)}
-                  className="flex w-full items-center justify-between text-left text-headline-sm text-on-surface"
+                  className="flex w-full items-center justify-between text-left text-headline-sm text-white"
                 >
                   <span>{faq.question}</span>
                   <span
-                    className={`material-symbols-outlined text-on-surface-variant transition-transform ${
+                    className={`material-symbols-outlined text-white/60 transition-transform ${
                       isOpen ? "rotate-180" : ""
                     }`}
                   >
@@ -63,7 +63,7 @@ export function FAQ() {
                   </span>
                 </button>
                 {isOpen && (
-                  <div className="mt-2 text-body-md text-on-surface-variant">
+                  <div className="mt-2 text-body-md text-white/70">
                     {faq.answer}
                   </div>
                 )}

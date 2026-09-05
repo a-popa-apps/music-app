@@ -29,7 +29,7 @@ export function HowItWorks() {
   return (
     <section
       id="how-it-works"
-      className="w-full bg-surface px-4 py-16 lg:px-12"
+      className="w-full bg-tertiary-container px-4 py-16 lg:px-12"
     >
       <div className="mx-auto flex max-w-7xl flex-col gap-12">
         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
@@ -37,11 +37,11 @@ export function HowItWorks() {
             <span className="font-mono text-meta-badge font-bold uppercase tracking-wider text-secondary-container">
               Workflow Architecture
             </span>
-            <h2 className="mt-1 text-headline-xl tracking-tight text-on-surface">
+            <h2 className="mt-1 text-headline-xl tracking-tight text-white">
               Three deliberate steps. Zero manual curation.
             </h2>
           </div>
-          <p className="max-w-md text-body-md text-on-surface-variant">
+          <p className="max-w-md text-body-md text-white/70">
             Architected for touring DJs who download 80 promo tracks two
             hours before call time.
           </p>
@@ -51,23 +51,23 @@ export function HowItWorks() {
           {STEPS.map((step) => (
             <div
               key={step.number}
-              className="flex flex-col rounded bg-surface-container-lowest p-8 shadow-sm transition-all hover:shadow-md"
+              className="flex flex-col rounded border border-white/10 bg-white/10 p-8 backdrop-blur-md transition-all hover:bg-white/15"
             >
               <div className="mb-8 flex items-center justify-between">
                 <span className="font-mono text-headline-lg font-bold text-secondary-container">
                   {step.number}
                 </span>
-                <span className="material-symbols-outlined text-[28px] text-on-surface-variant">
+                <span className="material-symbols-outlined text-[28px] text-white/60">
                   {step.icon}
                 </span>
               </div>
-              <h3 className="mb-2 text-headline-sm text-on-surface">
+              <h3 className="mb-2 text-headline-sm text-white">
                 {step.title}
               </h3>
-              <p className="mb-6 text-body-md text-on-surface-variant">
+              <p className="mb-6 text-body-md text-white/70">
                 {step.description}
               </p>
-              <div className="mt-auto flex items-center gap-1 pt-4 font-mono text-meta-badge text-on-surface-variant">
+              <div className="mt-auto flex items-center gap-1 pt-4 font-mono text-meta-badge text-white/70">
                 <span className="material-symbols-outlined text-[16px] text-secondary-container">
                   check_circle
                 </span>

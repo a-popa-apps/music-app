@@ -26,14 +26,14 @@ export function Features() {
   return (
     <section
       id="features"
-      className="w-full bg-surface-container-lowest px-4 py-16 lg:px-12"
+      className="w-full bg-tertiary-container px-4 py-16 lg:px-12"
     >
       <div className="mx-auto flex max-w-7xl flex-col gap-12">
         <div className="flex max-w-2xl flex-col gap-1">
           <span className="font-mono text-meta-badge font-bold uppercase tracking-wider text-secondary-container">
             System Capabilities
           </span>
-          <h2 className="text-headline-xl tracking-tight text-on-surface">
+          <h2 className="text-headline-xl tracking-tight text-white">
             Built strictly for selectors with high standards.
           </h2>
         </div>
@@ -42,17 +42,17 @@ export function Features() {
           {FEATURES.map((feature) => (
             <div
               key={feature.title}
-              className="flex flex-col rounded bg-surface-container p-8 shadow-sm transition-shadow hover:shadow-md"
+              className="flex flex-col rounded border border-white/10 bg-white/10 p-8 backdrop-blur-md transition-colors hover:bg-white/15"
             >
-              <div className="mb-6 flex h-10 w-10 items-center justify-center rounded-full bg-surface-container-highest">
+              <div className="mb-6 flex h-10 w-10 items-center justify-center rounded-full bg-white/10">
                 <span className="material-symbols-outlined text-[22px] text-secondary-container">
                   {feature.icon}
                 </span>
               </div>
-              <h3 className="mb-2 text-headline-sm text-on-surface">
+              <h3 className="mb-2 text-headline-sm text-white">
                 {feature.title}
               </h3>
-              <p className="mb-4 text-body-md text-on-surface-variant">
+              <p className="mb-4 text-body-md text-white/70">
                 {feature.description}
               </p>
               <div className="mt-auto font-mono text-meta-numeric font-semibold text-secondary-container">
@@ -61,16 +61,16 @@ export function Features() {
             </div>
           ))}
 
-          <div className="flex flex-col rounded bg-surface-container p-8 shadow-sm transition-shadow hover:shadow-md lg:col-span-2">
-            <div className="mb-6 flex h-10 w-10 items-center justify-center rounded-full bg-surface-container-highest">
+          <div className="flex flex-col rounded border border-white/10 bg-white/10 p-8 backdrop-blur-md transition-colors hover:bg-white/15 lg:col-span-2">
+            <div className="mb-6 flex h-10 w-10 items-center justify-center rounded-full bg-white/10">
               <span className="material-symbols-outlined text-[22px] text-secondary-container">
                 devices
               </span>
             </div>
-            <h3 className="mb-2 text-headline-sm text-on-surface">
+            <h3 className="mb-2 text-headline-sm text-white">
               Rekordbox, Serato & Traktor Native
             </h3>
-            <p className="mb-4 text-body-md text-on-surface-variant">
+            <p className="mb-4 text-body-md text-white/70">
               Exports playlist files ready to drag directly into your current
               library without recalculating waveforms or corrupting cues.
             </p>
@@ -83,7 +83,7 @@ export function Features() {
               ].map((tag) => (
                 <span
                   key={tag}
-                  className="rounded-full bg-surface-container-lowest px-4 py-1 font-mono text-meta-badge text-on-surface"
+                  className="rounded-full bg-white/10 px-4 py-1 font-mono text-meta-badge text-white"
                 >
                   {tag}
                 </span>
@@ -91,16 +91,16 @@ export function Features() {
             </div>
           </div>
 
-          <div className="flex flex-col rounded bg-surface-container p-8 shadow-sm transition-shadow hover:shadow-md">
-            <div className="mb-6 flex h-10 w-10 items-center justify-center rounded-full bg-surface-container-highest">
+          <div className="flex flex-col rounded border border-white/10 bg-white/10 p-8 backdrop-blur-md transition-colors hover:bg-white/15">
+            <div className="mb-6 flex h-10 w-10 items-center justify-center rounded-full bg-white/10">
               <span className="material-symbols-outlined text-[22px] text-secondary-container">
                 security
               </span>
             </div>
-            <h3 className="mb-2 text-headline-sm text-on-surface">
+            <h3 className="mb-2 text-headline-sm text-white">
               No Files Retained
             </h3>
-            <p className="mb-4 text-body-md text-on-surface-variant">
+            <p className="mb-4 text-body-md text-white/70">
               Your tracks are processed for a single request and streamed
               back — nothing is stored on our servers afterward.
             </p>

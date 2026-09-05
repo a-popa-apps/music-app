@@ -17,27 +17,27 @@ export function Pricing() {
   return (
     <section
       id="pricing"
-      className="w-full bg-surface px-4 py-16 lg:px-12"
+      className="w-full bg-tertiary-container px-4 py-16 lg:px-12"
     >
       <div className="mx-auto flex max-w-4xl flex-col items-center text-center">
         <span className="mb-1 font-mono text-meta-badge font-bold uppercase tracking-wider text-secondary-container">
           Fair Selector Pricing
         </span>
-        <h2 className="mb-4 text-headline-xl tracking-tight text-on-surface">
+        <h2 className="mb-4 text-headline-xl tracking-tight text-white">
           One plan. Infinite track crates.
         </h2>
-        <p className="mb-8 max-w-xl text-body-lg text-on-surface-variant">
+        <p className="mb-8 max-w-xl text-body-lg text-white/70">
           No complicated tiers. Start free to prep this weekend's gig,
           upgrade when your download folders get wild.
         </p>
 
-        <div className="mb-12 flex items-center gap-2 rounded-full bg-surface-container p-1 shadow-sm">
+        <div className="mb-12 flex items-center gap-2 rounded-full border border-white/10 bg-white/10 p-1 backdrop-blur-md">
           <button
             onClick={() => setBilling("monthly")}
             className={`rounded-full px-6 py-1 text-body-sm font-semibold transition-all ${
               billing === "monthly"
-                ? "bg-surface-container-lowest text-on-surface shadow-sm"
-                : "text-on-surface-variant"
+                ? "bg-white/20 text-white"
+                : "text-white/60"
             }`}
           >
             Monthly
@@ -46,8 +46,8 @@ export function Pricing() {
             onClick={() => setBilling("annual")}
             className={`flex items-center gap-1 rounded-full px-6 py-1 text-body-sm font-semibold transition-all ${
               billing === "annual"
-                ? "bg-surface-container-lowest text-on-surface shadow-sm"
-                : "text-on-surface-variant"
+                ? "bg-white/20 text-white"
+                : "text-white/60"
             }`}
           >
             Annual
@@ -57,23 +57,23 @@ export function Pricing() {
           </button>
         </div>
 
-        <div className="flex w-full max-w-lg flex-col rounded bg-surface-container-lowest p-12 text-left shadow-md">
+        <div className="flex w-full max-w-lg flex-col rounded border border-white/10 bg-white/10 p-12 text-left backdrop-blur-md">
           <div className="flex items-center justify-between pb-4">
             <div>
-              <h3 className="text-headline-lg font-bold text-on-surface">
+              <h3 className="text-headline-lg font-bold text-white">
                 Pro DJ Plan
               </h3>
-              <span className="text-body-sm text-on-surface-variant">
+              <span className="text-body-sm text-white/70">
                 Complete autonomy for working selectors
               </span>
             </div>
           </div>
 
           <div className="flex items-baseline gap-1 py-6">
-            <span className="text-display-hero-mobile tracking-tight text-on-surface">
+            <span className="text-display-hero-mobile tracking-tight text-white">
               ${price}
             </span>
-            <span className="text-body-md text-on-surface-variant">
+            <span className="text-body-md text-white/70">
               {cadence}
             </span>
           </div>
@@ -84,7 +84,7 @@ export function Pricing() {
                 <span className="material-symbols-outlined text-[20px] text-secondary-container">
                   check_circle
                 </span>
-                <span className="text-body-md text-on-surface">{item}</span>
+                <span className="text-body-md text-white">{item}</span>
               </div>
             ))}
           </div>
@@ -92,7 +92,7 @@ export function Pricing() {
           <button className="w-full rounded-full bg-secondary-container px-6 py-4 text-center text-headline-sm font-semibold text-on-primary transition-all hover:bg-secondary active:scale-95">
             Get Started Free (First 50 Tracks On Us)
           </button>
-          <span className="mt-2 text-center font-mono text-meta-numeric text-on-surface-variant">
+          <span className="mt-2 text-center font-mono text-meta-numeric text-white/60">
             No credit card required &bull; Instant activation
           </span>
         </div>
