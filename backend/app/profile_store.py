@@ -50,8 +50,8 @@ def save_settings(uid: str, settings: dict) -> dict:
         raise ValueError(f"Invalid role: {role!r}")
 
     genres = settings.get("primary_genres", [])
-    if len(genres) > 2:
-        raise ValueError("Max 2 primary genres")
+    if len(genres) > 3:
+        raise ValueError("Max 3 primary genres")
     if any(g not in VALID_GENRES for g in genres):
         raise ValueError(f"Invalid genre in: {genres!r}")
 

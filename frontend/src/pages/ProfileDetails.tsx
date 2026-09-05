@@ -21,7 +21,7 @@ const GENRES = [
   "Other",
 ]
 
-const MAX_GENRES = 2
+const MAX_GENRES = 3
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -203,7 +203,7 @@ export function ProfileDetails() {
 
             <div className="flex flex-col gap-2">
               <span className="text-body-sm font-semibold text-on-surface">Role</span>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {ROLES.map((role) => (
                   <label
                     key={role.value}
@@ -234,7 +234,7 @@ export function ProfileDetails() {
                   {settings.primary_genres.length} / {MAX_GENRES} max
                 </span>
               </div>
-              <div className="flex flex-wrap gap-2">
+              <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap">
                 {GENRES.map((genre) => {
                   const selected = settings.primary_genres.includes(genre)
                   return (
