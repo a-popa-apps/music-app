@@ -43,6 +43,9 @@ WHITESPACE_RUN = re.compile(r"\s{2,}")
 EDGE_JUNK = re.compile(r"^[\s\-_.,]+|[\s\-_.,]+$")
 CATALOG_CODE_AT_END = re.compile(r"\s+[A-Za-z]{2,6}\d{2,5}$")
 LEADING_VINYL_CODE = re.compile(r"^[A-Da-d]{1,2}\d{1,2}[\s.\-_]+")
+TRAILING_LABEL_CREDIT = re.compile(
+    r"\s*[-–—]\s*[^-–—]{1,50}\bRecord(?:s|ings)?\b\.?\s*$", re.IGNORECASE
+)
 TEMPLATE_PLACEHOLDER = re.compile(r"\{(\w+)\}")
 
 
@@ -77,6 +80,7 @@ def _clean_text(text: str) -> tuple[str, str | None]:
     text, version_tag = _extract_version_tag(text)
     text = JUNK_PHRASE.sub(" ", text)
     text = CATALOG_CODE_AT_END.sub("", text)
+    text = TRAILING_LABEL_CREDIT.sub("", text)
     text = text.replace("_", " ")
     text = _tidy(text)
     return text, version_tag
