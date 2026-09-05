@@ -17,8 +17,9 @@ from .playlist import build_playlist
 from .write_tags import write_tags
 
 ALLOWED_EXTENSIONS = {".mp3", ".wav", ".flac", ".aiff", ".aif", ".ogg", ".aac"}
-MAX_FILES = 25
-MAX_FILE_SIZE = 2 * 1024 * 1024 * 1024  # 2GB per file
+MAX_FILES = 50
+MAX_FILE_SIZE = 100 * 1024 * 1024  # 100MB per file
+MAX_TOTAL_SIZE = 2 * 1024 * 1024 * 1024  # 2GB per upload
 
 
 def validate_files(files: list[UploadFile]) -> None:
@@ -30,22 +31,32 @@ def validate_files(files: list[UploadFile]) -> None:
             400, f"Too many files ({len(files)}). Max: {MAX_FILES} per upload."
         )
 
+    total_size = 0
     for file in files:
         name = file.filename or ""
         ext = "." + name.rsplit(".", 1)[-1].lower() if "." in name else ""
         if ext not in ALLOWED_EXTENSIONS:
             raise HTTPException(
                 400,
-                f"'{name}' has an unsupported format. "
+                f"'{name}' is not a supported audio format. "
                 f"Try: {', '.join(sorted(ALLOWED_EXTENSIONS))}.",
             )
 
-        if file.size is not None and file.size > MAX_FILE_SIZE:
-            size_gb = file.size / (1024**3)
-            raise HTTPException(
-                400,
-                f"'{name}' is too large ({size_gb:.1f}GB). Max: 2GB per file.",
-            )
+        if file.size is not None:
+            if file.size > MAX_FILE_SIZE:
+                size_mb = file.size / (1024**2)
+                raise HTTPException(
+                    400,
+                    f"'{name}' is too large ({size_mb:.0f}MB). Max: 100MB per file.",
+                )
+            total_size += file.size
+
+    if total_size > MAX_TOTAL_SIZE:
+        total_gb = total_size / (1024**3)
+        raise HTTPException(
+            400,
+            f"Upload is too large ({total_gb:.1f}GB total). Max: 2GB per upload.",
+        )
 
 
 def _resolve_artist_title_genre(stem: str) -> tuple[str | None, str | None, str | None, dict]:
@@ -147,12 +158,26 @@ async def build_zip(files: list[UploadFile]) -> bytes:
     with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
         for file in files:
             original_name = file.filename or "track"
-            stem, ext, version_tag = prepare_stem(original_name)
-            content = await file.read()
 
-            tagged_content, entry, resolved_name = await run_in_threadpool(
-                _analyze_and_tag, content, ext, stem, version_tag
-            )
+            try:
+                stem, ext, version_tag = prepare_stem(original_name)
+                content = await file.read()
+            except Exception as e:
+                manifest[original_name] = {
+                    "error": f"Failed to read file: {type(e).__name__}: {e}"
+                }
+                continue
+
+            try:
+                tagged_content, entry, resolved_name = await run_in_threadpool(
+                    _analyze_and_tag, content, ext, stem, version_tag
+                )
+            except Exception as e:
+                # One file misbehaving shouldn't lose the rest of the batch --
+                # fall back to including it unprocessed, with the error noted.
+                tagged_content, resolved_name = content, original_name
+                entry = {"error": f"Processing failed: {type(e).__name__}: {e}"}
+
             name = _dedupe(resolved_name, seen_names)
             zip_file.writestr(name, tagged_content)
 
