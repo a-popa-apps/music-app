@@ -94,14 +94,18 @@ async def process(request: Request, files: list[UploadFile] = File(...)):
     validate_files(files)
 
     filename_template = None
+    deep_search = False
     uid = get_current_user(request)
     if uid is not None:
         try:
-            filename_template = get_settings(uid).get("filename_template")
+            settings = get_settings(uid)
+            filename_template = settings.get("filename_template")
+            deep_search = bool(settings.get("discogs_deep_search"))
         except Exception:
             filename_template = None  # don't let a profile lookup failure block processing
+            deep_search = False
 
-    zip_bytes = await build_zip(files, filename_template=filename_template)
+    zip_bytes = await build_zip(files, filename_template=filename_template, deep_search=deep_search)
     return Response(
         content=zip_bytes,
         media_type="application/zip",

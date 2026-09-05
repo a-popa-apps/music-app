@@ -59,7 +59,9 @@ def validate_files(files: list[UploadFile]) -> None:
         )
 
 
-def _resolve_artist_title_genre(stem: str) -> tuple[str | None, str | None, str | None, dict]:
+def _resolve_artist_title_genre(
+    stem: str, deep_search: bool = False
+) -> tuple[str | None, str | None, str | None, dict]:
     """Local dash split first (high confidence); else search Spotify/Discogs
     using the raw stem so a real catalog match beats guessing; else a
     best-effort word-count guess as a last resort."""
@@ -68,7 +70,7 @@ def _resolve_artist_title_genre(stem: str) -> tuple[str | None, str | None, str 
     split = local_dash_split(stem)
     if split:
         artist, title = split
-        genre = detect_genre(artist, title)
+        genre = detect_genre(artist, title, deep_search=deep_search)
         return artist, title, genre, debug
 
     match = lookup_track(stem)
@@ -80,7 +82,7 @@ def _resolve_artist_title_genre(stem: str) -> tuple[str | None, str | None, str 
     if split:
         artist, title = split
         debug["name_source"] = "guessed"
-        genre = detect_genre(artist, title)
+        genre = detect_genre(artist, title, deep_search=deep_search)
         return artist, title, genre, debug
 
     return None, None, None, debug
@@ -92,8 +94,9 @@ def _analyze_and_tag(
     stem: str,
     version_tag: str | None,
     filename_template: str | None = None,
+    deep_search: bool = False,
 ) -> tuple[bytes, dict, str]:
-    artist, title, genre, name_debug = _resolve_artist_title_genre(stem)
+    artist, title, genre, name_debug = _resolve_artist_title_genre(stem, deep_search)
 
     try:
         audio = load_audio(content, ext)
@@ -165,7 +168,11 @@ def _dedupe(name: str, seen: set[str]) -> str:
     return candidate
 
 
-async def build_zip(files: list[UploadFile], filename_template: str | None = None) -> bytes:
+async def build_zip(
+    files: list[UploadFile],
+    filename_template: str | None = None,
+    deep_search: bool = False,
+) -> bytes:
     buffer = io.BytesIO()
     manifest = {}
     seen_names: set[str] = set()
@@ -186,7 +193,13 @@ async def build_zip(files: list[UploadFile], filename_template: str | None = Non
 
             try:
                 tagged_content, entry, resolved_name = await run_in_threadpool(
-                    _analyze_and_tag, content, ext, stem, version_tag, filename_template
+                    _analyze_and_tag,
+                    content,
+                    ext,
+                    stem,
+                    version_tag,
+                    filename_template,
+                    deep_search,
                 )
             except Exception as e:
                 # One file misbehaving shouldn't lose the rest of the batch --

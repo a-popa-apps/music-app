@@ -148,11 +148,120 @@ def lookup_track(query: str) -> dict | None:
     return _spotify_track_lookup(query) or _discogs_track_lookup(query)
 
 
-def detect_genre(artist: str | None, title: str | None) -> str | None:
+DEEP_SEARCH_MAX_RELEASES = 10
+
+
+def _titles_match(target: str, candidate: str) -> bool:
+    target_words = _words(target)
+    candidate_words = _words(candidate)
+    if not target_words or not candidate_words:
+        return False
+    if target_words == candidate_words:
+        return True
+    overlap = target_words & candidate_words
+    union = target_words | candidate_words
+    return len(overlap) / len(union) >= 0.7
+
+
+def _discogs_artist_id(artist: str) -> int | None:
+    """Picks the closest-matching candidate, not just the first one whose
+    words happen to be a subset -- "A G" is a subset-match of both the
+    correct "A:G" AND the wrong "A. G. Cook", and a naive first-match would
+    have returned whichever ranked higher in Discogs' own search order."""
+    url = f"https://api.discogs.com/database/search?q={urllib.parse.quote(artist)}&type=artist&per_page=15"
+    if DISCOGS_TOKEN:
+        url += f"&token={DISCOGS_TOKEN}"
+
+    query_words = _words(artist)
+    if not query_words:
+        return None
+
+    result = _get_json(url, headers={"User-Agent": "QuickieApp/1.0"})
+    best_id, best_score = None, 0.0
+    for entry in result.get("results", []):
+        name_words = _words(entry.get("title", ""))
+        if not (query_words <= name_words):
+            continue
+        score = len(query_words) / len(name_words)  # 1.0 = exact match, penalizes extra words
+        if score > best_score:
+            best_id, best_score = entry.get("id"), score
+
+    return best_id if best_score >= 0.5 else None
+    return None
+
+
+def _discogs_artist_release_ids(artist_id: int, limit: int) -> list[int]:
+    url = (
+        f"https://api.discogs.com/artists/{artist_id}/releases"
+        f"?sort=year&sort_order=desc&per_page={limit}"
+    )
+    if DISCOGS_TOKEN:
+        url += f"&token={DISCOGS_TOKEN}"
+
+    result = _get_json(url, headers={"User-Agent": "QuickieApp/1.0"})
+    return [
+        r["id"]
+        for r in result.get("releases", [])
+        if r.get("type") == "release"  # skip "master" entries -- would need an
+        # extra lookup to resolve to a concrete release, not worth it here
+    ][:limit]
+
+
+def _discogs_release_track_match(release_id: int, title: str) -> dict | None:
+    url = f"https://api.discogs.com/releases/{release_id}"
+    if DISCOGS_TOKEN:
+        url += f"?token={DISCOGS_TOKEN}"
+
+    release = _get_json(url, headers={"User-Agent": "QuickieApp/1.0"})
+    for track in release.get("tracklist", []):
+        track_title = track.get("title", "")
+        if track_title and _titles_match(title, track_title):
+            styles = release.get("styles") or []
+            genres = release.get("genres") or []
+            genre = styles[0] if styles else (genres[0] if genres else None)
+            return {"title": track_title, "genre": genre}
+    return None
+
+
+def deep_discogs_lookup(artist: str, title: str) -> dict | None:
+    """Slower, more thorough fallback: searches the artist's own Discogs page
+    and scans their release tracklists directly, catching tracks the basic
+    release-title search misses (e.g. a track named "Catharsis" on a release
+    titled "Algobub" -- searching "Catharsis" alone would never surface it).
+    Opt-in only, since this can be several sequential API calls per track."""
+    try:
+        artist_id = _discogs_artist_id(artist)
+        if artist_id is None:
+            return None
+
+        for release_id in _discogs_artist_release_ids(artist_id, DEEP_SEARCH_MAX_RELEASES):
+            try:
+                match = _discogs_release_track_match(release_id, title)
+            except Exception:
+                continue
+            if match:
+                return {"artist": artist, "title": match["title"], "genre": match["genre"]}
+        return None
+    except Exception:
+        return None
+
+
+def detect_genre(artist: str | None, title: str | None, deep_search: bool = False) -> str | None:
     """Genre-only lookup for when artist/title are already known (e.g. from
     a local dash split). Reuses lookup_track's plausibility-checked search
-    rather than trusting a single top result."""
+    rather than trusting a single top result; falls back to the slower
+    deep_discogs_lookup when deep_search is enabled and the basic search
+    finds nothing."""
     if not artist or not title:
         return None
+
     match = lookup_track(f"{artist} {title}")
-    return match["genre"] if match else None
+    if match:
+        return match["genre"]
+
+    if deep_search:
+        deep_match = deep_discogs_lookup(artist, title)
+        if deep_match:
+            return deep_match["genre"]
+
+    return None
