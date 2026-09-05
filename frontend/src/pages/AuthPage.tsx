@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
+import { Header } from "../components/Header"
 import { useAuth } from "../hooks/useAuth"
 import { checkPwnedPassword } from "../utils/checkPwnedPassword"
 
@@ -86,7 +87,9 @@ export function AuthPage() {
   }
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center bg-surface px-4 py-12">
+    <>
+      <Header />
+      <div className="flex min-h-screen w-full items-center justify-center bg-surface px-4 py-12 pt-32">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
           <span className="font-mono text-headline-lg font-bold tracking-tight text-on-surface">
@@ -225,6 +228,7 @@ export function AuthPage() {
           )}
         </div>
       </div>
-    </div>
+      </div>
+    </>
   )
 }

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import { Navigate } from "react-router-dom"
+import { Header } from "../components/Header"
 import { COUNTRIES } from "../data/countries"
 import { useAuth } from "../hooks/useAuth"
 import { getProfile, saveProfile, type ProfileSettings } from "../services/api"
@@ -74,19 +75,25 @@ export function ProfileDetails() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-surface">
-        <p className="text-body-md text-on-surface-variant">Loading...</p>
-      </div>
+      <>
+        <Header />
+        <div className="flex min-h-screen items-center justify-center bg-surface pt-16">
+          <p className="text-body-md text-on-surface-variant">Loading...</p>
+        </div>
+      </>
     )
   }
 
   if (!settings) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-surface">
-        <p className="text-body-md text-red-600">
-          {error ?? "Couldn't load your profile."}
-        </p>
-      </div>
+      <>
+        <Header />
+        <div className="flex min-h-screen items-center justify-center bg-surface pt-16">
+          <p className="text-body-md text-red-600">
+            {error ?? "Couldn't load your profile."}
+          </p>
+        </div>
+      </>
     )
   }
 
@@ -133,7 +140,9 @@ export function ProfileDetails() {
   const isDirty = JSON.stringify(settings) !== JSON.stringify(savedSettings)
 
   return (
-    <div className="min-h-screen w-full bg-surface px-4 py-12">
+    <>
+      <Header />
+      <div className="min-h-screen w-full bg-surface px-4 py-12 pt-32">
       <div className="mx-auto max-w-2xl">
         <h1 className="mb-6 text-headline-lg text-on-surface">Profile Details</h1>
 
@@ -343,6 +352,7 @@ export function ProfileDetails() {
           </button>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   )
 }

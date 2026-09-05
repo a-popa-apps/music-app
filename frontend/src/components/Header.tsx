@@ -4,10 +4,10 @@ import { AccountMenu } from "./AccountMenu"
 import { useAuth } from "../hooks/useAuth"
 
 const NAV_LINKS = [
-  { label: "How it works", href: "#how-it-works" },
-  { label: "Features", href: "#features" },
-  { label: "Pricing", href: "#pricing" },
-  { label: "FAQ", href: "#faq" },
+  { label: "How it works", href: "/#how-it-works" },
+  { label: "Features", href: "/#features" },
+  { label: "Pricing", href: "/#pricing" },
+  { label: "FAQ", href: "/#faq" },
 ]
 
 export function Header() {
@@ -18,11 +18,11 @@ export function Header() {
   return (
     <header className="fixed top-0 z-50 w-full bg-surface/90 shadow-[0_1px_8px_rgba(0,0,0,0.03)] backdrop-blur-xl">
       <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-4 px-4 lg:px-12">
-        <div className="flex items-center gap-2">
+        <Link to="/" className="flex items-center gap-2">
           <span className="font-mono text-headline-sm font-bold tracking-tight text-on-surface">
             quickie.
           </span>
-        </div>
+        </Link>
         <nav className="hidden items-center gap-8 md:flex">
           {NAV_LINKS.map((link) => (
             <a
