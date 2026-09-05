@@ -36,6 +36,7 @@ export function ProfileDetails() {
   const { user, isVerified, loading: authLoading } = useAuth()
 
   const [settings, setSettings] = useState<ProfileSettings | null>(null)
+  const [savedSettings, setSavedSettings] = useState<ProfileSettings | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -50,7 +51,10 @@ export function ProfileDetails() {
       try {
         const token = await user!.getIdToken()
         const profile = await getProfile(token)
-        if (!cancelled) setSettings(profile)
+        if (!cancelled) {
+          setSettings(profile)
+          setSavedSettings(profile)
+        }
       } catch {
         if (!cancelled) setError("Couldn't load your profile. Try refreshing.")
       } finally {
@@ -116,6 +120,7 @@ export function ProfileDetails() {
         discogs_deep_search: settings.discogs_deep_search,
       })
       setSettings(updated)
+      setSavedSettings(updated)
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
     } catch {
@@ -124,6 +129,8 @@ export function ProfileDetails() {
       setSaving(false)
     }
   }
+
+  const isDirty = JSON.stringify(settings) !== JSON.stringify(savedSettings)
 
   return (
     <div className="min-h-screen w-full bg-surface px-4 py-12">
@@ -329,8 +336,8 @@ export function ProfileDetails() {
 
           <button
             onClick={handleSave}
-            disabled={saving}
-            className="rounded-full bg-secondary-container px-6 py-3 text-headline-sm font-semibold text-on-primary transition-opacity hover:opacity-90 disabled:opacity-60"
+            disabled={saving || !isDirty}
+            className="rounded-full bg-secondary-container px-6 py-3 text-headline-sm font-semibold text-on-primary transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
           >
             {saving ? "Saving..." : saved ? "Saved!" : "Save"}
           </button>
