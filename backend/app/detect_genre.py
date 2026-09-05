@@ -57,74 +57,28 @@ def _get_spotify_token() -> str | None:
     return token
 
 
-def _spotify_genre(artist: str, title: str) -> str | None:
-    token = _get_spotify_token()
-    if not token:
-        return None
-
-    query = urllib.parse.quote(f"artist:{artist} track:{title}")
-    headers = {"Authorization": f"Bearer {token}"}
-
-    try:
-        search = _get_json(
-            f"https://api.spotify.com/v1/search?q={query}&type=track&limit=1", headers
-        )
-        items = search.get("tracks", {}).get("items", [])
-        if not items:
-            return None
-
-        artist_id = items[0]["artists"][0]["id"]
-        artist_data = _get_json(f"https://api.spotify.com/v1/artists/{artist_id}", headers)
-        genres = artist_data.get("genres", [])
-        return genres[0] if genres else None
-    except Exception:
-        return None
-
-
-def _discogs_genre(artist: str, title: str) -> str | None:
-    query = urllib.parse.quote(f"{artist} {title}")
-    url = f"https://api.discogs.com/database/search?q={query}&type=release&per_page=1"
-    if DISCOGS_TOKEN:
-        url += f"&token={DISCOGS_TOKEN}"
-
-    try:
-        result = _get_json(url, headers={"User-Agent": "QuickieApp/1.0"})
-        results = result.get("results", [])
-        if not results:
-            return None
-
-        styles = results[0].get("style") or []
-        genres = results[0].get("genre") or []
-        if styles:
-            return styles[0]
-        if genres:
-            return genres[0]
-        return None
-    except Exception:
-        return None
-
-
-def detect_genre(artist: str | None, title: str | None) -> str | None:
-    if not artist or not title:
-        return None
-    return _spotify_genre(artist, title) or _discogs_genre(artist, title)
-
-
 def _words(text: str) -> set[str]:
     return set(re.findall(r"[a-z0-9]+", text.lower()))
 
 
 def _is_plausible_match(query: str, artist: str, title: str) -> bool:
     """Catalog search engines rank loosely -- a query like "Bicep Glue" can
-    return Bicep's self-titled album ahead of the actual "Glue" release.
-    Require most of the query's words to actually appear in the result
-    before trusting it, rather than blindly taking the top hit."""
+    return Bicep's self-titled album ahead of the actual "Glue" release, and
+    a generic query like "Good Track" can match a totally unrelated release
+    that merely contains both words somewhere in its own title. Jaccard
+    similarity (vs. one-directional overlap) also penalizes a result
+    stuffed with unrelated extra words."""
     query_words = _words(query)
-    if not query_words:
-        return False
+    if len(query_words) < 2:
+        return False  # too generic a query to trust any match
+
     result_words = _words(f"{artist} {title}")
+    if not result_words:
+        return False
+
     overlap = query_words & result_words
-    return len(overlap) / len(query_words) >= 0.6
+    union = query_words | result_words
+    return len(overlap) / len(union) >= 0.6
 
 
 def _spotify_track_lookup(query: str) -> dict | None:
@@ -192,3 +146,13 @@ def lookup_track(query: str) -> dict | None:
     if not query:
         return None
     return _spotify_track_lookup(query) or _discogs_track_lookup(query)
+
+
+def detect_genre(artist: str | None, title: str | None) -> str | None:
+    """Genre-only lookup for when artist/title are already known (e.g. from
+    a local dash split). Reuses lookup_track's plausibility-checked search
+    rather than trusting a single top result."""
+    if not artist or not title:
+        return None
+    match = lookup_track(f"{artist} {title}")
+    return match["genre"] if match else None
