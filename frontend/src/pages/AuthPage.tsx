@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { useAuth } from "../hooks/useAuth"
+import { checkPwnedPassword } from "../utils/checkPwnedPassword"
 
 type Mode = "login" | "signup"
 type View = "form" | "check-inbox"
@@ -13,7 +14,14 @@ function firebaseErrorMessage(error: unknown): string {
   if (code.includes("user-not-found")) return "No account found with that email."
   if (code.includes("weak-password")) return "Password should be at least 6 characters."
   if (code.includes("invalid-email")) return "That doesn't look like a valid email."
-  return "Something went wrong. Please try again."
+  if (code.includes("unauthorized-domain"))
+    return "This domain isn't authorized for sign-in yet. (Add it in Firebase Console → Authentication → Settings → Authorized domains.)"
+  if (code.includes("operation-not-allowed"))
+    return "This sign-in method isn't enabled yet. (Check Firebase Console → Authentication → Sign-in method.)"
+  if (code.includes("network-request-failed"))
+    return "Network error. Check your connection and try again."
+  console.error("Unhandled auth error:", error)
+  return code ? `Something went wrong (${code}). Please try again.` : "Something went wrong. Please try again."
 }
 
 export function AuthPage() {
@@ -34,6 +42,13 @@ export function AuthPage() {
     setSubmitting(true)
     try {
       if (mode === "signup") {
+        const breachCount = await checkPwnedPassword(password)
+        if (breachCount) {
+          setError(
+            "This password has appeared in known data breaches. Please choose a different one."
+          )
+          return
+        }
         await signUp(email, password)
         setView("check-inbox")
       } else {
