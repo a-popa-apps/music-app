@@ -15,9 +15,15 @@ from .rate_limit import enforce_rate_limit
 
 app = FastAPI(title="Quickie Backend")
 
+ALLOWED_ORIGINS = [
+    "https://music-app-sage-sigma.vercel.app",
+    "http://localhost:5173",  # vite dev server
+    "http://localhost:4173",  # vite preview server
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # tighten to the Vercel domain once it's live
+    allow_origins=ALLOWED_ORIGINS,
     allow_methods=["*"],
     allow_headers=["*"],
 )
