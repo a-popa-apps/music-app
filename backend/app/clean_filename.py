@@ -43,6 +43,7 @@ WHITESPACE_RUN = re.compile(r"\s{2,}")
 EDGE_JUNK = re.compile(r"^[\s\-_.,]+|[\s\-_.,]+$")
 CATALOG_CODE_AT_END = re.compile(r"\s+[A-Za-z]{2,6}\d{2,5}$")
 LEADING_VINYL_CODE = re.compile(r"^[A-Da-d]{1,2}\d{1,2}[\s.\-_]+")
+TEMPLATE_PLACEHOLDER = re.compile(r"\{(\w+)\}")
 
 
 def _extract_version_tag(stem: str) -> tuple[str, str | None]:
@@ -108,10 +109,51 @@ def guess_split(stem: str) -> tuple[str, str] | None:
     return None
 
 
-def compose_name(
-    artist: str | None, title: str | None, fallback_stem: str, version_tag: str | None, ext: str
+def apply_template(
+    template: str,
+    *,
+    artist: str,
+    title: str,
+    bpm: float | None,
+    key: str | None,
+    genre: str | None,
 ) -> str:
-    if artist and title:
+    """Substitutes {artist} {title} {bpm} {key} {genre}. A known placeholder
+    whose value wasn't detected renders as an empty string; an unrecognized
+    placeholder (typo) is left literally in place, matching the frontend
+    preview's behavior so what the user saw is what they get."""
+    values = {
+        "artist": artist,
+        "title": title,
+        "bpm": str(round(bpm)) if bpm is not None else "",
+        "key": key or "",
+        "genre": genre or "",
+    }
+
+    def replace(match: re.Match) -> str:
+        name = match.group(1)
+        return values[name] if name in values else match.group(0)
+
+    return TEMPLATE_PLACEHOLDER.sub(replace, template)
+
+
+def compose_name(
+    artist: str | None,
+    title: str | None,
+    fallback_stem: str,
+    version_tag: str | None,
+    ext: str,
+    *,
+    filename_template: str | None = None,
+    bpm: float | None = None,
+    key: str | None = None,
+    genre: str | None = None,
+) -> str:
+    if filename_template and artist and title:
+        result = apply_template(
+            filename_template, artist=artist, title=title, bpm=bpm, key=key, genre=genre
+        )
+    elif artist and title:
         result = f"{artist} - {title}"
     else:
         result = fallback_stem or "track"

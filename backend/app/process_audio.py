@@ -87,10 +87,13 @@ def _resolve_artist_title_genre(stem: str) -> tuple[str | None, str | None, str 
 
 
 def _analyze_and_tag(
-    content: bytes, ext: str, stem: str, version_tag: str | None
+    content: bytes,
+    ext: str,
+    stem: str,
+    version_tag: str | None,
+    filename_template: str | None = None,
 ) -> tuple[bytes, dict, str]:
     artist, title, genre, name_debug = _resolve_artist_title_genre(stem)
-    final_name = compose_name(artist, title, stem, version_tag, ext)
 
     try:
         audio = load_audio(content, ext)
@@ -102,6 +105,7 @@ def _analyze_and_tag(
             "load_error": f"{type(e).__name__}: {e}",
             **name_debug,
         }
+        final_name = compose_name(artist, title, stem, version_tag, ext)
         return content, entry, final_name
 
     entry: dict = {"duration_seconds": round(len(audio) / SAMPLE_RATE, 2), **name_debug}
@@ -126,6 +130,18 @@ def _analyze_and_tag(
     del audio
     entry["genre"] = genre
 
+    final_name = compose_name(
+        artist,
+        title,
+        stem,
+        version_tag,
+        ext,
+        filename_template=filename_template,
+        bpm=bpm,
+        key=camelot,
+        genre=genre,
+    )
+
     try:
         tagged_content = write_tags(content, ext, bpm=bpm, camelot=camelot, genre=genre)
     except Exception as e:
@@ -149,7 +165,7 @@ def _dedupe(name: str, seen: set[str]) -> str:
     return candidate
 
 
-async def build_zip(files: list[UploadFile]) -> bytes:
+async def build_zip(files: list[UploadFile], filename_template: str | None = None) -> bytes:
     buffer = io.BytesIO()
     manifest = {}
     seen_names: set[str] = set()
@@ -170,7 +186,7 @@ async def build_zip(files: list[UploadFile]) -> bytes:
 
             try:
                 tagged_content, entry, resolved_name = await run_in_threadpool(
-                    _analyze_and_tag, content, ext, stem, version_tag
+                    _analyze_and_tag, content, ext, stem, version_tag, filename_template
                 )
             except Exception as e:
                 # One file misbehaving shouldn't lose the rest of the batch --
