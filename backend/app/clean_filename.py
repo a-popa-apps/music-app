@@ -41,6 +41,7 @@ JUNK_PHRASE = re.compile(
 DASH_SPLIT = re.compile(r"\s*[-–—]\s*")
 WHITESPACE_RUN = re.compile(r"\s{2,}")
 EDGE_JUNK = re.compile(r"^[\s\-_.,]+|[\s\-_.,]+$")
+CATALOG_CODE_AT_END = re.compile(r"\s+[A-Za-z]{2,6}\d{2,5}$")
 
 
 def _extract_version_tag(stem: str) -> tuple[str, str | None]:
@@ -63,6 +64,26 @@ def _tidy(text: str) -> str:
     return EDGE_JUNK.sub("", text).strip()
 
 
+def _split_by_catalog_code(stem: str) -> str | None:
+    """Best-effort artist/title split for label-promo names with no dash,
+    e.g. "Paolo Macri Movin System STL005" -> "Paolo Macri - Movin System".
+    Only fires when a trailing catalog code (letters+digits) signals this
+    naming style; otherwise a dash-less title is left alone."""
+    match = CATALOG_CODE_AT_END.search(stem)
+    if not match:
+        return None
+
+    remainder = _tidy(stem[: match.start()])
+    words = remainder.split(" ")
+    if len(words) < 2:
+        return None
+
+    split_point = (len(words) + 1) // 2
+    artist = " ".join(words[:split_point])
+    title = " ".join(words[split_point:])
+    return f"{artist} - {title}"
+
+
 def clean_filename(filename: str) -> str:
     if "." in filename:
         stem, ext = filename.rsplit(".", 1)
@@ -82,7 +103,7 @@ def clean_filename(filename: str) -> str:
         artist, title = (_tidy(parts[0]), _tidy(parts[1]))
         result = f"{artist} - {title}" if artist and title else stem
     else:
-        result = stem
+        result = _split_by_catalog_code(stem) or stem
 
     if not result:
         result = "track"
