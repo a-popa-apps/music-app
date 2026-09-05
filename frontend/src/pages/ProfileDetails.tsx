@@ -3,6 +3,7 @@ import { Navigate } from "react-router-dom"
 import { COUNTRIES } from "../data/countries"
 import { useAuth } from "../hooks/useAuth"
 import { getProfile, saveProfile, type ProfileSettings } from "../services/api"
+import { previewFilename, unknownPlaceholders } from "../utils/filenameTemplate"
 
 const ROLES: { value: string; label: string }[] = [
   { value: "dj", label: "DJ" },
@@ -264,6 +265,23 @@ export function ProfileDetails() {
                 Placeholders: {"{artist} {title} {bpm} {key} {genre}"}. Leave blank for
                 the default "Artist - Title (Remix)" format.
               </span>
+              <span className="font-mono text-body-sm text-on-surface-variant">
+                Preview: {previewFilename(settings.filename_template ?? "")}
+              </span>
+              {(() => {
+                const unknown = settings.filename_template
+                  ? unknownPlaceholders(settings.filename_template)
+                  : []
+                if (unknown.length === 0) return null
+                const plural = unknown.length > 1
+                return (
+                  <span className="text-body-sm text-red-600">
+                    Unrecognized placeholder{plural ? "s" : ""}:{" "}
+                    {unknown.map((p) => `{${p}}`).join(", ")}. {plural ? "They" : "It"} will
+                    be left as-is in the output.
+                  </span>
+                )
+              })()}
             </label>
 
             <div className="flex items-center justify-between rounded border border-outline-variant px-4 py-3">
