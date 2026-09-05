@@ -29,11 +29,9 @@ export function HowItWorks() {
   return (
     <section
       id="how-it-works"
-      className="relative w-full overflow-hidden bg-surface px-4 pb-16 pt-28 lg:px-12"
+      className="w-full bg-surface px-4 py-16 lg:px-12"
     >
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-48 bg-gradient-to-b from-[#0d0a1a] to-transparent" />
-
-      <div className="relative mx-auto flex max-w-7xl flex-col gap-12">
+      <div className="mx-auto flex max-w-7xl flex-col gap-12">
         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
           <div>
             <span className="font-mono text-meta-badge font-bold uppercase tracking-wider text-secondary-container">
