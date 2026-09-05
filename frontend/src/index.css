@@ -98,6 +98,22 @@ body {
   }
 }
 
+@keyframes indeterminate-progress {
+  0% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(20%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-indeterminate {
+  animation: indeterminate-progress 1.4s ease-in-out infinite;
+}
+
 .material-symbols-outlined {
   font-variation-settings:
     "FILL" 0,
