@@ -168,17 +168,6 @@ export function ProfileDetails() {
       <div className="mx-auto max-w-2xl">
         <h1 className="mb-6 text-headline-lg text-on-surface">Profile Details</h1>
 
-        {settings.plan === "free" && (
-          <div className="mb-6 flex items-center justify-between gap-4 rounded bg-gradient-to-r from-secondary-container to-secondary px-6 py-4 text-on-primary">
-            <span className="text-body-md font-semibold">
-              You're on the free plan. Upgrade for full access.
-            </span>
-            <button className="whitespace-nowrap rounded-full bg-on-primary px-4 py-2 text-body-sm font-semibold text-secondary">
-              Upgrade
-            </button>
-          </div>
-        )}
-
         <div className="flex flex-col gap-6">
           <Section title="Personal Details">
             <label className="flex flex-col gap-1">
@@ -359,6 +348,26 @@ export function ProfileDetails() {
                     settings.discogs_deep_search ? "translate-x-5" : "translate-x-0.5"
                   }`}
                 />
+              </button>
+            </div>
+          </Section>
+
+          <Section title="Billing">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex flex-col gap-1">
+                <span className="text-body-md text-on-surface">
+                  Current plan: <strong>{settings.plan === "pro" ? "Pro" : "Free"}</strong>
+                </span>
+                <span className="text-body-sm text-on-surface-variant">
+                  No payment method on file. Billing isn't live yet — check back soon.
+                </span>
+              </div>
+              <button
+                disabled
+                title="Coming soon"
+                className="whitespace-nowrap rounded-full bg-outline-variant px-4 py-2 text-body-sm font-semibold text-on-surface-variant cursor-not-allowed"
+              >
+                Manage billing
               </button>
             </div>
           </Section>

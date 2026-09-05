@@ -2,6 +2,7 @@ import { useState } from "react"
 import { Link } from "react-router-dom"
 import { AccountMenu } from "./AccountMenu"
 import { useAuth } from "../hooks/useAuth"
+import { useIsAdmin } from "../hooks/useIsAdmin"
 
 const NAV_LINKS = [
   { label: "How it works", href: "/#how-it-works" },
@@ -13,6 +14,7 @@ const NAV_LINKS = [
 export function Header() {
   const [menuOpen, setMenuOpen] = useState(false)
   const { user, isVerified, logOut } = useAuth()
+  const { isAdmin } = useIsAdmin()
   const loggedIn = user && isVerified
 
   return (
@@ -75,6 +77,15 @@ export function Header() {
               <span className="text-body-sm text-on-surface-variant">
                 {user.email}
               </span>
+              {isAdmin && (
+                <Link
+                  to="/admin"
+                  onClick={() => setMenuOpen(false)}
+                  className="py-1 text-body-md font-semibold text-on-surface"
+                >
+                  Admin
+                </Link>
+              )}
               <Link
                 to="/profile"
                 onClick={() => setMenuOpen(false)}

@@ -1,9 +1,11 @@
 import { useState } from "react"
 import { Link } from "react-router-dom"
 import { useAuth } from "../hooks/useAuth"
+import { useIsAdmin } from "../hooks/useIsAdmin"
 
 export function AccountMenu() {
   const { user, logOut, resetPassword } = useAuth()
+  const { isAdmin } = useIsAdmin()
   const [open, setOpen] = useState(false)
   const [resetSent, setResetSent] = useState(false)
 
@@ -36,6 +38,18 @@ export function AccountMenu() {
             <div className="border-b border-outline px-3 py-2 text-body-sm text-inverse-on-surface/70">
               {user.email}
             </div>
+            {isAdmin && (
+              <Link
+                to="/admin"
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-2 rounded px-3 py-2 text-body-md text-inverse-on-surface hover:bg-white/10"
+              >
+                <span className="material-symbols-outlined text-[18px]">
+                  shield_person
+                </span>
+                Admin
+              </Link>
+            )}
             <Link
               to="/profile"
               onClick={() => setOpen(false)}

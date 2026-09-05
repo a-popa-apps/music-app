@@ -7,6 +7,7 @@ import { Hero } from "./components/Hero"
 import { HowItWorks } from "./components/HowItWorks"
 import { Pricing } from "./components/Pricing"
 import { UploadDemo } from "./components/UploadDemo"
+import { AdminPage } from "./pages/AdminPage"
 import { AuthPage } from "./pages/AuthPage"
 import { NotFound } from "./pages/NotFound"
 import { PrivacyPage } from "./pages/PrivacyPage"
@@ -36,6 +37,7 @@ function App() {
       <Route path="/" element={<Landing />} />
       <Route path="/auth" element={<AuthPage />} />
       <Route path="/profile" element={<ProfileDetails />} />
+      <Route path="/admin" element={<AdminPage />} />
       <Route path="/terms" element={<TermsPage />} />
       <Route path="/privacy" element={<PrivacyPage />} />
       <Route path="*" element={<NotFound />} />
