@@ -17,6 +17,7 @@ VALID_GENRES = {
 DEFAULT_SETTINGS = {
     "name": "",
     "country": "",
+    "artist_name": "",
     "role": None,
     "primary_genres": [],
     "filename_template": None,

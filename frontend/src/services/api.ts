@@ -15,6 +15,7 @@ export async function checkBackendHealth(): Promise<boolean> {
 export interface ProfileSettings {
   name: string
   country: string
+  artist_name: string
   role: string | null
   primary_genres: string[]
   filename_template: string | null

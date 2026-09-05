@@ -38,6 +38,7 @@ def health():
 class ProfileUpdate(BaseModel):
     name: str | None = None
     country: str | None = None
+    artist_name: str | None = None
     role: str | None = None
     primary_genres: list[str] | None = None
     filename_template: str | None = None
