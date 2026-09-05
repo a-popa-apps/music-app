@@ -28,7 +28,7 @@ export function AuthPage() {
   const { signUp, logIn, signInWithGoogle, resendVerification } = useAuth()
   const navigate = useNavigate()
 
-  const [mode, setMode] = useState<Mode>("signup")
+  const [mode, setMode] = useState<Mode>("login")
   const [view, setView] = useState<View>("form")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
