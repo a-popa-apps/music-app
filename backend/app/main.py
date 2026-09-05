@@ -7,6 +7,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from pydantic import BaseModel
 
+from .admin_store import (
+    create_discount_code,
+    delete_user_account,
+    get_stats,
+    list_discount_codes,
+    list_users,
+    set_admin_flag,
+    set_discount_code_active,
+    set_user_plan,
+)
 from .auth import delete_user, get_app, get_current_user
 from .detect_bpm import warm_up
 from .process_audio import build_zip, validate_files
@@ -62,6 +72,88 @@ def _require_user(request: Request) -> str:
     if uid is None:
         raise HTTPException(401, "Sign in required.")
     return uid
+
+
+def _require_admin(request: Request) -> str:
+    uid = _require_user(request)
+    if not get_settings(uid).get("is_admin"):
+        raise HTTPException(403, "Admin access required.")
+    return uid
+
+
+class PlanUpdate(BaseModel):
+    plan: str
+
+
+class AdminFlagUpdate(BaseModel):
+    is_admin: bool
+
+
+class DiscountCodeCreate(BaseModel):
+    percent_off: int
+    max_uses: int = 1
+
+
+class DiscountCodeActiveUpdate(BaseModel):
+    active: bool
+
+
+@app.get("/admin/users")
+def admin_list_users(request: Request):
+    _require_admin(request)
+    return list_users()
+
+
+@app.put("/admin/users/{uid}/plan")
+def admin_set_plan(uid: str, update: PlanUpdate, request: Request):
+    _require_admin(request)
+    try:
+        return set_user_plan(uid, update.plan)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+
+@app.put("/admin/users/{uid}/admin")
+def admin_set_admin_flag(uid: str, update: AdminFlagUpdate, request: Request):
+    _require_admin(request)
+    return set_admin_flag(uid, update.is_admin)
+
+
+@app.delete("/admin/users/{uid}")
+def admin_delete_user(uid: str, request: Request):
+    _require_admin(request)
+    delete_user_account(uid)
+    return {"status": "deleted"}
+
+
+@app.get("/admin/stats")
+def admin_stats(request: Request):
+    _require_admin(request)
+    return get_stats()
+
+
+@app.get("/admin/discount-codes")
+def admin_list_discount_codes(request: Request):
+    _require_admin(request)
+    return list_discount_codes()
+
+
+@app.post("/admin/discount-codes")
+def admin_create_discount_code(body: DiscountCodeCreate, request: Request):
+    uid = _require_admin(request)
+    try:
+        return create_discount_code(body.percent_off, uid, max_uses=body.max_uses)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+
+@app.patch("/admin/discount-codes/{code}")
+def admin_set_discount_code_active(code: str, body: DiscountCodeActiveUpdate, request: Request):
+    _require_admin(request)
+    try:
+        return set_discount_code_active(code, body.active)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
 
 
 @app.get("/profile")

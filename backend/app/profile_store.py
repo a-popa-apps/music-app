@@ -23,11 +23,13 @@ DEFAULT_SETTINGS = {
     "filename_template": None,
     "discogs_deep_search": False,
     "plan": "free",
+    "is_admin": False,
 }
 
-# Not user-editable via the API -- there's no billing flow yet, so this is
-# read-only until a real upgrade path exists.
-READ_ONLY_FIELDS = {"plan"}
+# Not user-editable via the regular PUT /profile endpoint -- "plan" has no
+# billing flow yet, and "is_admin" is only ever set via the admin-only
+# endpoints in main.py so a user can never self-promote.
+READ_ONLY_FIELDS = {"plan", "is_admin"}
 
 
 def _users_collection():
