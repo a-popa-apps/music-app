@@ -42,6 +42,7 @@ DASH_SPLIT = re.compile(r"\s*[-–—]\s*")
 WHITESPACE_RUN = re.compile(r"\s{2,}")
 EDGE_JUNK = re.compile(r"^[\s\-_.,]+|[\s\-_.,]+$")
 CATALOG_CODE_AT_END = re.compile(r"\s+[A-Za-z]{2,6}\d{2,5}$")
+LEADING_VINYL_CODE = re.compile(r"^[A-Da-d]{1,2}\d{1,2}[\s.\-_]+")
 
 
 def _extract_version_tag(stem: str) -> tuple[str, str | None]:
@@ -64,49 +65,56 @@ def _tidy(text: str) -> str:
     return EDGE_JUNK.sub("", text).strip()
 
 
-def _split_by_catalog_code(stem: str) -> str | None:
-    """Best-effort artist/title split for label-promo names with no dash,
-    e.g. "Paolo Macri Movin System STL005" -> "Paolo Macri - Movin System".
-    Only fires when a trailing catalog code (letters+digits) signals this
-    naming style; otherwise a dash-less title is left alone."""
-    match = CATALOG_CODE_AT_END.search(stem)
-    if not match:
-        return None
-
-    remainder = _tidy(stem[: match.start()])
-    words = remainder.split(" ")
-    if len(words) < 2:
-        return None
-
-    split_point = (len(words) + 1) // 2
-    artist = " ".join(words[:split_point])
-    title = " ".join(words[split_point:])
-    return f"{artist} - {title}"
-
-
-def clean_filename(filename: str) -> str:
+def prepare_stem(filename: str) -> tuple[str, str, str | None]:
+    """Strip junk (URLs, Telegram handles, vinyl position codes, promo
+    phrases, catalog codes) and pull out any version/remix credit.
+    Returns (tidied_stem, ext, version_tag) with no artist/title split yet."""
     if "." in filename:
         stem, ext = filename.rsplit(".", 1)
         ext = "." + ext
     else:
         stem, ext = filename, ""
 
+    stem = LEADING_VINYL_CODE.sub("", stem)
     stem = URL.sub(" ", stem)
     stem = TELEGRAM.sub(" ", stem)
     stem, version_tag = _extract_version_tag(stem)
     stem = JUNK_PHRASE.sub(" ", stem)
+    stem = CATALOG_CODE_AT_END.sub("", stem)
     stem = stem.replace("_", " ")
     stem = _tidy(stem)
 
+    return stem, ext, version_tag
+
+
+def local_dash_split(stem: str) -> tuple[str, str] | None:
+    """Split on an explicit dash separator, e.g. "Artist - Title"."""
     parts = DASH_SPLIT.split(stem, maxsplit=1)
     if len(parts) == 2 and parts[0] and parts[1]:
-        artist, title = (_tidy(parts[0]), _tidy(parts[1]))
-        result = f"{artist} - {title}" if artist and title else stem
-    else:
-        result = _split_by_catalog_code(stem) or stem
+        return _tidy(parts[0]), _tidy(parts[1])
+    return None
 
-    if not result:
-        result = "track"
+
+def guess_split(stem: str) -> tuple[str, str] | None:
+    """Last-resort artist/title guess for a dash-less name with no external
+    catalog match: assume the first word (or two, if there are enough words)
+    is the artist. Unreliable for compilations/one-off titles, but better
+    than leaving most real-world dash-less filenames untouched."""
+    words = stem.split(" ")
+    if len(words) >= 3:
+        return " ".join(words[:2]), " ".join(words[2:])
+    if len(words) == 2:
+        return words[0], words[1]
+    return None
+
+
+def compose_name(
+    artist: str | None, title: str | None, fallback_stem: str, version_tag: str | None, ext: str
+) -> str:
+    if artist and title:
+        result = f"{artist} - {title}"
+    else:
+        result = fallback_stem or "track"
 
     if version_tag:
         result = f"{result} ({version_tag})"
@@ -114,12 +122,11 @@ def clean_filename(filename: str) -> str:
     return result + ext
 
 
-def split_artist_title(cleaned_name: str) -> tuple[str | None, str | None]:
-    """Recover artist/title from an already-cleaned "Artist - Title (Version)"
-    name, for genre lookups. Returns (None, None) if it isn't in that shape."""
-    stem = cleaned_name.rsplit(".", 1)[0]
-    stem = re.sub(r"\s*\([^)]*\)\s*$", "", stem)
-    parts = DASH_SPLIT.split(stem, maxsplit=1)
-    if len(parts) == 2 and parts[0] and parts[1]:
-        return parts[0], parts[1]
-    return None, None
+def clean_filename(filename: str) -> str:
+    """Local-only cleanup with no external lookups: dash split if present,
+    else a best-effort word-count guess. See process_audio.py for the
+    network-lookup-assisted version used in the actual pipeline."""
+    stem, ext, version_tag = prepare_stem(filename)
+    split = local_dash_split(stem) or guess_split(stem)
+    artist, title = split if split else (None, None)
+    return compose_name(artist, title, stem, version_tag, ext)

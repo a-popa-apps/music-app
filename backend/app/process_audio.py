@@ -9,9 +9,9 @@ from fastapi import HTTPException, UploadFile
 from fastapi.concurrency import run_in_threadpool
 
 from .audio_io import SAMPLE_RATE, load_audio
-from .clean_filename import clean_filename, split_artist_title
+from .clean_filename import compose_name, guess_split, local_dash_split, prepare_stem
 from .detect_bpm import detect_bpm
-from .detect_genre import detect_genre
+from .detect_genre import detect_genre, lookup_track
 from .detect_key import detect_key
 from .playlist import build_playlist
 from .write_tags import write_tags
@@ -48,16 +48,52 @@ def validate_files(files: list[UploadFile]) -> None:
             )
 
 
-def _analyze_and_tag(
-    content: bytes, suffix: str, artist: str | None, title: str | None
-) -> tuple[bytes, dict]:
-    try:
-        audio = load_audio(content, suffix)
-    except Exception as e:
-        entry = {"bpm": None, "key": None, "load_error": f"{type(e).__name__}: {e}"}
-        return content, entry
+def _resolve_artist_title_genre(stem: str) -> tuple[str | None, str | None, str | None, dict]:
+    """Local dash split first (high confidence); else search Spotify/Discogs
+    using the raw stem so a real catalog match beats guessing; else a
+    best-effort word-count guess as a last resort."""
+    debug: dict = {}
 
-    entry: dict = {"duration_seconds": round(len(audio) / SAMPLE_RATE, 2)}
+    split = local_dash_split(stem)
+    if split:
+        artist, title = split
+        genre = detect_genre(artist, title)
+        return artist, title, genre, debug
+
+    match = lookup_track(stem)
+    if match:
+        debug["name_source"] = "catalog_match"
+        return match["artist"], match["title"], match["genre"], debug
+
+    split = guess_split(stem)
+    if split:
+        artist, title = split
+        debug["name_source"] = "guessed"
+        genre = detect_genre(artist, title)
+        return artist, title, genre, debug
+
+    return None, None, None, debug
+
+
+def _analyze_and_tag(
+    content: bytes, ext: str, stem: str, version_tag: str | None
+) -> tuple[bytes, dict, str]:
+    artist, title, genre, name_debug = _resolve_artist_title_genre(stem)
+    final_name = compose_name(artist, title, stem, version_tag, ext)
+
+    try:
+        audio = load_audio(content, ext)
+    except Exception as e:
+        entry = {
+            "bpm": None,
+            "key": None,
+            "genre": genre,
+            "load_error": f"{type(e).__name__}: {e}",
+            **name_debug,
+        }
+        return content, entry, final_name
+
+    entry: dict = {"duration_seconds": round(len(audio) / SAMPLE_RATE, 2), **name_debug}
     bpm = None
     camelot = None
 
@@ -77,22 +113,15 @@ def _analyze_and_tag(
         entry["key_error"] = f"{type(e).__name__}: {e}"
 
     del audio
-
-    genre = None
-    try:
-        genre = detect_genre(artist, title)
-        entry["genre"] = genre
-    except Exception as e:
-        entry["genre"] = None
-        entry["genre_error"] = f"{type(e).__name__}: {e}"
+    entry["genre"] = genre
 
     try:
-        tagged_content = write_tags(content, suffix, bpm=bpm, camelot=camelot, genre=genre)
+        tagged_content = write_tags(content, ext, bpm=bpm, camelot=camelot, genre=genre)
     except Exception as e:
         tagged_content = content
         entry["tag_error"] = f"{type(e).__name__}: {e}"
 
-    return tagged_content, entry
+    return tagged_content, entry, final_name
 
 
 def _dedupe(name: str, seen: set[str]) -> str:
@@ -118,14 +147,13 @@ async def build_zip(files: list[UploadFile]) -> bytes:
     with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
         for file in files:
             original_name = file.filename or "track"
-            name = _dedupe(clean_filename(original_name), seen_names)
-            suffix = "." + name.rsplit(".", 1)[-1].lower() if "." in name else ""
-            artist, title = split_artist_title(name)
+            stem, ext, version_tag = prepare_stem(original_name)
             content = await file.read()
 
-            tagged_content, entry = await run_in_threadpool(
-                _analyze_and_tag, content, suffix, artist, title
+            tagged_content, entry, resolved_name = await run_in_threadpool(
+                _analyze_and_tag, content, ext, stem, version_tag
             )
+            name = _dedupe(resolved_name, seen_names)
             zip_file.writestr(name, tagged_content)
 
             entry["original_filename"] = original_name
