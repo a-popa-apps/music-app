@@ -29,7 +29,7 @@ export function FAQ() {
   return (
     <section
       id="faq"
-      className="w-full bg-tertiary-container px-4 py-16 lg:px-12"
+      className="w-full bg-[#0c0e22] px-4 py-16 lg:px-12"
     >
       <div className="mx-auto flex max-w-4xl flex-col gap-12">
         <div className="flex flex-col gap-1 text-center">

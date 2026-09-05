@@ -17,7 +17,7 @@ export function Pricing() {
   return (
     <section
       id="pricing"
-      className="w-full bg-tertiary-container px-4 py-16 lg:px-12"
+      className="w-full bg-[#0f1330] px-4 py-16 lg:px-12"
     >
       <div className="mx-auto flex max-w-4xl flex-col items-center text-center">
         <span className="mb-1 font-mono text-meta-badge font-bold uppercase tracking-wider text-secondary-container">

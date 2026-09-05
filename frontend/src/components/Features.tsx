@@ -26,7 +26,7 @@ export function Features() {
   return (
     <section
       id="features"
-      className="w-full bg-tertiary-container px-4 py-16 lg:px-12"
+      className="w-full bg-[#15122e] px-4 py-16 lg:px-12"
     >
       <div className="mx-auto flex max-w-7xl flex-col gap-12">
         <div className="flex max-w-2xl flex-col gap-1">
