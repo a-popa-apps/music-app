@@ -7,6 +7,7 @@ from fastapi import HTTPException, UploadFile
 from fastapi.concurrency import run_in_threadpool
 
 from .audio_io import load_audio
+from .clean_filename import clean_filename
 from .detect_bpm import detect_bpm
 from .detect_key import detect_key
 
@@ -65,18 +66,36 @@ def _analyze(content: bytes, suffix: str) -> dict:
     return entry
 
 
+def _dedupe(name: str, seen: set[str]) -> str:
+    if name not in seen:
+        seen.add(name)
+        return name
+
+    stem, ext = (name.rsplit(".", 1) + [""])[:2]
+    ext = f".{ext}" if ext else ""
+    counter = 2
+    while (candidate := f"{stem} ({counter}){ext}") in seen:
+        counter += 1
+    seen.add(candidate)
+    return candidate
+
+
 async def build_zip(files: list[UploadFile]) -> bytes:
     buffer = io.BytesIO()
     manifest = {}
+    seen_names: set[str] = set()
 
     with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
         for file in files:
-            name = file.filename or "track"
+            original_name = file.filename or "track"
+            name = _dedupe(clean_filename(original_name), seen_names)
             suffix = "." + name.rsplit(".", 1)[-1].lower() if "." in name else ""
             content = await file.read()
             zip_file.writestr(name, content)
 
-            manifest[name] = await run_in_threadpool(_analyze, content, suffix)
+            entry = await run_in_threadpool(_analyze, content, suffix)
+            entry["original_filename"] = original_name
+            manifest[name] = entry
             gc.collect()
 
         zip_file.writestr("quickie-manifest.json", json.dumps(manifest, indent=2))
