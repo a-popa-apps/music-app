@@ -14,6 +14,7 @@ from .detect_bpm import detect_bpm
 from .detect_genre import detect_genre, lookup_track
 from .detect_key import detect_key
 from .playlist import build_playlist
+from .read_tags import read_embedded_tags
 from .write_tags import write_tags
 
 ALLOWED_EXTENSIONS = {".mp3", ".wav", ".flac", ".aiff", ".aif", ".ogg", ".aac"}
@@ -60,12 +61,20 @@ def validate_files(files: list[UploadFile]) -> None:
 
 
 def _resolve_artist_title_genre(
-    stem: str, deep_search: bool = False
+    stem: str, deep_search: bool = False, embedded_tags: dict | None = None
 ) -> tuple[str | None, str | None, str | None, dict]:
-    """Local dash split first (high confidence); else search Spotify/Discogs
-    using the raw stem so a real catalog match beats guessing; else a
-    best-effort word-count guess as a last resort."""
+    """Embedded file tags first, if the file already carries a usable
+    artist/title (most reliable -- no guessing needed); else local dash
+    split; else search Spotify/Discogs using the raw stem so a real catalog
+    match beats guessing; else a best-effort word-count guess as a last
+    resort."""
     debug: dict = {}
+
+    if embedded_tags:
+        artist, title = embedded_tags["artist"], embedded_tags["title"]
+        genre = embedded_tags["genre"] or detect_genre(artist, title, deep_search=deep_search)
+        debug["name_source"] = "embedded_tags"
+        return artist, title, genre, debug
 
     split = local_dash_split(stem)
     if split:
@@ -96,7 +105,12 @@ def _analyze_and_tag(
     filename_template: str | None = None,
     deep_search: bool = False,
 ) -> tuple[bytes, dict, str]:
-    artist, title, genre, name_debug = _resolve_artist_title_genre(stem, deep_search)
+    embedded_tags = read_embedded_tags(content, ext)
+    artist, title, genre, name_debug = _resolve_artist_title_genre(
+        stem, deep_search, embedded_tags=embedded_tags
+    )
+    if embedded_tags and not version_tag:
+        version_tag = embedded_tags["version_tag"]
 
     try:
         audio = load_audio(content, ext)

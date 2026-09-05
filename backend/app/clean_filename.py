@@ -66,9 +66,24 @@ def _tidy(text: str) -> str:
     return EDGE_JUNK.sub("", text).strip()
 
 
-def prepare_stem(filename: str) -> tuple[str, str, str | None]:
+def _clean_text(text: str) -> tuple[str, str | None]:
     """Strip junk (URLs, Telegram handles, vinyl position codes, promo
-    phrases, catalog codes) and pull out any version/remix credit.
+    phrases, catalog codes) and pull out any version/remix credit. Works on
+    any free text, not just filenames (no extension assumptions) -- used for
+    both filename stems and embedded tag values (see read_tags.py)."""
+    text = LEADING_VINYL_CODE.sub("", text)
+    text = URL.sub(" ", text)
+    text = TELEGRAM.sub(" ", text)
+    text, version_tag = _extract_version_tag(text)
+    text = JUNK_PHRASE.sub(" ", text)
+    text = CATALOG_CODE_AT_END.sub("", text)
+    text = text.replace("_", " ")
+    text = _tidy(text)
+    return text, version_tag
+
+
+def prepare_stem(filename: str) -> tuple[str, str, str | None]:
+    """Strip junk from a filename and pull out any version/remix credit.
     Returns (tidied_stem, ext, version_tag) with no artist/title split yet."""
     if "." in filename:
         stem, ext = filename.rsplit(".", 1)
@@ -76,15 +91,7 @@ def prepare_stem(filename: str) -> tuple[str, str, str | None]:
     else:
         stem, ext = filename, ""
 
-    stem = LEADING_VINYL_CODE.sub("", stem)
-    stem = URL.sub(" ", stem)
-    stem = TELEGRAM.sub(" ", stem)
-    stem, version_tag = _extract_version_tag(stem)
-    stem = JUNK_PHRASE.sub(" ", stem)
-    stem = CATALOG_CODE_AT_END.sub("", stem)
-    stem = stem.replace("_", " ")
-    stem = _tidy(stem)
-
+    stem, version_tag = _clean_text(stem)
     return stem, ext, version_tag
 
 
