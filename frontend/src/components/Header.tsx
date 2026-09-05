@@ -31,10 +31,10 @@ export function Header() {
 
   return (
     <header
-      className={`fixed top-0 z-50 w-full transition-colors duration-300 ${
+      className={`fixed top-0 z-50 w-full border-b transition-colors duration-300 ${
         overHero
-          ? "bg-transparent"
-          : "bg-surface/90 shadow-[0_1px_8px_rgba(0,0,0,0.03)] backdrop-blur-xl"
+          ? "border-white/10 bg-black/20 backdrop-blur-md"
+          : "border-transparent bg-surface/90 shadow-[0_1px_8px_rgba(0,0,0,0.03)] backdrop-blur-xl"
       }`}
     >
       <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-4 px-4 lg:px-12">
