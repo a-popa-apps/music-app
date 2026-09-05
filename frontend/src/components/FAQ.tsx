@@ -2,14 +2,14 @@ import { useState } from "react"
 
 const FAQS = [
   {
-    question: "Does Quickie overwrite my original audio files?",
+    question: "Does CratePrep overwrite my original audio files?",
     answer:
-      "Never. Quickie creates a clean replica and exports your tracks with corrected metadata, leaving your original download folder completely untouched.",
+      "Never. CratePrep creates a clean replica and exports your tracks with corrected metadata, leaving your original download folder completely untouched.",
   },
   {
-    question: "Which DJ software does Quickie support?",
+    question: "Which DJ software does CratePrep support?",
     answer:
-      "Quickie generates Rekordbox-compatible playlists and formatted folder hierarchies ready for direct Pioneer CDJ USB stick mounting. Serato and Traktor export are on the roadmap.",
+      "CratePrep generates Rekordbox-compatible playlists and formatted folder hierarchies ready for direct Pioneer CDJ USB stick mounting. Serato and Traktor export are on the roadmap.",
   },
   {
     question: "Do my tracks get stored on your servers?",
@@ -19,7 +19,7 @@ const FAQS = [
   {
     question: "How accurate is the BPM and key detection?",
     answer:
-      "Quickie uses librosa and essentia, industry-standard open-source audio analysis libraries, tuned for modern dance music transients and bass frequencies.",
+      "CratePrep uses librosa and essentia, industry-standard open-source audio analysis libraries, tuned for modern dance music transients and bass frequencies.",
   },
 ]
 

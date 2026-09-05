@@ -11,7 +11,7 @@ export function TermsPage() {
         },
         {
           heading: "2. Description of Service",
-          body: "Quickie processes audio files you upload to detect BPM, musical key, and genre, cleans up filenames, embeds the detected metadata as tags, and returns a ZIP archive for download.",
+          body: "CratePrep processes audio files you upload to detect BPM, musical key, and genre, cleans up filenames, embeds the detected metadata as tags, and returns a ZIP archive for download.",
         },
         {
           heading: "3. Accounts",

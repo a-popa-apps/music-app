@@ -93,7 +93,7 @@ export function AuthPage() {
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
           <span className="font-mono text-headline-lg font-bold tracking-tight text-on-surface">
-            quickie.
+            crateprep.
           </span>
         </div>
 

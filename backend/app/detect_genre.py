@@ -120,7 +120,7 @@ def _discogs_track_lookup(query: str) -> dict | None:
         url += f"&token={DISCOGS_TOKEN}"
 
     try:
-        result = _get_json(url, headers={"User-Agent": "QuickieApp/1.0"})
+        result = _get_json(url, headers={"User-Agent": "CratePrepApp/1.0"})
         for entry in result.get("results", []):
             title_field = entry.get("title", "")
             parts = title_field.split(" - ", 1)
@@ -176,7 +176,7 @@ def _discogs_artist_id(artist: str) -> int | None:
     if not query_words:
         return None
 
-    result = _get_json(url, headers={"User-Agent": "QuickieApp/1.0"})
+    result = _get_json(url, headers={"User-Agent": "CratePrepApp/1.0"})
     best_id, best_score = None, 0.0
     for entry in result.get("results", []):
         name_words = _words(entry.get("title", ""))
@@ -198,7 +198,7 @@ def _discogs_artist_release_ids(artist_id: int, limit: int) -> list[int]:
     if DISCOGS_TOKEN:
         url += f"&token={DISCOGS_TOKEN}"
 
-    result = _get_json(url, headers={"User-Agent": "QuickieApp/1.0"})
+    result = _get_json(url, headers={"User-Agent": "CratePrepApp/1.0"})
     return [
         r["id"]
         for r in result.get("releases", [])
@@ -212,7 +212,7 @@ def _discogs_release_track_match(release_id: int, title: str) -> dict | None:
     if DISCOGS_TOKEN:
         url += f"?token={DISCOGS_TOKEN}"
 
-    release = _get_json(url, headers={"User-Agent": "QuickieApp/1.0"})
+    release = _get_json(url, headers={"User-Agent": "CratePrepApp/1.0"})
     for track in release.get("tracklist", []):
         track_title = track.get("title", "")
         if track_title and _titles_match(title, track_title):

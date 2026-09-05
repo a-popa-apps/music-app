@@ -28,7 +28,7 @@ type Phase = "idle" | "processing" | "done" | "error"
 async function parseManifest(blob: Blob): Promise<ProcessedTrack[]> {
   const bytes = new Uint8Array(await blob.arrayBuffer())
   const files = unzipSync(bytes)
-  const manifestBytes = files["quickie-manifest.json"]
+  const manifestBytes = files["crateprep-manifest.json"]
   if (!manifestBytes) return []
 
   const manifest: Record<string, ManifestEntry> = JSON.parse(
@@ -86,7 +86,7 @@ export function Hero() {
     const url = URL.createObjectURL(zipBlob)
     const link = document.createElement("a")
     link.href = url
-    link.download = "quickie-export.zip"
+    link.download = "crateprep-export.zip"
     link.click()
     URL.revokeObjectURL(url)
   }

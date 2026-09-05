@@ -22,7 +22,7 @@ export function Header() {
       <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-4 px-4 lg:px-12">
         <Link to="/" className="flex items-center gap-2">
           <span className="font-mono text-headline-sm font-bold tracking-tight text-on-surface">
-            quickie.
+            crateprep.
           </span>
         </Link>
         <nav className="hidden items-center gap-8 md:flex">

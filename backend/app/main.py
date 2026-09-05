@@ -23,7 +23,7 @@ from .process_audio import build_zip, validate_files
 from .profile_store import delete_settings, get_settings, save_settings
 from .rate_limit import enforce_rate_limit
 
-app = FastAPI(title="Quickie Backend")
+app = FastAPI(title="CratePrep Backend")
 
 ALLOWED_ORIGINS = [
     "https://music-app-sage-sigma.vercel.app",
@@ -217,5 +217,5 @@ async def process(request: Request, files: list[UploadFile] = File(...)):
     return Response(
         content=zip_bytes,
         media_type="application/zip",
-        headers={"Content-Disposition": "attachment; filename=quickie-export.zip"},
+        headers={"Content-Disposition": "attachment; filename=crateprep-export.zip"},
     )

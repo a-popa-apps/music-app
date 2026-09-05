@@ -229,8 +229,8 @@ async def build_zip(
             playlist_tracks.append((name, entry.get("duration_seconds")))
             gc.collect()
 
-        zip_file.writestr("quickie-manifest.json", json.dumps(manifest, indent=2))
-        zip_file.writestr("quickie-playlist.m3u8", build_playlist(playlist_tracks))
+        zip_file.writestr("crateprep-manifest.json", json.dumps(manifest, indent=2))
+        zip_file.writestr("crateprep-playlist.m3u8", build_playlist(playlist_tracks))
 
     buffer.seek(0)
     return buffer.read()
