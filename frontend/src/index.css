@@ -80,11 +80,22 @@
   --radius: 1rem;
 }
 
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 4rem;
+}
+
 body {
   margin: 0;
   font-family: var(--font-sans);
   background-color: var(--color-surface);
   color: var(--color-on-surface);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
 }
 
 .material-symbols-outlined {

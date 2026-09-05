@@ -21,7 +21,7 @@ export function Hero() {
           exports in seconds.
         </p>
 
-        <div className="mb-16 flex flex-col items-center gap-4 sm:flex-row">
+        <div className="mb-16 flex flex-col items-center">
           <a
             href="#demo"
             className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-secondary-container px-8 py-4 text-headline-sm font-semibold text-on-primary shadow-md transition-all hover:opacity-90 active:scale-95 sm:w-auto"
@@ -29,15 +29,6 @@ export function Hero() {
             Drop Folder to Clean
             <span className="material-symbols-outlined text-[20px]">
               arrow_forward
-            </span>
-          </a>
-          <a
-            href="#demo"
-            className="inline-flex w-full items-center justify-center gap-1 rounded-full bg-surface-container px-8 py-4 text-headline-sm text-on-surface transition-all hover:bg-surface-container-high sm:w-auto"
-          >
-            See Sample Output
-            <span className="material-symbols-outlined text-[18px]">
-              play_circle
             </span>
           </a>
         </div>
