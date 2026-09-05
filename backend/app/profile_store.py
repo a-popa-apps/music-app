@@ -21,7 +21,12 @@ DEFAULT_SETTINGS = {
     "primary_genres": [],
     "filename_template": None,
     "discogs_deep_search": False,
+    "plan": "free",
 }
+
+# Not user-editable via the API -- there's no billing flow yet, so this is
+# read-only until a real upgrade path exists.
+READ_ONLY_FIELDS = {"plan"}
 
 
 def _users_collection():
@@ -49,6 +54,8 @@ def save_settings(uid: str, settings: dict) -> dict:
     if any(g not in VALID_GENRES for g in genres):
         raise ValueError(f"Invalid genre in: {genres!r}")
 
-    update = {k: v for k, v in settings.items() if k in DEFAULT_SETTINGS}
+    update = {
+        k: v for k, v in settings.items() if k in DEFAULT_SETTINGS and k not in READ_ONLY_FIELDS
+    }
     _users_collection().document(uid).set(update, merge=True)
     return get_settings(uid)

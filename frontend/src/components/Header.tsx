@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { Link } from "react-router-dom"
+import { AccountMenu } from "./AccountMenu"
 import { useAuth } from "../hooks/useAuth"
 
 const NAV_LINKS = [
@@ -35,16 +36,8 @@ export function Header() {
         </nav>
         <div className="flex items-center gap-2">
           {loggedIn ? (
-            <div className="hidden items-center gap-3 md:flex">
-              <span className="text-body-sm text-on-surface-variant">
-                {user.email}
-              </span>
-              <button
-                onClick={() => logOut()}
-                className="inline-flex items-center justify-center rounded-full border border-outline-variant px-6 py-2 text-body-sm font-semibold text-on-surface transition-all hover:bg-surface-container-low"
-              >
-                Log out
-              </button>
+            <div className="hidden md:block">
+              <AccountMenu />
             </div>
           ) : (
             <Link
@@ -78,13 +71,20 @@ export function Header() {
             </a>
           ))}
           {loggedIn ? (
-            <div className="flex items-center justify-between px-2 py-3">
+            <div className="flex flex-col gap-1 px-2 py-3">
               <span className="text-body-sm text-on-surface-variant">
                 {user.email}
               </span>
+              <Link
+                to="/profile"
+                onClick={() => setMenuOpen(false)}
+                className="py-1 text-body-md font-semibold text-on-surface"
+              >
+                Profile Details
+              </Link>
               <button
                 onClick={() => logOut()}
-                className="text-body-sm font-semibold text-on-surface underline"
+                className="py-1 text-left text-body-sm font-semibold text-on-surface underline"
               >
                 Log out
               </button>
