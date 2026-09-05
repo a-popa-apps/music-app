@@ -1,6 +1,7 @@
 import { unzipSync } from "fflate"
 import { useCallback, useState } from "react"
 import { useDropzone } from "react-dropzone"
+import heroBg from "../assets/hero-bg.jpg"
 import { useAuth } from "../hooks/useAuth"
 import { uploadAndProcess } from "../services/api"
 
@@ -98,20 +99,26 @@ export function Hero() {
   }
 
   return (
-    <section id="demo" className="w-full bg-surface-container-lowest px-4 pb-16 pt-12 lg:px-12">
-      <div className="mx-auto flex max-w-7xl flex-col items-center text-center">
-        <div className="mb-6 inline-flex items-center gap-1 rounded-full bg-surface-container-low px-4 py-1 shadow-sm">
+    <section
+      id="demo"
+      className="relative flex min-h-[calc(100vh-4rem)] w-full flex-col items-center justify-center overflow-hidden bg-cover bg-center px-4 py-12 lg:px-12"
+      style={{ backgroundImage: `url(${heroBg})` }}
+    >
+      <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/40 to-black/60" />
+
+      <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-col items-center text-center">
+        <div className="mb-6 inline-flex items-center gap-1 rounded-full bg-white/10 px-4 py-1 backdrop-blur-sm">
           <span className="h-2 w-2 animate-ping rounded-full bg-secondary-container" />
-          <span className="font-mono text-meta-badge uppercase tracking-wider text-on-surface-variant">
+          <span className="font-mono text-meta-badge uppercase tracking-wider text-white/90">
             DJ Utility 1.0 &middot; Rekordbox Ready
           </span>
         </div>
 
-        <h1 className="mb-4 max-w-4xl text-display-hero-mobile tracking-tighter text-on-surface lg:text-display-hero">
+        <h1 className="mb-4 max-w-4xl text-display-hero-mobile tracking-tighter text-white lg:text-display-hero">
           Let's do it quick.
         </h1>
 
-        <p className="mb-10 max-w-2xl text-body-lg text-on-surface-variant">
+        <p className="mb-10 max-w-2xl text-body-lg text-white/80">
           Drop your messy download folder. Get back clean filenames, verified
           BPM and Camelot keys, genre playlists, and ready-to-gig Rekordbox
           exports in seconds.
