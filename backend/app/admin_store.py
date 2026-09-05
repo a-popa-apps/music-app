@@ -91,17 +91,19 @@ def create_discount_code(percent_off: int, uid: str, max_uses: int = 1) -> dict:
         raise ValueError("max_uses must be at least 1")
 
     code = _generate_code(percent_off)
-    doc = {
-        "code": code,
-        "percent_off": percent_off,
-        "active": True,
-        "max_uses": max_uses,
-        "used_count": 0,
-        "created_by": uid,
-        "created_at": firestore.SERVER_TIMESTAMP,
-    }
-    _discount_codes_collection().document(code).set(doc)
-    return doc
+    ref = _discount_codes_collection().document(code)
+    ref.set(
+        {
+            "code": code,
+            "percent_off": percent_off,
+            "active": True,
+            "max_uses": max_uses,
+            "used_count": 0,
+            "created_by": uid,
+            "created_at": firestore.SERVER_TIMESTAMP,
+        }
+    )
+    return ref.get().to_dict()
 
 
 def list_discount_codes() -> list[dict]:
