@@ -59,44 +59,51 @@ export function Pricing() {
           </button>
         </div>
 
-        <div className="flex w-full max-w-lg flex-col rounded border border-white/10 bg-white/10 p-12 text-left backdrop-blur-md">
-          <div className="flex items-center justify-between pb-4">
-            <div>
-              <h3 className="text-headline-lg font-bold text-white">
-                Pro DJ Plan
-              </h3>
-              <span className="text-body-sm text-white/70">
-                Complete autonomy for working selectors
+        <div className="w-full max-w-lg rounded-[calc(1rem+4px)] bg-gradient-to-r from-secondary-container to-[#ff3d78] p-[2px] shadow-[0_0_70px_rgba(255,107,53,0.3)]">
+          <div className="flex w-full flex-col rounded-2xl bg-[#12122a]/90 p-12 text-left backdrop-blur-md">
+            <div className="flex items-center justify-between gap-4 pb-4">
+              <div>
+                <h3 className="text-headline-lg font-bold text-white">
+                  Pro DJ Plan
+                </h3>
+                <span className="text-body-sm text-white/70">
+                  Complete autonomy for working selectors
+                </span>
+              </div>
+              {billing === "annual" && (
+                <span className="whitespace-nowrap rounded-full border border-secondary-container/40 bg-secondary-container/10 px-3 py-1 font-mono text-meta-badge font-bold uppercase tracking-wider text-secondary-container">
+                  Best Value &mdash; Save 33%
+                </span>
+              )}
+            </div>
+
+            <div className="flex items-baseline gap-1 py-6">
+              <span className="text-display-hero tracking-tight text-white">
+                ${price}
+              </span>
+              <span className="text-body-md text-white/70">
+                {cadence}
               </span>
             </div>
-          </div>
 
-          <div className="flex items-baseline gap-1 py-6">
-            <span className="text-display-hero-mobile tracking-tight text-white">
-              ${price}
+            <div className="mb-8 flex flex-col gap-2 py-4">
+              {CHECKLIST.map((item) => (
+                <div key={item} className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[20px] text-secondary-container">
+                    check_circle
+                  </span>
+                  <span className="text-body-md text-white">{item}</span>
+                </div>
+              ))}
+            </div>
+
+            <button className="w-full rounded-full bg-gradient-to-r from-secondary-container to-[#ff3d78] px-6 py-4 text-center text-headline-sm font-semibold text-on-primary shadow-[0_8px_30px_rgba(255,107,53,0.45)] transition-transform hover:scale-[1.02] active:scale-95">
+              Get Started Free (First 50 Tracks On Us)
+            </button>
+            <span className="mt-2 text-center font-mono text-meta-numeric text-white/60">
+              No credit card required &bull; Instant activation
             </span>
-            <span className="text-body-md text-white/70">
-              {cadence}
-            </span>
           </div>
-
-          <div className="mb-8 flex flex-col gap-2 py-4">
-            {CHECKLIST.map((item) => (
-              <div key={item} className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-[20px] text-secondary-container">
-                  check_circle
-                </span>
-                <span className="text-body-md text-white">{item}</span>
-              </div>
-            ))}
-          </div>
-
-          <button className="w-full rounded-full bg-secondary-container px-6 py-4 text-center text-headline-sm font-semibold text-on-primary transition-all hover:bg-secondary active:scale-95">
-            Get Started Free (First 50 Tracks On Us)
-          </button>
-          <span className="mt-2 text-center font-mono text-meta-numeric text-white/60">
-            No credit card required &bull; Instant activation
-          </span>
         </div>
       </div>
     </section>
