@@ -1,3 +1,5 @@
+import os
+
 import essentia.standard as es
 import mutagen
 from fastapi import FastAPI, File, HTTPException, Request, UploadFile
@@ -33,6 +35,9 @@ def health():
         "essentia": es.__file__ is not None,
         "mutagen": mutagen.version_string,
         "firebase_configured": get_app() is not None,
+        "spotify_configured": bool(
+            os.environ.get("SPOTIFY_CLIENT_ID") and os.environ.get("SPOTIFY_CLIENT_SECRET")
+        ),
     }
 
 
