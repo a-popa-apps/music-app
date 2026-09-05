@@ -1,3 +1,4 @@
+import gc
 import io
 import json
 import zipfile
@@ -5,6 +6,7 @@ import zipfile
 from fastapi import HTTPException, UploadFile
 from fastapi.concurrency import run_in_threadpool
 
+from .audio_io import load_audio
 from .detect_bpm import detect_bpm
 from .detect_key import detect_key
 
@@ -40,6 +42,29 @@ def validate_files(files: list[UploadFile]) -> None:
             )
 
 
+def _analyze(content: bytes, suffix: str) -> dict:
+    try:
+        audio = load_audio(content, suffix)
+    except Exception as e:
+        return {"bpm": None, "key": None, "load_error": f"{type(e).__name__}: {e}"}
+
+    entry: dict = {}
+    try:
+        entry["bpm"] = detect_bpm(audio)
+    except Exception as e:
+        entry["bpm"] = None
+        entry["bpm_error"] = f"{type(e).__name__}: {e}"
+
+    try:
+        entry.update(detect_key(audio))
+    except Exception as e:
+        entry["key"] = None
+        entry["key_error"] = f"{type(e).__name__}: {e}"
+
+    del audio
+    return entry
+
+
 async def build_zip(files: list[UploadFile]) -> bytes:
     buffer = io.BytesIO()
     manifest = {}
@@ -51,20 +76,8 @@ async def build_zip(files: list[UploadFile]) -> bytes:
             content = await file.read()
             zip_file.writestr(name, content)
 
-            entry: dict = {}
-            try:
-                entry["bpm"] = await run_in_threadpool(detect_bpm, content)
-            except Exception as e:
-                entry["bpm"] = None
-                entry["bpm_error"] = f"{type(e).__name__}: {e}"
-
-            try:
-                entry.update(await run_in_threadpool(detect_key, content, suffix))
-            except Exception as e:
-                entry["key"] = None
-                entry["key_error"] = f"{type(e).__name__}: {e}"
-
-            manifest[name] = entry
+            manifest[name] = await run_in_threadpool(_analyze, content, suffix)
+            gc.collect()
 
         zip_file.writestr("quickie-manifest.json", json.dumps(manifest, indent=2))
 

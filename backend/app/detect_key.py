@@ -1,7 +1,5 @@
-import os
-import tempfile
-
 import essentia.standard as es
+import numpy as np
 
 NOTE_SEMITONES = {
     "C": 0, "B#": 0,
@@ -33,17 +31,8 @@ def to_camelot(key: str, scale: str) -> str:
     return f"{MAJOR_CAMELOT_NUMBER[relative_major_semitone]}A"
 
 
-def detect_key(audio_bytes: bytes, suffix: str = ".wav") -> dict:
-    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
-        tmp.write(audio_bytes)
-        tmp_path = tmp.name
-
-    try:
-        audio = es.MonoLoader(filename=tmp_path)()
-        key, scale, strength = es.KeyExtractor()(audio)
-    finally:
-        os.unlink(tmp_path)
-
+def detect_key(audio: np.ndarray) -> dict:
+    key, scale, strength = es.KeyExtractor()(audio)
     return {
         "key": f"{key} {scale}",
         "camelot": to_camelot(key, scale),

@@ -1,5 +1,4 @@
 import essentia.standard as es
-import librosa
 import mutagen
 from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -20,7 +19,6 @@ app.add_middleware(
 
 @app.on_event("startup")
 def startup():
-    # Pay numba's one-time JIT compile cost at boot, not on the first upload.
     warm_up()
 
 
@@ -28,7 +26,6 @@ def startup():
 def health():
     return {
         "status": "ok",
-        "librosa": librosa.__version__,
         "essentia": es.__file__ is not None,
         "mutagen": mutagen.version_string,
     }

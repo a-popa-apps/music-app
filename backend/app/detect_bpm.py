@@ -1,38 +1,22 @@
-import io
-
-import librosa
+import essentia.standard as es
 import numpy as np
-import soundfile as sf
 
-ANALYSIS_DURATION = 30  # seconds
-ANALYSIS_SR = 22050  # half of typical 44.1kHz; negligible accuracy loss for tempo
+from .audio_io import SAMPLE_RATE
+
+ANALYSIS_SECONDS = 30
 
 
-def _estimate_tempo(y: np.ndarray, sr: int) -> float:
-    tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
-    return round(float(np.atleast_1d(tempo)[0]), 2)
+def _estimate_tempo(audio: np.ndarray) -> float:
+    window = audio[: SAMPLE_RATE * ANALYSIS_SECONDS]
+    rhythm_extractor = es.RhythmExtractor2013(method="degara")
+    bpm, _beats, _confidence, _estimates, _intervals = rhythm_extractor(window)
+    return round(float(bpm), 2)
 
 
 def warm_up() -> None:
-    """Trigger numba's JIT compilation at startup instead of on a user's first request."""
-    noise = np.random.default_rng(0).standard_normal(ANALYSIS_SR * 5).astype(np.float32)
-    _estimate_tempo(noise, ANALYSIS_SR)
+    noise = np.random.default_rng(0).standard_normal(SAMPLE_RATE * 5).astype(np.float32)
+    _estimate_tempo(noise)
 
 
-def detect_bpm(audio_bytes: bytes) -> float:
-    info = sf.info(io.BytesIO(audio_bytes))
-    total_duration = info.duration
-
-    offset = 0.0
-    if total_duration > ANALYSIS_DURATION:
-        # skip a likely intro, but don't run past the end of the track
-        offset = min(15.0, total_duration - ANALYSIS_DURATION)
-
-    y, sr = librosa.load(
-        io.BytesIO(audio_bytes),
-        sr=ANALYSIS_SR,
-        mono=True,
-        offset=offset,
-        duration=ANALYSIS_DURATION,
-    )
-    return _estimate_tempo(y, sr)
+def detect_bpm(audio: np.ndarray) -> float:
+    return _estimate_tempo(audio)

@@ -1,6 +1,5 @@
 fastapi==0.110.0
 uvicorn==0.29.0
 python-multipart==0.0.9
-librosa==0.10.2.post1
 essentia==2.1b6.dev1389
 mutagen==1.47.0
