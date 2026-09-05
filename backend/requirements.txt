@@ -3,3 +3,4 @@ uvicorn==0.29.0
 python-multipart==0.0.9
 essentia==2.1b6.dev1389
 mutagen==1.47.0
+firebase-admin==6.5.0
