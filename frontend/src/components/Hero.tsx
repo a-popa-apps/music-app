@@ -101,7 +101,7 @@ export function Hero() {
   return (
     <section
       id="demo"
-      className="relative flex min-h-[calc(100vh-4rem)] w-full flex-col items-center justify-center overflow-hidden bg-cover bg-center px-4 py-12 lg:px-12"
+      className="relative -mt-16 flex min-h-screen w-full flex-col items-center justify-center overflow-hidden bg-cover bg-center px-4 py-12 lg:px-12"
       style={{ backgroundImage: `url(${heroBg})` }}
     >
       <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/40 to-black/60" />
