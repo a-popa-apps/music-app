@@ -9,7 +9,9 @@ import { Pricing } from "./components/Pricing"
 import { UploadDemo } from "./components/UploadDemo"
 import { AuthPage } from "./pages/AuthPage"
 import { NotFound } from "./pages/NotFound"
+import { PrivacyPage } from "./pages/PrivacyPage"
 import { ProfileDetails } from "./pages/ProfileDetails"
+import { TermsPage } from "./pages/TermsPage"
 
 function Landing() {
   return (
@@ -34,6 +36,8 @@ function App() {
       <Route path="/" element={<Landing />} />
       <Route path="/auth" element={<AuthPage />} />
       <Route path="/profile" element={<ProfileDetails />} />
+      <Route path="/terms" element={<TermsPage />} />
+      <Route path="/privacy" element={<PrivacyPage />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   )
