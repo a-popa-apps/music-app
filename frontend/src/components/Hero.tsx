@@ -128,8 +128,8 @@ export function Hero() {
           {phase === "idle" && (
             <div
               {...getRootProps()}
-              className={`flex w-full cursor-pointer flex-col items-center justify-center rounded border-2 border-dashed border-outline-variant bg-surface-container-low p-12 text-center shadow-sm transition-all hover:bg-surface-container ${
-                isDragActive ? "border-secondary-container ring-2 ring-secondary-container" : ""
+              className={`flex w-full cursor-pointer flex-col items-center justify-center rounded border-2 border-dashed border-white/30 bg-white/10 p-12 text-center backdrop-blur-md transition-all hover:bg-white/15 ${
+                isDragActive ? "border-secondary-container bg-white/20 ring-2 ring-secondary-container" : ""
               }`}
             >
               <input {...getInputProps()} />
@@ -138,10 +138,10 @@ export function Hero() {
                   graphic_eq
                 </span>
               </div>
-              <h3 className="mb-1 text-headline-sm text-on-surface">
+              <h3 className="mb-1 text-headline-sm text-white">
                 Drag your track folder here
               </h3>
-              <p className="mb-4 text-body-md text-on-surface-variant">
+              <p className="mb-4 text-body-md text-white/70">
                 Drop .WAV, .MP3, .AIFF, or .FLAC directly from Finder or Explorer
               </p>
               <span className="rounded-full bg-secondary-container px-4 py-1 font-mono text-meta-badge uppercase tracking-wider text-on-secondary">
@@ -151,27 +151,27 @@ export function Hero() {
           )}
 
           {phase === "processing" && (
-            <div className="flex w-full flex-col items-center gap-4 rounded border-2 border-outline-variant bg-surface-container-low p-12 text-center shadow-sm">
+            <div className="flex w-full flex-col items-center gap-4 rounded border-2 border-white/20 bg-white/10 p-12 text-center backdrop-blur-md">
               <span className="material-symbols-outlined animate-spin text-[36px] text-secondary-container">
                 progress_activity
               </span>
-              <h3 className="text-headline-sm text-on-surface">
+              <h3 className="text-headline-sm text-white">
                 Processing {fileCount} file{fileCount === 1 ? "" : "s"}...
               </h3>
-              <p className="text-body-md text-on-surface-variant">
+              <p className="text-body-md text-white/70">
                 Detecting BPM, key, and genre for each track.
               </p>
-              <div className="h-2 w-full max-w-md overflow-hidden rounded-full bg-surface-container">
+              <div className="h-2 w-full max-w-md overflow-hidden rounded-full bg-white/20">
                 <div className="h-full w-1/3 animate-indeterminate rounded-full bg-secondary-container" />
               </div>
             </div>
           )}
 
           {phase === "error" && (
-            <div className="flex w-full flex-col items-center gap-4 rounded border-2 border-red-200 bg-red-50 p-12 text-center shadow-sm">
-              <span className="material-symbols-outlined text-[36px] text-red-600">error</span>
-              <h3 className="text-headline-sm text-red-700">Processing failed</h3>
-              <p className="text-body-md text-red-700/80">
+            <div className="flex w-full flex-col items-center gap-4 rounded border-2 border-red-400/30 bg-red-500/10 p-12 text-center backdrop-blur-md">
+              <span className="material-symbols-outlined text-[36px] text-red-300">error</span>
+              <h3 className="text-headline-sm text-white">Processing failed</h3>
+              <p className="text-body-md text-white/70">
                 The backend didn't respond. Check that it's awake and try again.
               </p>
               <button
@@ -184,8 +184,8 @@ export function Hero() {
           )}
 
           {phase === "done" && (
-            <div className="w-full overflow-hidden rounded bg-surface-container-lowest shadow-md">
-              <div className="grid grid-cols-12 items-center bg-surface-container-low px-6 py-2 font-mono text-meta-badge uppercase tracking-wider text-on-surface-variant">
+            <div className="w-full overflow-hidden rounded border border-white/20 bg-white/10 backdrop-blur-md">
+              <div className="grid grid-cols-12 items-center bg-white/5 px-6 py-2 font-mono text-meta-badge uppercase tracking-wider text-white/70">
                 <div className="col-span-1 text-center">#</div>
                 <div className="col-span-4">Track Title &amp; Artist</div>
                 <div className="col-span-2 text-center">BPM</div>
@@ -197,17 +197,17 @@ export function Hero() {
               {results.map((track, i) => (
                 <div
                   key={track.name + i}
-                  className="grid grid-cols-12 items-center border-t border-outline-variant px-6 py-4 transition-colors hover:bg-surface-container-low"
+                  className="grid grid-cols-12 items-center border-t border-white/10 px-6 py-4 transition-colors hover:bg-white/5"
                 >
-                  <div className="col-span-1 text-center font-mono text-meta-numeric text-on-surface-variant">
+                  <div className="col-span-1 text-center font-mono text-meta-numeric text-white/60">
                     {String(i + 1).padStart(2, "0")}
                   </div>
                   <div className="col-span-4 flex min-w-0 flex-col pr-2">
-                    <span className="truncate text-body-md font-bold text-on-surface">
+                    <span className="truncate text-body-md font-bold text-white">
                       {track.name}
                     </span>
                     {track.originalFilename && (
-                      <span className="truncate text-body-sm text-on-surface-variant">
+                      <span className="truncate text-body-sm text-white/50">
                         was: {track.originalFilename}
                       </span>
                     )}
@@ -217,16 +217,16 @@ export function Hero() {
                   </div>
                   <div className="col-span-2 text-center">
                     {track.key ? (
-                      <span className="rounded bg-surface-container-low px-2 py-px font-mono text-meta-numeric text-on-surface">
+                      <span className="rounded bg-white/10 px-2 py-px font-mono text-meta-numeric text-white">
                         {track.key}
                       </span>
                     ) : (
-                      <span className="font-mono text-meta-numeric text-on-surface-variant">—</span>
+                      <span className="font-mono text-meta-numeric text-white/50">—</span>
                     )}
                   </div>
                   <div className="col-span-2 hidden items-center lg:flex">
                     {track.genre && (
-                      <span className="rounded-full bg-inverse-surface px-2 py-px text-body-sm text-inverse-on-surface">
+                      <span className="rounded-full bg-white/15 px-2 py-px text-body-sm text-white">
                         {track.genre}
                       </span>
                     )}
@@ -234,12 +234,12 @@ export function Hero() {
                   <div className="col-span-3 text-right lg:col-span-1">
                     <span
                       className={`inline-flex items-center gap-1 font-mono text-meta-badge font-bold uppercase ${
-                        track.failed ? "text-red-600" : "text-secondary-container"
+                        track.failed ? "text-red-300" : "text-secondary-container"
                       }`}
                     >
                       <span
                         className={`h-1.5 w-1.5 rounded-full ${
-                          track.failed ? "bg-red-600" : "bg-secondary-container"
+                          track.failed ? "bg-red-300" : "bg-secondary-container"
                         }`}
                       />
                       {track.failed ? "Error" : "Done"}
@@ -248,9 +248,9 @@ export function Hero() {
                 </div>
               ))}
 
-              <div className="flex flex-col items-center justify-between gap-4 border-t border-outline-variant bg-surface-container-low p-6 sm:flex-row">
-                <div className="flex items-center gap-4 font-mono text-meta-numeric text-on-surface-variant">
-                  <span className="flex items-center gap-1 text-on-surface">
+              <div className="flex flex-col items-center justify-between gap-4 border-t border-white/10 bg-white/5 p-6 sm:flex-row">
+                <div className="flex items-center gap-4 font-mono text-meta-numeric text-white/70">
+                  <span className="flex items-center gap-1 text-white">
                     <span className="material-symbols-outlined text-[18px] text-secondary-container">
                       verified
                     </span>
@@ -258,7 +258,7 @@ export function Hero() {
                   </span>
                   <button
                     onClick={reset}
-                    className="text-body-sm font-semibold text-on-surface-variant underline hover:text-on-surface"
+                    className="text-body-sm font-semibold text-white/70 underline hover:text-white"
                   >
                     Process another folder
                   </button>
