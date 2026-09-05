@@ -10,6 +10,7 @@ from .audio_io import load_audio
 from .clean_filename import clean_filename
 from .detect_bpm import detect_bpm
 from .detect_key import detect_key
+from .write_tags import write_tags
 
 ALLOWED_EXTENSIONS = {".mp3", ".wav", ".flac", ".aiff", ".aif", ".ogg", ".aac"}
 MAX_FILES = 25
@@ -43,27 +44,41 @@ def validate_files(files: list[UploadFile]) -> None:
             )
 
 
-def _analyze(content: bytes, suffix: str) -> dict:
+def _analyze_and_tag(content: bytes, suffix: str) -> tuple[bytes, dict]:
     try:
         audio = load_audio(content, suffix)
     except Exception as e:
-        return {"bpm": None, "key": None, "load_error": f"{type(e).__name__}: {e}"}
+        entry = {"bpm": None, "key": None, "load_error": f"{type(e).__name__}: {e}"}
+        return content, entry
 
     entry: dict = {}
+    bpm = None
+    camelot = None
+
     try:
-        entry["bpm"] = detect_bpm(audio)
+        bpm = detect_bpm(audio)
+        entry["bpm"] = bpm
     except Exception as e:
         entry["bpm"] = None
         entry["bpm_error"] = f"{type(e).__name__}: {e}"
 
     try:
-        entry.update(detect_key(audio))
+        key_result = detect_key(audio)
+        entry.update(key_result)
+        camelot = key_result["camelot"]
     except Exception as e:
         entry["key"] = None
         entry["key_error"] = f"{type(e).__name__}: {e}"
 
     del audio
-    return entry
+
+    try:
+        tagged_content = write_tags(content, suffix, bpm=bpm, camelot=camelot)
+    except Exception as e:
+        tagged_content = content
+        entry["tag_error"] = f"{type(e).__name__}: {e}"
+
+    return tagged_content, entry
 
 
 def _dedupe(name: str, seen: set[str]) -> str:
@@ -91,9 +106,12 @@ async def build_zip(files: list[UploadFile]) -> bytes:
             name = _dedupe(clean_filename(original_name), seen_names)
             suffix = "." + name.rsplit(".", 1)[-1].lower() if "." in name else ""
             content = await file.read()
-            zip_file.writestr(name, content)
 
-            entry = await run_in_threadpool(_analyze, content, suffix)
+            tagged_content, entry = await run_in_threadpool(
+                _analyze_and_tag, content, suffix
+            )
+            zip_file.writestr(name, tagged_content)
+
             entry["original_filename"] = original_name
             manifest[name] = entry
             gc.collect()
