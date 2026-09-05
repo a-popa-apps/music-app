@@ -6,7 +6,6 @@ import { Header } from "./components/Header"
 import { Hero } from "./components/Hero"
 import { HowItWorks } from "./components/HowItWorks"
 import { Pricing } from "./components/Pricing"
-import { UploadDemo } from "./components/UploadDemo"
 import { AdminPage } from "./pages/AdminPage"
 import { AdminUserDetail } from "./pages/AdminUserDetail"
 import { AuthPage } from "./pages/AuthPage"
@@ -22,7 +21,6 @@ function Landing() {
       <main className="w-full pt-16">
         <Hero />
         <HowItWorks />
-        <UploadDemo />
         <Features />
         <Pricing />
         <FAQ />
