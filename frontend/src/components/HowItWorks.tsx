@@ -29,7 +29,7 @@ export function HowItWorks() {
   return (
     <section
       id="how-it-works"
-      className="w-full bg-tertiary-container px-4 py-16 lg:px-12"
+      className="w-full bg-[#1a1130] px-4 py-16 lg:px-12"
     >
       <div className="mx-auto flex max-w-7xl flex-col gap-12">
         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
