@@ -1,3 +1,5 @@
+import { GrainOverlay } from "./GrainOverlay"
+
 const FEATURES = [
   {
     icon: "spellcheck",
@@ -26,9 +28,10 @@ export function Features() {
   return (
     <section
       id="features"
-      className="w-full bg-[#15122e] px-4 py-16 lg:px-12"
+      className="relative w-full overflow-hidden bg-gradient-to-br from-[#1c1840] to-[#0a0918] px-4 py-16 lg:px-12"
     >
-      <div className="mx-auto flex max-w-7xl flex-col gap-12">
+      <GrainOverlay />
+      <div className="relative z-10 mx-auto flex max-w-7xl flex-col gap-12">
         <div className="flex max-w-2xl flex-col gap-1">
           <span className="font-mono text-meta-badge font-bold uppercase tracking-wider text-secondary-container">
             System Capabilities

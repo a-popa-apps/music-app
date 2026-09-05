@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { GrainOverlay } from "./GrainOverlay"
 
 const FAQS = [
   {
@@ -29,9 +30,10 @@ export function FAQ() {
   return (
     <section
       id="faq"
-      className="w-full bg-[#0c0e22] px-4 py-16 lg:px-12"
+      className="relative w-full overflow-hidden bg-gradient-to-br from-[#10122c] to-[#050609] px-4 py-16 lg:px-12"
     >
-      <div className="mx-auto flex max-w-4xl flex-col gap-12">
+      <GrainOverlay />
+      <div className="relative z-10 mx-auto flex max-w-4xl flex-col gap-12">
         <div className="flex flex-col gap-1 text-center">
           <span className="font-mono text-meta-badge font-bold uppercase tracking-wider text-secondary-container">
             Clear Answers

@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { GrainOverlay } from "./GrainOverlay"
 
 const CHECKLIST = [
   "Unlimited track batch processing",
@@ -17,9 +18,10 @@ export function Pricing() {
   return (
     <section
       id="pricing"
-      className="w-full bg-[#0f1330] px-4 py-16 lg:px-12"
+      className="relative w-full overflow-hidden bg-gradient-to-br from-[#141a44] to-[#07081a] px-4 py-16 lg:px-12"
     >
-      <div className="mx-auto flex max-w-4xl flex-col items-center text-center">
+      <GrainOverlay />
+      <div className="relative z-10 mx-auto flex max-w-4xl flex-col items-center text-center">
         <span className="mb-1 font-mono text-meta-badge font-bold uppercase tracking-wider text-secondary-container">
           Fair Selector Pricing
         </span>
