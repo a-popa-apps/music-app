@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import gc
 import io
 import json
@@ -6,10 +8,11 @@ import zipfile
 from fastapi import HTTPException, UploadFile
 from fastapi.concurrency import run_in_threadpool
 
-from .audio_io import load_audio
+from .audio_io import SAMPLE_RATE, load_audio
 from .clean_filename import clean_filename
 from .detect_bpm import detect_bpm
 from .detect_key import detect_key
+from .playlist import build_playlist
 from .write_tags import write_tags
 
 ALLOWED_EXTENSIONS = {".mp3", ".wav", ".flac", ".aiff", ".aif", ".ogg", ".aac"}
@@ -51,7 +54,7 @@ def _analyze_and_tag(content: bytes, suffix: str) -> tuple[bytes, dict]:
         entry = {"bpm": None, "key": None, "load_error": f"{type(e).__name__}: {e}"}
         return content, entry
 
-    entry: dict = {}
+    entry: dict = {"duration_seconds": round(len(audio) / SAMPLE_RATE, 2)}
     bpm = None
     camelot = None
 
@@ -99,6 +102,7 @@ async def build_zip(files: list[UploadFile]) -> bytes:
     buffer = io.BytesIO()
     manifest = {}
     seen_names: set[str] = set()
+    playlist_tracks: list[tuple[str, float | None]] = []
 
     with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
         for file in files:
@@ -114,9 +118,11 @@ async def build_zip(files: list[UploadFile]) -> bytes:
 
             entry["original_filename"] = original_name
             manifest[name] = entry
+            playlist_tracks.append((name, entry.get("duration_seconds")))
             gc.collect()
 
         zip_file.writestr("quickie-manifest.json", json.dumps(manifest, indent=2))
+        zip_file.writestr("quickie-playlist.m3u8", build_playlist(playlist_tracks))
 
     buffer.seek(0)
     return buffer.read()
