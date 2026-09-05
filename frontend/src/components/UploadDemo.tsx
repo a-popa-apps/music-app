@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react"
 import { useDropzone } from "react-dropzone"
+import { useAuth } from "../hooks/useAuth"
 import { uploadAndProcess } from "../services/api"
 
 const SAMPLE_TRACKS = [
@@ -29,6 +30,7 @@ const SAMPLE_TRACKS = [
 type DownloadState = "idle" | "processing" | "done" | "error"
 
 export function UploadDemo() {
+  const { user, isVerified } = useAuth()
   const [droppedFiles, setDroppedFiles] = useState<File[]>([])
   const [downloadState, setDownloadState] = useState<DownloadState>("idle")
 
@@ -48,7 +50,8 @@ export function UploadDemo() {
     if (droppedFiles.length === 0) return
     setDownloadState("processing")
     try {
-      const blob = await uploadAndProcess(droppedFiles)
+      const idToken = user && isVerified ? await user.getIdToken() : undefined
+      const blob = await uploadAndProcess(droppedFiles, idToken)
       const url = URL.createObjectURL(blob)
       const link = document.createElement("a")
       link.href = url

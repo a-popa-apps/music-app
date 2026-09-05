@@ -55,12 +55,13 @@ export async function deleteAccount(idToken: string): Promise<void> {
   if (!res.ok) throw new Error(`Failed to delete account: ${res.status}`)
 }
 
-export async function uploadAndProcess(files: File[]): Promise<Blob> {
+export async function uploadAndProcess(files: File[], idToken?: string): Promise<Blob> {
   const formData = new FormData()
   files.forEach((file) => formData.append("files", file))
 
   const response = await fetch(`${BACKEND_URL}/process`, {
     method: "POST",
+    headers: idToken ? { Authorization: `Bearer ${idToken}` } : undefined,
     body: formData,
   })
 

@@ -81,7 +81,16 @@ def delete_account(request: Request):
 async def process(request: Request, files: list[UploadFile] = File(...)):
     enforce_rate_limit(request)
     validate_files(files)
-    zip_bytes = await build_zip(files)
+
+    filename_template = None
+    uid = get_current_user(request)
+    if uid is not None:
+        try:
+            filename_template = get_settings(uid).get("filename_template")
+        except Exception:
+            filename_template = None  # don't let a profile lookup failure block processing
+
+    zip_bytes = await build_zip(files, filename_template=filename_template)
     return Response(
         content=zip_bytes,
         media_type="application/zip",
