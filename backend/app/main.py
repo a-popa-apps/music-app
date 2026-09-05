@@ -9,6 +9,7 @@ from .auth import get_app, get_current_user
 from .detect_bpm import warm_up
 from .process_audio import build_zip, validate_files
 from .profile_store import get_settings, save_settings
+from .rate_limit import enforce_rate_limit
 
 app = FastAPI(title="Quickie Backend")
 
@@ -69,7 +70,8 @@ def update_profile(update: ProfileUpdate, request: Request):
 
 
 @app.post("/process")
-async def process(files: list[UploadFile] = File(...)):
+async def process(request: Request, files: list[UploadFile] = File(...)):
+    enforce_rate_limit(request)
     validate_files(files)
     zip_bytes = await build_zip(files)
     return Response(
