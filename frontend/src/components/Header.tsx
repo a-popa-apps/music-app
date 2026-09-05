@@ -13,7 +13,7 @@ const NAV_LINKS = [
 
 export function Header() {
   const [menuOpen, setMenuOpen] = useState(false)
-  const { user, isVerified, logOut } = useAuth()
+  const { user, isVerified, logOut, loading } = useAuth()
   const { isAdmin } = useIsAdmin()
   const loggedIn = user && isVerified
 
@@ -37,7 +37,9 @@ export function Header() {
           ))}
         </nav>
         <div className="flex items-center gap-2">
-          {loggedIn ? (
+          {loading ? (
+            <div className="h-9 w-20 animate-pulse rounded-full bg-surface-container-low" />
+          ) : loggedIn ? (
             <div className="hidden md:block">
               <AccountMenu />
             </div>
@@ -72,7 +74,7 @@ export function Header() {
               {link.label}
             </a>
           ))}
-          {loggedIn ? (
+          {loading ? null : loggedIn ? (
             <div className="flex flex-col gap-1 px-2 py-3">
               <span className="text-body-sm text-on-surface-variant">
                 {user.email}
