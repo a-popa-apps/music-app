@@ -11,7 +11,7 @@ const CHECKLIST = [
 
 export function Pricing() {
   const [billing, setBilling] = useState<"monthly" | "annual">("annual")
-  const price = billing === "annual" ? 8 : 12
+  const price = billing === "annual" ? 3 : 5
   const cadence =
     billing === "annual" ? "/ month (billed annually)" : "/ month"
 
@@ -54,7 +54,7 @@ export function Pricing() {
           >
             Annual
             <span className="rounded-full bg-secondary-container px-1 py-px text-[10px] font-bold uppercase text-on-primary">
-              Save 33%
+              Save 40%
             </span>
           </button>
         </div>
@@ -72,7 +72,7 @@ export function Pricing() {
               </div>
               {billing === "annual" && (
                 <span className="whitespace-nowrap rounded-full border border-secondary-container/40 bg-secondary-container/10 px-3 py-1 font-mono text-meta-badge font-bold uppercase tracking-wider text-secondary-container">
-                  Best Value &mdash; Save 33%
+                  Best Value &mdash; Save 40%
                 </span>
               )}
             </div>
