@@ -1,6 +1,5 @@
 import io
 import json
-import traceback
 import zipfile
 
 from fastapi import HTTPException, UploadFile
@@ -52,20 +51,18 @@ async def build_zip(files: list[UploadFile]) -> bytes:
             content = await file.read()
             zip_file.writestr(name, content)
 
-            entry: dict = {"bpm_attempted": True, "key_attempted": True}
+            entry: dict = {}
             try:
                 entry["bpm"] = await run_in_threadpool(detect_bpm, content)
-            except BaseException as e:
+            except Exception as e:
                 entry["bpm"] = None
                 entry["bpm_error"] = f"{type(e).__name__}: {e}"
-                entry["bpm_traceback"] = traceback.format_exc()
 
             try:
                 entry.update(await run_in_threadpool(detect_key, content, suffix))
-            except BaseException as e:
+            except Exception as e:
                 entry["key"] = None
                 entry["key_error"] = f"{type(e).__name__}: {e}"
-                entry["key_traceback"] = traceback.format_exc()
 
             manifest[name] = entry
 
