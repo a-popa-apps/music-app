@@ -30,6 +30,7 @@ export function ProfileDetails() {
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [dangerZoneOpen, setDangerZoneOpen] = useState(false)
   const [billingLoading, setBillingLoading] = useState(false)
   const checkoutResult = searchParams.get("checkout")
 
@@ -253,19 +254,35 @@ export function ProfileDetails() {
             {saving ? "Saving..." : saved ? "Saved!" : "Save"}
           </button>
 
-          <div className="flex flex-col gap-3 rounded border border-red-200 bg-red-50 p-6">
-            <h2 className="text-headline-sm text-red-700">Danger Zone</h2>
-            <p className="text-body-sm text-red-700/80">
-              Permanently delete your account and all saved settings. This cannot be
-              undone.
-            </p>
+          <div className="rounded border border-red-200 bg-red-50 p-6">
             <button
-              onClick={handleDeleteAccount}
-              disabled={deleting}
-              className="self-start rounded-full border border-red-600 px-6 py-2 text-body-sm font-semibold text-red-700 transition-colors hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+              onClick={() => setDangerZoneOpen((o) => !o)}
+              className="flex w-full items-center justify-between text-left"
             >
-              {deleting ? "Deleting..." : "Delete Account"}
+              <h2 className="text-headline-sm text-red-700">Danger Zone</h2>
+              <span
+                className={`material-symbols-outlined text-red-700 transition-transform ${
+                  dangerZoneOpen ? "rotate-180" : ""
+                }`}
+              >
+                expand_more
+              </span>
             </button>
+            {dangerZoneOpen && (
+              <div className="mt-3 flex flex-col gap-3">
+                <p className="text-body-sm text-red-700/80">
+                  Permanently delete your account and all saved settings. This cannot be
+                  undone.
+                </p>
+                <button
+                  onClick={handleDeleteAccount}
+                  disabled={deleting}
+                  className="self-start rounded-full border border-red-600 px-6 py-2 text-body-sm font-semibold text-red-700 transition-colors hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {deleting ? "Deleting..." : "Delete Account"}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
