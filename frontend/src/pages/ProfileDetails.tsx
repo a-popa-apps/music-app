@@ -1,13 +1,27 @@
 import { useEffect, useState } from "react"
-import { Navigate, useNavigate } from "react-router-dom"
+import { Navigate, useNavigate, useSearchParams } from "react-router-dom"
 import { Header } from "../components/Header"
 import { ProfileFieldsForm, Section } from "../components/ProfileFieldsForm"
 import { useAuth } from "../hooks/useAuth"
-import { deleteAccount, getProfile, saveProfile, type ProfileSettings } from "../services/api"
+import {
+  createBillingPortalSession,
+  createCheckoutSession,
+  deleteAccount,
+  getProfile,
+  saveProfile,
+  type ProfileSettings,
+} from "../services/api"
+
+const SUBSCRIPTION_WARNINGS: Record<string, string> = {
+  past_due: "Your last payment failed. Update your payment method to keep Pro.",
+  unpaid: "Your subscription is unpaid. Update your payment method to keep Pro.",
+  incomplete: "Your subscription setup is incomplete.",
+}
 
 export function ProfileDetails() {
   const { user, isVerified, loading: authLoading, logOut } = useAuth()
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
 
   const [settings, setSettings] = useState<ProfileSettings | null>(null)
   const [savedSettings, setSavedSettings] = useState<ProfileSettings | null>(null)
@@ -16,6 +30,8 @@ export function ProfileDetails() {
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [billingLoading, setBillingLoading] = useState(false)
+  const checkoutResult = searchParams.get("checkout")
 
   useEffect(() => {
     if (!user) return
@@ -102,6 +118,34 @@ export function ProfileDetails() {
 
   const isDirty = JSON.stringify(settings) !== JSON.stringify(savedSettings)
 
+  async function handleUpgrade() {
+    if (!user) return
+    setBillingLoading(true)
+    setError(null)
+    try {
+      const token = await user.getIdToken()
+      const url = await createCheckoutSession(token, "monthly")
+      window.location.href = url
+    } catch {
+      setError("Couldn't start checkout. Try again.")
+      setBillingLoading(false)
+    }
+  }
+
+  async function handleManageBilling() {
+    if (!user) return
+    setBillingLoading(true)
+    setError(null)
+    try {
+      const token = await user.getIdToken()
+      const url = await createBillingPortalSession(token)
+      window.location.href = url
+    } catch {
+      setError("Couldn't open billing portal. Try again.")
+      setBillingLoading(false)
+    }
+  }
+
   async function handleDeleteAccount() {
     if (!user) return
     const confirmed = window.confirm(
@@ -130,6 +174,29 @@ export function ProfileDetails() {
         <h1 className="mb-6 text-headline-lg text-on-surface">Profile Details</h1>
 
         <div className="flex flex-col gap-6">
+          {checkoutResult === "success" && (
+            <div className="rounded border border-green-200 bg-green-50 px-4 py-3 text-body-sm text-green-800">
+              Welcome to Pro! Your subscription is now active.
+              <button
+                onClick={() => setSearchParams({}, { replace: true })}
+                className="ml-2 underline"
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
+          {checkoutResult === "cancelled" && (
+            <div className="rounded border border-outline-variant bg-surface-container-low px-4 py-3 text-body-sm text-on-surface-variant">
+              Checkout was cancelled — no changes were made.
+              <button
+                onClick={() => setSearchParams({}, { replace: true })}
+                className="ml-2 underline"
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
+
           <ProfileFieldsForm settings={settings} onChange={update} email={user?.email ?? ""} />
 
           <Section title="Billing">
@@ -140,22 +207,38 @@ export function ProfileDetails() {
                   <strong className="inline-flex items-center gap-1">
                     {settings.plan === "pro" ? "Pro" : "Free"}
                     {settings.plan === "pro" && (
-                      <span className="material-symbols-outlined text-[16px] text-blue-500">
+                      <span className="material-symbols-outlined text-[15px] text-blue-500">
                         verified
                       </span>
                     )}
                   </strong>
                 </span>
-                <span className="text-body-sm text-on-surface-variant">
-                  No payment method on file. Billing isn't live yet — check back soon.
-                </span>
+                {settings.plan === "pro" ? (
+                  settings.subscription_status && SUBSCRIPTION_WARNINGS[settings.subscription_status] ? (
+                    <span className="text-body-sm text-red-600">
+                      {SUBSCRIPTION_WARNINGS[settings.subscription_status]}
+                    </span>
+                  ) : (
+                    <span className="text-body-sm text-on-surface-variant">
+                      Manage your payment method, invoices, or cancel anytime.
+                    </span>
+                  )
+                ) : (
+                  <span className="text-body-sm text-on-surface-variant">
+                    Upgrade for unlimited processing and priority detection.
+                  </span>
+                )}
               </div>
               <button
-                disabled
-                title="Coming soon"
-                className="whitespace-nowrap rounded-full bg-outline-variant px-4 py-2 text-body-sm font-semibold text-on-surface-variant cursor-not-allowed"
+                onClick={settings.plan === "pro" ? handleManageBilling : handleUpgrade}
+                disabled={billingLoading}
+                className="whitespace-nowrap rounded-full bg-secondary-container px-4 py-2 text-body-sm font-semibold text-on-primary transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                Manage billing
+                {billingLoading
+                  ? "Loading..."
+                  : settings.plan === "pro"
+                    ? "Manage billing"
+                    : "Upgrade to Pro"}
               </button>
             </div>
           </Section>

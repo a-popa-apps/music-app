@@ -363,8 +363,9 @@ function BillingTab({ token }: { token: string }) {
     <Card>
       <h3 className="text-headline-sm text-on-surface">Plan distribution</h3>
       <p className="text-body-sm text-on-surface-variant">
-        Real billing integration (Stripe) isn't connected yet — this is a placeholder
-        showing plan counts until checkout and revenue tracking exist.
+        Stripe billing is live (checkout, portal, and webhooks). Revenue reporting
+        isn't built here yet — for now this shows plan counts only; check the Stripe
+        dashboard for actual revenue.
       </p>
       {stats && (
         <div className="flex gap-6 text-body-md text-on-surface">

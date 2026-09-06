@@ -22,6 +22,9 @@ export interface ProfileSettings {
   discogs_deep_search: boolean
   plan: "free" | "pro"
   is_admin: boolean
+  stripe_customer_id: string | null
+  stripe_subscription_id: string | null
+  subscription_status: string | null
 }
 
 export async function getProfile(idToken: string): Promise<ProfileSettings> {
@@ -54,6 +57,33 @@ export async function deleteAccount(idToken: string): Promise<void> {
     headers: { Authorization: `Bearer ${idToken}` },
   })
   if (!res.ok) throw new Error(`Failed to delete account: ${res.status}`)
+}
+
+export async function createCheckoutSession(
+  idToken: string,
+  billingCycle: "monthly" | "annual"
+): Promise<string> {
+  const res = await fetch(`${BACKEND_URL}/billing/checkout`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${idToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ billing_cycle: billingCycle }),
+  })
+  if (!res.ok) throw new Error(`Failed to start checkout: ${res.status}`)
+  const data = await res.json()
+  return data.url
+}
+
+export async function createBillingPortalSession(idToken: string): Promise<string> {
+  const res = await fetch(`${BACKEND_URL}/billing/portal`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${idToken}` },
+  })
+  if (!res.ok) throw new Error(`Failed to open billing portal: ${res.status}`)
+  const data = await res.json()
+  return data.url
 }
 
 export interface AdminUser {

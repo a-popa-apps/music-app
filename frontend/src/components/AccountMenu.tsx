@@ -37,12 +37,12 @@ export function AccountMenu({ profile }: { profile: ProfileSettings | null }) {
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
           <div className="absolute right-0 z-50 mt-2 w-64 rounded bg-inverse-surface p-2 shadow-md">
-            <div className="border-b border-outline px-3 py-2">
+            <div className="flex flex-col gap-1.5 border-b border-outline px-3 py-2">
               {displayName && (
                 <div className="flex items-center gap-1 text-body-md font-semibold text-inverse-on-surface">
                   <span>{displayName}</span>
                   {profile?.plan === "pro" && (
-                    <span className="material-symbols-outlined text-[16px] text-blue-500">
+                    <span className="material-symbols-outlined text-[15px] text-blue-500">
                       verified
                     </span>
                   )}

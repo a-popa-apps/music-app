@@ -1,5 +1,8 @@
 import { useState } from "react"
+import { useNavigate } from "react-router-dom"
 import { GrainOverlay } from "./GrainOverlay"
+import { useAuth } from "../hooks/useAuth"
+import { createCheckoutSession } from "../services/api"
 
 const CHECKLIST = [
   "Unlimited track batch processing",
@@ -10,10 +13,28 @@ const CHECKLIST = [
 ]
 
 export function Pricing() {
+  const { user, isVerified } = useAuth()
+  const navigate = useNavigate()
   const [billing, setBilling] = useState<"monthly" | "annual">("annual")
+  const [checkoutLoading, setCheckoutLoading] = useState(false)
   const price = billing === "annual" ? 5 : 8
   const cadence =
     billing === "annual" ? "/ month (billed annually)" : "/ month"
+
+  async function handleGetStarted() {
+    if (!user || !isVerified) {
+      navigate("/auth")
+      return
+    }
+    setCheckoutLoading(true)
+    try {
+      const token = await user.getIdToken()
+      const url = await createCheckoutSession(token, billing)
+      window.location.href = url
+    } catch {
+      setCheckoutLoading(false)
+    }
+  }
 
   return (
     <section
@@ -97,8 +118,12 @@ export function Pricing() {
               ))}
             </div>
 
-            <button className="w-full rounded-full bg-gradient-to-r from-secondary-container to-[#ff3d78] px-6 py-4 text-center text-headline-sm font-semibold text-on-primary shadow-[0_8px_30px_rgba(255,107,53,0.45)] transition-transform hover:scale-[1.02] active:scale-95">
-              Get Started Free (First 50 Tracks On Us)
+            <button
+              onClick={handleGetStarted}
+              disabled={checkoutLoading}
+              className="w-full rounded-full bg-gradient-to-r from-secondary-container to-[#ff3d78] px-6 py-4 text-center text-headline-sm font-semibold text-on-primary shadow-[0_8px_30px_rgba(255,107,53,0.45)] transition-transform hover:scale-[1.02] active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {checkoutLoading ? "Loading..." : "Get Started Free (First 50 Tracks On Us)"}
             </button>
             <span className="mt-2 text-center font-mono text-meta-numeric text-white/60">
               No credit card required &bull; Instant activation

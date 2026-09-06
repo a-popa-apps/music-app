@@ -131,7 +131,7 @@ export function Header() {
                 >
                   {profile.name}
                   {profile.plan === "pro" && (
-                    <span className="material-symbols-outlined text-[16px] text-blue-500">
+                    <span className="material-symbols-outlined text-[15px] text-blue-500">
                       verified
                     </span>
                   )}
