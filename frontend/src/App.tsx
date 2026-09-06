@@ -8,6 +8,7 @@ import { HowItWorks } from "./components/HowItWorks"
 import { Pricing } from "./components/Pricing"
 import { AdminPage } from "./pages/AdminPage"
 import { AdminUserDetail } from "./pages/AdminUserDetail"
+import { AuthActionPage } from "./pages/AuthActionPage"
 import { AuthPage } from "./pages/AuthPage"
 import { NotFound } from "./pages/NotFound"
 import { PrivacyPage } from "./pages/PrivacyPage"
@@ -35,6 +36,7 @@ function App() {
     <Routes>
       <Route path="/" element={<Landing />} />
       <Route path="/auth" element={<AuthPage />} />
+      <Route path="/auth/action" element={<AuthActionPage />} />
       <Route path="/profile" element={<ProfileDetails />} />
       <Route path="/admin" element={<AdminPage />} />
       <Route path="/admin/users/:uid" element={<AdminUserDetail />} />
