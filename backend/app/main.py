@@ -172,6 +172,10 @@ def admin_create_discount_code(body: DiscountCodeCreate, request: Request):
         raise HTTPException(400, str(e))
     except RuntimeError as e:
         raise HTTPException(503, str(e))
+    except Exception as e:
+        # Surface Stripe API errors (invalid params, rate limits, etc.)
+        # instead of a bare 500 with no detail.
+        raise HTTPException(502, f"Stripe error: {type(e).__name__}: {e}")
 
 
 @app.patch("/admin/discount-codes/{code}")
@@ -181,6 +185,8 @@ def admin_set_discount_code_active(code: str, body: DiscountCodeActiveUpdate, re
         return set_discount_code_active(code, body.active)
     except ValueError as e:
         raise HTTPException(400, str(e))
+    except Exception as e:
+        raise HTTPException(502, f"Stripe error: {type(e).__name__}: {e}")
 
 
 def _frontend_base_url(request: Request) -> str:
