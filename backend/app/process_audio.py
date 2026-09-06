@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import asyncio
 import gc
 import io
 import json
+import os
 import zipfile
 
 from fastapi import HTTPException, UploadFile
@@ -22,6 +24,17 @@ MAX_FILES_FREE = 25
 MAX_FILES_PRO = 50
 MAX_FILE_SIZE = 100 * 1024 * 1024  # 100MB per file
 MAX_TOTAL_SIZE = 2 * 1024 * 1024 * 1024  # 2GB per upload
+
+# Files in a batch are independent, so analyzing them concurrently instead of
+# one at a time is a real speedup -- both the essentia decode/BPM/key work
+# (releases the GIL, benefits from multiple cores) and the Spotify/Discogs
+# genre lookups (I/O-bound, mostly just waiting on the network) parallelize
+# well. Kept conservative and tunable rather than guessing high: each
+# concurrent slot holds a full decoded audio array in memory (roughly 50MB
+# for a 5-minute track) plus essentia's own working memory, and the actual
+# Render plan's RAM headroom isn't known -- raise via the env var once real
+# memory behavior has been observed live, not preemptively.
+PROCESS_CONCURRENCY = int(os.environ.get("PROCESS_CONCURRENCY", "3"))
 
 
 def validate_files(files: list[UploadFile], max_files: int = MAX_FILES_FREE) -> None:
@@ -184,6 +197,29 @@ def _dedupe(name: str, seen: set[str]) -> str:
     return candidate
 
 
+async def _analyze_one(
+    semaphore: asyncio.Semaphore,
+    content: bytes,
+    ext: str,
+    stem: str,
+    version_tag: str | None,
+    original_name: str,
+    filename_template: str | None,
+    deep_search: bool,
+) -> tuple[bytes, dict, str]:
+    async with semaphore:
+        try:
+            return await run_in_threadpool(
+                _analyze_and_tag, content, ext, stem, version_tag, filename_template, deep_search
+            )
+        except Exception as e:
+            # One file misbehaving shouldn't lose the rest of the batch --
+            # fall back to including it unprocessed, with the error noted.
+            return content, {"error": f"Processing failed: {type(e).__name__}: {e}"}, original_name
+        finally:
+            gc.collect()
+
+
 async def build_zip(
     files: list[UploadFile],
     filename_template: str | None = None,
@@ -194,42 +230,58 @@ async def build_zip(
     seen_names: set[str] = set()
     playlist_tracks: list[tuple[str, float | None]] = []
 
-    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
-        for file in files:
-            original_name = file.filename or "track"
+    # Phase 1: read every upload sequentially -- this is Starlette's async
+    # file I/O tied to each UploadFile, cheap, and not worth parallelizing.
+    reads: list[tuple[str, dict | None]] = []
+    for file in files:
+        original_name = file.filename or "track"
+        try:
+            stem, ext, version_tag = prepare_stem(original_name)
+            content = await file.read()
+            reads.append(
+                (original_name, {"stem": stem, "ext": ext, "version_tag": version_tag, "content": content})
+            )
+        except Exception as e:
+            reads.append((original_name, {"error": f"Failed to read file: {type(e).__name__}: {e}"}))
 
-            try:
-                stem, ext, version_tag = prepare_stem(original_name)
-                content = await file.read()
-            except Exception as e:
-                manifest[original_name] = {
-                    "error": f"Failed to read file: {type(e).__name__}: {e}"
-                }
+    # Phase 2: analyze the successfully-read files concurrently (bounded by
+    # PROCESS_CONCURRENCY) -- this is the expensive, genuinely independent
+    # part (decode + BPM/key detection + optional genre network lookup).
+    semaphore = asyncio.Semaphore(PROCESS_CONCURRENCY)
+    results = await asyncio.gather(
+        *(
+            _analyze_one(
+                semaphore,
+                data["content"],
+                data["ext"],
+                data["stem"],
+                data["version_tag"],
+                original_name,
+                filename_template,
+                deep_search,
+            )
+            for original_name, data in reads
+            if "error" not in data
+        )
+    )
+    results_iter = iter(results)
+
+    # Phase 3: write the zip/manifest/playlist sequentially, in original
+    # upload order, from the already-computed results -- dedup and the zip
+    # file itself stay single-threaded, so nothing here needs a lock.
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+        for original_name, data in reads:
+            if "error" in data:
+                manifest[original_name] = data
                 continue
 
-            try:
-                tagged_content, entry, resolved_name = await run_in_threadpool(
-                    _analyze_and_tag,
-                    content,
-                    ext,
-                    stem,
-                    version_tag,
-                    filename_template,
-                    deep_search,
-                )
-            except Exception as e:
-                # One file misbehaving shouldn't lose the rest of the batch --
-                # fall back to including it unprocessed, with the error noted.
-                tagged_content, resolved_name = content, original_name
-                entry = {"error": f"Processing failed: {type(e).__name__}: {e}"}
-
+            tagged_content, entry, resolved_name = next(results_iter)
             name = _dedupe(resolved_name, seen_names)
             zip_file.writestr(name, tagged_content)
 
             entry["original_filename"] = original_name
             manifest[name] = entry
             playlist_tracks.append((name, entry.get("duration_seconds")))
-            gc.collect()
 
         zip_file.writestr("crateprep-manifest.json", json.dumps(manifest, indent=2))
         zip_file.writestr("crateprep-playlist.m3u8", build_playlist(playlist_tracks))
