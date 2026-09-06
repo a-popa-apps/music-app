@@ -20,7 +20,7 @@ from .admin_store import (
 from .auth import delete_user, get_app, get_current_user
 from .billing import create_billing_portal_session, create_checkout_session, handle_webhook_event
 from .detect_bpm import warm_up
-from .process_audio import build_zip, validate_files
+from .process_audio import MAX_FILES_FREE, MAX_FILES_PRO, build_zip, validate_files
 from .profile_store import delete_settings, get_settings, save_settings
 from .rate_limit import enforce_rate_limit
 
@@ -253,19 +253,25 @@ def delete_account(request: Request):
 @app.post("/process")
 async def process(request: Request, files: list[UploadFile] = File(...)):
     enforce_rate_limit(request)
-    validate_files(files)
 
     filename_template = None
     deep_search = False
+    plan = "free"
     uid = get_current_user(request)
     if uid is not None:
         try:
             settings = get_settings(uid)
-            filename_template = settings.get("filename_template")
+            plan = settings.get("plan", "free")
             deep_search = bool(settings.get("discogs_deep_search"))
+            if plan == "pro":
+                filename_template = settings.get("filename_template")
         except Exception:
             filename_template = None  # don't let a profile lookup failure block processing
             deep_search = False
+            plan = "free"
+
+    max_files = MAX_FILES_PRO if plan == "pro" else MAX_FILES_FREE
+    validate_files(files, max_files=max_files)
 
     zip_bytes = await build_zip(files, filename_template=filename_template, deep_search=deep_search)
     return Response(

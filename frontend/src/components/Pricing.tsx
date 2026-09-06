@@ -4,8 +4,17 @@ import { GrainOverlay } from "./GrainOverlay"
 import { useAuth } from "../hooks/useAuth"
 import { createCheckoutSession } from "../services/api"
 
-const CHECKLIST = [
-  "Unlimited track batch processing",
+const FREE_INCLUDED = [
+  "Up to 25 tracks per batch",
+  "Standard BPM & key detection",
+  "Rekordbox-ready .m3u8 playlist export",
+]
+
+const FREE_EXCLUDED = ["Custom filename syntax templating", "Priority processing"]
+
+const PRO_CHECKLIST = [
+  "Everything in Free, plus:",
+  "Up to 50 tracks per batch",
   "FLAC, AIFF & WAV 24-bit precision",
   "Rekordbox, Serato & Traktor XML export",
   "Custom filename syntax templating",
@@ -21,7 +30,7 @@ export function Pricing() {
   const cadence =
     billing === "annual" ? "/ month (billed annually)" : "/ month"
 
-  async function handleGetStarted() {
+  async function handleGetPro() {
     if (!user || !isVerified) {
       navigate("/auth")
       return
@@ -42,12 +51,12 @@ export function Pricing() {
       className="relative w-full overflow-hidden bg-gradient-to-br from-[#141a44] to-[#07081a] px-4 py-16 lg:px-12"
     >
       <GrainOverlay />
-      <div className="relative z-10 mx-auto flex max-w-4xl flex-col items-center text-center">
+      <div className="relative z-10 mx-auto flex max-w-5xl flex-col items-center text-center">
         <span className="mb-1 font-mono text-meta-badge font-bold uppercase tracking-wider text-secondary-container">
           Fair Selector Pricing
         </span>
         <h2 className="mb-4 text-headline-xl tracking-tight text-white">
-          One plan. Infinite track crates.
+          Start free. Go Pro when you're ready.
         </h2>
         <p className="mb-8 max-w-xl text-body-lg text-white/70">
           No complicated tiers. Start free to prep this weekend's gig,
@@ -80,35 +89,21 @@ export function Pricing() {
           </button>
         </div>
 
-        <div className="w-full max-w-lg rounded-[calc(1rem+4px)] bg-gradient-to-r from-secondary-container to-[#ff3d78] p-[2px] shadow-[0_0_70px_rgba(255,107,53,0.3)]">
-          <div className="flex w-full flex-col rounded-2xl bg-[#12122a]/90 p-12 text-left backdrop-blur-md">
-            <div className="flex items-center justify-between gap-4 pb-4">
-              <div>
-                <h3 className="text-headline-lg font-bold text-white">
-                  Pro DJ Plan
-                </h3>
-                <span className="text-body-sm text-white/70">
-                  Complete autonomy for working selectors
-                </span>
-              </div>
-              {billing === "annual" && (
-                <span className="whitespace-nowrap rounded-full border border-secondary-container/40 bg-secondary-container/10 px-3 py-1 font-mono text-meta-badge font-bold uppercase tracking-wider text-secondary-container">
-                  Best Value &mdash; Save 38%
-                </span>
-              )}
-            </div>
+        <div className="grid w-full grid-cols-1 items-start gap-6 text-left md:grid-cols-2">
+          {/* Free plan */}
+          <div className="flex flex-col rounded-2xl border border-white/10 bg-white/5 p-10 backdrop-blur-md">
+            <h3 className="text-headline-lg font-bold text-white">Free</h3>
+            <span className="text-body-sm text-white/70">
+              Perfect for one-off gig prep
+            </span>
 
             <div className="flex items-baseline gap-1 py-6">
-              <span className="text-display-hero tracking-tight text-white">
-                ${price}
-              </span>
-              <span className="text-body-md text-white/70">
-                {cadence}
-              </span>
+              <span className="text-display-hero tracking-tight text-white">$0</span>
+              <span className="text-body-md text-white/70">/ forever</span>
             </div>
 
-            <div className="mb-8 flex flex-col gap-2 py-4">
-              {CHECKLIST.map((item) => (
+            <div className="mb-8 flex flex-col gap-2">
+              {FREE_INCLUDED.map((item) => (
                 <div key={item} className="flex items-center gap-2">
                   <span className="material-symbols-outlined text-[20px] text-secondary-container">
                     check_circle
@@ -116,18 +111,79 @@ export function Pricing() {
                   <span className="text-body-md text-white">{item}</span>
                 </div>
               ))}
+              {FREE_EXCLUDED.map((item) => (
+                <div key={item} className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[20px] text-white/30">
+                    cancel
+                  </span>
+                  <span className="text-body-md text-white/40 line-through">{item}</span>
+                </div>
+              ))}
             </div>
 
             <button
-              onClick={handleGetStarted}
-              disabled={checkoutLoading}
-              className="w-full rounded-full bg-gradient-to-r from-secondary-container to-[#ff3d78] px-6 py-4 text-center text-headline-sm font-semibold text-on-primary shadow-[0_8px_30px_rgba(255,107,53,0.45)] transition-transform hover:scale-[1.02] active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+              onClick={() => navigate("/auth")}
+              className="mt-auto w-full rounded-full border border-white/20 bg-white/10 px-6 py-4 text-center text-headline-sm font-semibold text-white transition-colors hover:bg-white/15"
             >
-              {checkoutLoading ? "Loading..." : "Get Started Free (First 50 Tracks On Us)"}
+              Get Started Free
             </button>
             <span className="mt-2 text-center font-mono text-meta-numeric text-white/60">
-              No credit card required &bull; Instant activation
+              No credit card required
             </span>
+          </div>
+
+          {/* Pro plan */}
+          <div className="rounded-[calc(1rem+4px)] bg-gradient-to-r from-secondary-container to-[#ff3d78] p-[2px] shadow-[0_0_70px_rgba(255,107,53,0.3)]">
+            <div className="flex h-full w-full flex-col rounded-2xl bg-[#12122a]/90 p-10 backdrop-blur-md">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <h3 className="text-headline-lg font-bold text-white">CratePrep Pro</h3>
+                  <span className="text-body-sm text-white/70">
+                    Complete autonomy for working selectors
+                  </span>
+                </div>
+                {billing === "annual" && (
+                  <span className="whitespace-nowrap rounded-full border border-secondary-container/40 bg-secondary-container/10 px-3 py-1 font-mono text-meta-badge font-bold uppercase tracking-wider text-secondary-container">
+                    Best Value &mdash; Save 38%
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-baseline gap-1 py-6">
+                <span className="text-display-hero tracking-tight text-white">
+                  ${price}
+                </span>
+                <span className="text-body-md text-white/70">{cadence}</span>
+              </div>
+
+              <div className="mb-8 flex flex-col gap-2">
+                {PRO_CHECKLIST.map((item, i) =>
+                  i === 0 ? (
+                    <span key={item} className="text-body-sm font-semibold text-white/70">
+                      {item}
+                    </span>
+                  ) : (
+                    <div key={item} className="flex items-center gap-2">
+                      <span className="material-symbols-outlined text-[20px] text-secondary-container">
+                        check_circle
+                      </span>
+                      <span className="text-body-md text-white">{item}</span>
+                    </div>
+                  )
+                )}
+              </div>
+
+              <button
+                onClick={handleGetPro}
+                disabled={checkoutLoading}
+                className="mt-auto w-full rounded-full bg-gradient-to-r from-secondary-container to-[#ff3d78] px-6 py-4 text-center text-headline-sm font-semibold text-on-primary shadow-[0_8px_30px_rgba(255,107,53,0.45)] transition-transform hover:scale-[1.02] active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {checkoutLoading ? "Loading..." : "Get CratePrep Pro"}
+              </button>
+              <span className="mt-2 text-center font-mono text-meta-numeric text-white/60">
+                7-day free trial &bull; Cancel anytime
+              </span>
+            </div>
           </div>
         </div>
       </div>

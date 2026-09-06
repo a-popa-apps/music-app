@@ -40,6 +40,7 @@ export function ProfileFieldsForm({
   onChange: <K extends keyof ProfileSettings>(key: K, value: ProfileSettings[K]) => void
   email?: string
 }) {
+  const isPro = settings.plan === "pro"
   const [showDiscogsHelp, setShowDiscogsHelp] = useState(false)
   const discogsHelpRef = useRef<HTMLButtonElement>(null)
   useClickOutside(discogsHelpRef, () => setShowDiscogsHelp(false), showDiscogsHelp)
@@ -220,14 +221,22 @@ export function ProfileFieldsForm({
 
       <Section title="Output Settings">
         <label className="flex flex-col gap-1">
-          <span className="text-body-sm font-semibold text-on-surface">Filename template</span>
+          <span className="flex items-center gap-1.5 text-body-sm font-semibold text-on-surface">
+            Filename template
+            {!isPro && (
+              <span className="rounded-full bg-secondary-container/15 px-2 py-px font-mono text-[10px] font-bold uppercase tracking-wider text-secondary-container">
+                Pro
+              </span>
+            )}
+          </span>
           <input
             ref={templateInputRef}
             type="text"
             placeholder="{artist} - {title} [{bpm} - {key}]"
             value={settings.filename_template ?? ""}
             onChange={(e) => onChange("filename_template", e.target.value)}
-            className="rounded border border-outline-variant bg-surface-container-lowest px-4 py-3 font-mono text-body-md text-on-surface outline-none focus:border-secondary-container"
+            disabled={!isPro}
+            className="rounded border border-outline-variant bg-surface-container-lowest px-4 py-3 font-mono text-body-md text-on-surface outline-none focus:border-secondary-container disabled:cursor-not-allowed disabled:opacity-50"
           />
           <div className="mt-2 flex flex-wrap items-center gap-1.5">
             <span className="text-body-sm text-on-surface-variant">Click to insert:</span>
@@ -236,12 +245,22 @@ export function ProfileFieldsForm({
                 type="button"
                 key={tag}
                 onClick={() => insertPlaceholder(tag)}
-                className="rounded-full border border-outline-variant px-2.5 py-0.5 font-mono text-body-sm text-on-surface transition-colors hover:border-secondary-container hover:bg-surface-container-low"
+                disabled={!isPro}
+                className="rounded-full border border-outline-variant px-2.5 py-0.5 font-mono text-body-sm text-on-surface transition-colors hover:border-secondary-container hover:bg-surface-container-low disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-outline-variant disabled:hover:bg-transparent"
               >
                 {`{${tag}}`}
               </button>
             ))}
           </div>
+          {!isPro && (
+            <span className="text-body-sm text-secondary-container">
+              Custom filename templates are a CratePrep Pro feature.{" "}
+              <a href="/#pricing" className="underline">
+                Upgrade to unlock
+              </a>
+              .
+            </span>
+          )}
           <span className="text-body-sm text-on-surface-variant">
             Leave blank for the default "Artist - Title (Remix)" format.
           </span>

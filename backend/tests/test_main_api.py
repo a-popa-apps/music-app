@@ -1,10 +1,14 @@
+from types import SimpleNamespace
+
 import pytest
 
 pytest.importorskip("essentia")
 
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
 from app import main
+from app.process_audio import MAX_FILES_FREE, MAX_FILES_PRO, validate_files
 
 
 @pytest.fixture
@@ -60,3 +64,31 @@ def test_process_rejects_unsupported_extension(client):
         files=[("files", ("track.txt", b"not audio", "text/plain"))],
     )
     assert res.status_code == 400
+
+
+def _fake_file(name="track.mp3", size=1000):
+    return SimpleNamespace(filename=name, size=size)
+
+
+def test_validate_files_free_tier_rejects_over_25():
+    files = [_fake_file(f"track{i}.mp3") for i in range(26)]
+    with pytest.raises(HTTPException) as exc_info:
+        validate_files(files, max_files=MAX_FILES_FREE)
+    assert exc_info.value.status_code == 400
+
+
+def test_validate_files_free_tier_allows_up_to_25():
+    files = [_fake_file(f"track{i}.mp3") for i in range(25)]
+    validate_files(files, max_files=MAX_FILES_FREE)
+
+
+def test_validate_files_pro_tier_allows_more_than_free_limit():
+    files = [_fake_file(f"track{i}.mp3") for i in range(40)]
+    validate_files(files, max_files=MAX_FILES_PRO)
+
+
+def test_validate_files_pro_tier_rejects_over_50():
+    files = [_fake_file(f"track{i}.mp3") for i in range(51)]
+    with pytest.raises(HTTPException) as exc_info:
+        validate_files(files, max_files=MAX_FILES_PRO)
+    assert exc_info.value.status_code == 400
