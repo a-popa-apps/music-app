@@ -120,6 +120,14 @@ def guess_split(stem: str) -> tuple[str, str] | None:
     return None
 
 
+def _format_duration(seconds: float | None) -> str:
+    if seconds is None:
+        return ""
+    total = int(round(seconds))
+    minutes, secs = divmod(total, 60)
+    return f"{minutes}:{secs:02d}"
+
+
 def apply_template(
     template: str,
     *,
@@ -128,17 +136,19 @@ def apply_template(
     bpm: float | None,
     key: str | None,
     genre: str | None,
+    duration: float | None = None,
 ) -> str:
-    """Substitutes {artist} {title} {bpm} {key} {genre}. A known placeholder
-    whose value wasn't detected renders as an empty string; an unrecognized
-    placeholder (typo) is left literally in place, matching the frontend
-    preview's behavior so what the user saw is what they get."""
+    """Substitutes {artist} {title} {bpm} {key} {genre} {duration}. A known
+    placeholder whose value wasn't detected renders as an empty string; an
+    unrecognized placeholder (typo) is left literally in place, matching the
+    frontend preview's behavior so what the user saw is what they get."""
     values = {
         "artist": artist,
         "title": title,
         "bpm": str(round(bpm)) if bpm is not None else "",
         "key": key or "",
         "genre": genre or "",
+        "duration": _format_duration(duration),
     }
 
     def replace(match: re.Match) -> str:
@@ -159,10 +169,17 @@ def compose_name(
     bpm: float | None = None,
     key: str | None = None,
     genre: str | None = None,
+    duration: float | None = None,
 ) -> str:
     if filename_template and artist and title:
         result = apply_template(
-            filename_template, artist=artist, title=title, bpm=bpm, key=key, genre=genre
+            filename_template,
+            artist=artist,
+            title=title,
+            bpm=bpm,
+            key=key,
+            genre=genre,
+            duration=duration,
         )
     elif artist and title:
         result = f"{artist} - {title}"

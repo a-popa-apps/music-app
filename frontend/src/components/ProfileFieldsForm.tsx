@@ -1,7 +1,7 @@
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { COUNTRIES } from "../data/countries"
 import type { ProfileSettings } from "../services/api"
-import { previewFilename, unknownPlaceholders } from "../utils/filenameTemplate"
+import { KNOWN_PLACEHOLDERS, previewFilename, unknownPlaceholders } from "../utils/filenameTemplate"
 
 export const ROLES: { value: string; label: string }[] = [
   { value: "dj", label: "DJ" },
@@ -40,6 +40,29 @@ export function ProfileFieldsForm({
   email?: string
 }) {
   const [showDiscogsHelp, setShowDiscogsHelp] = useState(false)
+  const templateInputRef = useRef<HTMLInputElement>(null)
+
+  function insertPlaceholder(tag: string) {
+    const current = settings.filename_template ?? ""
+    const input = templateInputRef.current
+    const insertion = `{${tag}}`
+
+    if (!input) {
+      onChange("filename_template", current + insertion)
+      return
+    }
+
+    const start = input.selectionStart ?? current.length
+    const end = input.selectionEnd ?? current.length
+    const next = current.slice(0, start) + insertion + current.slice(end)
+    onChange("filename_template", next)
+
+    requestAnimationFrame(() => {
+      const cursor = start + insertion.length
+      input.focus()
+      input.setSelectionRange(cursor, cursor)
+    })
+  }
 
   function toggleGenre(genre: string) {
     const current = settings.primary_genres
@@ -161,15 +184,28 @@ export function ProfileFieldsForm({
         <label className="flex flex-col gap-1">
           <span className="text-body-sm font-semibold text-on-surface">Filename template</span>
           <input
+            ref={templateInputRef}
             type="text"
             placeholder="{artist} - {title} [{bpm} - {key}]"
             value={settings.filename_template ?? ""}
             onChange={(e) => onChange("filename_template", e.target.value)}
             className="rounded border border-outline-variant bg-surface-container-lowest px-4 py-3 font-mono text-body-md text-on-surface outline-none focus:border-secondary-container"
           />
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-body-sm text-on-surface-variant">Click to insert:</span>
+            {KNOWN_PLACEHOLDERS.map((tag) => (
+              <button
+                type="button"
+                key={tag}
+                onClick={() => insertPlaceholder(tag)}
+                className="rounded-full border border-outline-variant px-2.5 py-0.5 font-mono text-body-sm text-on-surface transition-colors hover:border-secondary-container hover:bg-surface-container-low"
+              >
+                {`{${tag}}`}
+              </button>
+            ))}
+          </div>
           <span className="text-body-sm text-on-surface-variant">
-            Placeholders: {"{artist} {title} {bpm} {key} {genre}"}. Leave blank for the
-            default "Artist - Title (Remix)" format.
+            Leave blank for the default "Artist - Title (Remix)" format.
           </span>
           <span className="font-mono text-body-sm text-on-surface-variant">
             Preview: {previewFilename(settings.filename_template ?? "")}

@@ -157,6 +157,7 @@ def _analyze_and_tag(
         bpm=bpm,
         key=camelot,
         genre=genre,
+        duration=entry["duration_seconds"],
     )
 
     try:

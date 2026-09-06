@@ -18,7 +18,9 @@ describe("extractPlaceholders", () => {
 
 describe("unknownPlaceholders", () => {
   it("returns nothing when all placeholders are known", () => {
-    expect(unknownPlaceholders("{artist} - {title} [{bpm} - {key} - {genre}]")).toEqual([])
+    expect(
+      unknownPlaceholders("{artist} - {title} [{bpm} - {key} - {genre} - {duration}]")
+    ).toEqual([])
   })
 
   it("flags a typo'd placeholder", () => {
@@ -44,5 +46,11 @@ describe("previewFilename", () => {
 
   it("leaves an unknown placeholder as-is so a typo is visible", () => {
     expect(previewFilename("{artst} - {title}")).toBe("{artst} - One More Time.mp3")
+  })
+
+  it("substitutes duration", () => {
+    expect(previewFilename("{artist} - {title} ({duration})")).toBe(
+      "Daft Punk - One More Time (3:44).mp3"
+    )
   })
 })

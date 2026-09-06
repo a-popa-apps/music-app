@@ -103,6 +103,30 @@ class TestApplyTemplate:
         )
         assert result == "Artist - Title [128 - 8A]"
 
+    def test_substitutes_duration(self):
+        result = apply_template(
+            "{artist} - {title} ({duration})",
+            artist="Artist",
+            title="Title",
+            bpm=None,
+            key=None,
+            genre=None,
+            duration=402.7,
+        )
+        assert result == "Artist - Title (6:43)"
+
+    def test_duration_seconds_zero_padded(self):
+        result = apply_template(
+            "{duration}", artist="A", title="T", bpm=None, key=None, genre=None, duration=185
+        )
+        assert result == "3:05"
+
+    def test_missing_duration_renders_empty(self):
+        result = apply_template(
+            "{duration}", artist="A", title="T", bpm=None, key=None, genre=None
+        )
+        assert result == ""
+
     def test_missing_values_render_empty(self):
         result = apply_template(
             "{artist} - {title} [{bpm}]", artist="Artist", title="Title", bpm=None, key=None, genre=None

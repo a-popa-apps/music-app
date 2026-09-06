@@ -1,4 +1,4 @@
-export const KNOWN_PLACEHOLDERS = ["artist", "title", "bpm", "key", "genre"] as const
+export const KNOWN_PLACEHOLDERS = ["artist", "title", "bpm", "key", "genre", "duration"] as const
 
 const SAMPLE_VALUES: Record<string, string> = {
   artist: "Daft Punk",
@@ -6,6 +6,7 @@ const SAMPLE_VALUES: Record<string, string> = {
   bpm: "128",
   key: "8A",
   genre: "House",
+  duration: "3:44",
 }
 
 const PLACEHOLDER_PATTERN = /\{(\w+)\}/g
