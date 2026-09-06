@@ -50,6 +50,16 @@ export function AccountMenu({ profile }: { profile: ProfileSettings | null }) {
               </div>
             )}
             <div className="text-body-sm text-inverse-on-surface/70">{user.email}</div>
+            {profile?.plan === "free" && (
+              <a
+                href="/#pricing"
+                onClick={() => setOpen(false)}
+                className="mt-1 inline-flex w-fit items-center gap-1 rounded-full bg-gradient-to-r from-secondary-container to-[#ff3d78] px-3 py-1.5 text-body-sm font-semibold text-on-primary shadow-[0_4px_16px_rgba(255,61,120,0.4)] transition-transform hover:scale-[1.03] active:scale-95"
+              >
+                <span className="material-symbols-outlined text-[16px]">bolt</span>
+                Upgrade
+              </a>
+            )}
           </div>
           {isAdmin && (
             <Link

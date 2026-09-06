@@ -96,20 +96,9 @@ export function Header() {
               }`}
             />
           ) : loggedIn ? (
-            <>
-              {profile?.plan === "free" && (
-                <a
-                  href="/#pricing"
-                  className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-secondary-container to-[#ff3d78] px-3 py-1.5 text-body-sm font-semibold text-on-primary shadow-[0_4px_16px_rgba(255,61,120,0.4)] transition-transform hover:scale-[1.03] active:scale-95 sm:px-4"
-                >
-                  <span className="material-symbols-outlined text-[16px]">bolt</span>
-                  Upgrade
-                </a>
-              )}
-              <div className="hidden md:block">
-                <AccountMenu profile={profile} />
-              </div>
-            </>
+            <div className="hidden md:block">
+              <AccountMenu profile={profile} />
+            </div>
           ) : (
             <Link
               to="/auth"
@@ -176,6 +165,16 @@ export function Header() {
               <span className={`text-body-sm ${overHero ? "text-white/70" : "text-on-surface-variant"}`}>
                 {user.email}
               </span>
+              {profile?.plan === "free" && (
+                <a
+                  href="/#pricing"
+                  onClick={() => setMenuOpen(false)}
+                  className="mt-2 inline-flex w-fit items-center gap-1 rounded-full bg-gradient-to-r from-secondary-container to-[#ff3d78] px-3 py-1.5 text-body-sm font-semibold text-on-primary shadow-[0_4px_16px_rgba(255,61,120,0.4)] transition-transform hover:scale-[1.03] active:scale-95"
+                >
+                  <span className="material-symbols-outlined text-[16px]">bolt</span>
+                  Upgrade
+                </a>
+              )}
               {isAdmin && (
                 <Link
                   to="/admin"
