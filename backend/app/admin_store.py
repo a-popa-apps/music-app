@@ -7,6 +7,7 @@ from firebase_admin import auth as firebase_auth
 from firebase_admin import firestore
 
 from .auth import get_app
+from .billing import get_stripe
 from .profile_store import _users_collection, delete_settings, get_settings
 
 VALID_PLANS = {"free", "pro"}
@@ -97,7 +98,20 @@ def create_discount_code(percent_off: int, uid: str, max_uses: int = 1) -> dict:
     if max_uses < 1:
         raise ValueError("max_uses must be at least 1")
 
+    client = get_stripe()
+    if client is None:
+        raise RuntimeError("Stripe is not configured")
+
     code = _generate_code(percent_off)
+
+    # "once" -- applies to the first invoice only, then the subscription
+    # reverts to full price. Not "forever", which would also discount every
+    # future renewal (a meaningful revenue difference, especially at 100%).
+    coupon = client.Coupon.create(percent_off=percent_off, duration="once")
+    promotion_code = client.PromotionCode.create(
+        coupon=coupon.id, code=code, max_redemptions=max_uses
+    )
+
     ref = _discount_codes_collection().document(code)
     ref.set(
         {
@@ -108,6 +122,8 @@ def create_discount_code(percent_off: int, uid: str, max_uses: int = 1) -> dict:
             "used_count": 0,
             "created_by": uid,
             "created_at": firestore.SERVER_TIMESTAMP,
+            "stripe_coupon_id": coupon.id,
+            "stripe_promotion_code_id": promotion_code.id,
         }
     )
     return ref.get().to_dict()
@@ -119,7 +135,17 @@ def list_discount_codes() -> list[dict]:
 
 def set_discount_code_active(code: str, active: bool) -> dict:
     ref = _discount_codes_collection().document(code)
-    if not ref.get().exists:
+    doc = ref.get()
+    if not doc.exists:
         raise ValueError(f"No such discount code: {code!r}")
+
+    # Codes created before Stripe sync was added have no promotion code id --
+    # update Firestore only rather than crashing on a legacy record.
+    promotion_code_id = doc.to_dict().get("stripe_promotion_code_id")
+    if promotion_code_id:
+        client = get_stripe()
+        if client is not None:
+            client.PromotionCode.modify(promotion_code_id, active=bool(active))
+
     ref.set({"active": bool(active)}, merge=True)
     return ref.get().to_dict()

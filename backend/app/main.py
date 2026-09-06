@@ -170,6 +170,8 @@ def admin_create_discount_code(body: DiscountCodeCreate, request: Request):
         return create_discount_code(body.percent_off, uid, max_uses=body.max_uses)
     except ValueError as e:
         raise HTTPException(400, str(e))
+    except RuntimeError as e:
+        raise HTTPException(503, str(e))
 
 
 @app.patch("/admin/discount-codes/{code}")
