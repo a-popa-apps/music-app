@@ -191,7 +191,7 @@ export function ProfileFieldsForm({
             onChange={(e) => onChange("filename_template", e.target.value)}
             className="rounded border border-outline-variant bg-surface-container-lowest px-4 py-3 font-mono text-body-md text-on-surface outline-none focus:border-secondary-container"
           />
-          <div className="flex flex-wrap items-center gap-1.5">
+          <div className="mt-2 flex flex-wrap items-center gap-1.5">
             <span className="text-body-sm text-on-surface-variant">Click to insert:</span>
             {KNOWN_PLACEHOLDERS.map((tag) => (
               <button
