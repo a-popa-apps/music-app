@@ -59,8 +59,8 @@ export function Pricing() {
           Free for one-off gigs. Pro for the grind.
         </h2>
         <p className="mb-12 max-w-xl text-body-lg text-white/70">
-          No complicated tiers. Start free to prep this weekend's gig,
-          upgrade when your download folders get wild.
+          Start free to prep this weekend's gig, upgrade when your download
+          folders get wild.
         </p>
 
         <div className="grid w-full grid-cols-1 items-stretch gap-6 text-left md:grid-cols-2">
