@@ -19,6 +19,7 @@ const PRO_CHECKLIST = [
   "Rekordbox, Serato & Traktor XML export",
   "Custom filename syntax templating",
   "Priority harmonic key analyzer",
+  "Enhanced BPM detection",
 ]
 
 export function Pricing() {
