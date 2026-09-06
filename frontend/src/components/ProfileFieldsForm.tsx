@@ -1,5 +1,6 @@
 import { useRef, useState } from "react"
 import { COUNTRIES } from "../data/countries"
+import { useClickOutside } from "../hooks/useClickOutside"
 import type { ProfileSettings } from "../services/api"
 import { KNOWN_PLACEHOLDERS, previewFilename, unknownPlaceholders } from "../utils/filenameTemplate"
 
@@ -40,6 +41,8 @@ export function ProfileFieldsForm({
   email?: string
 }) {
   const [showDiscogsHelp, setShowDiscogsHelp] = useState(false)
+  const discogsHelpRef = useRef<HTMLButtonElement>(null)
+  useClickOutside(discogsHelpRef, () => setShowDiscogsHelp(false), showDiscogsHelp)
   const templateInputRef = useRef<HTMLInputElement>(null)
 
   function insertPlaceholder(tag: string) {
@@ -230,6 +233,7 @@ export function ProfileFieldsForm({
           <div className="flex items-center gap-2">
             <span className="text-body-md text-on-surface">Deep catalog search</span>
             <button
+              ref={discogsHelpRef}
               type="button"
               onClick={() => setShowDiscogsHelp((v) => !v)}
               aria-label="What is deep catalog search?"
