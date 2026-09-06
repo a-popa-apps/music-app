@@ -25,6 +25,8 @@ export interface ProfileSettings {
   stripe_customer_id: string | null
   stripe_subscription_id: string | null
   subscription_status: string | null
+  tracks_processed_this_period: number
+  usage_period_start: string | null
 }
 
 export async function getProfile(idToken: string): Promise<ProfileSettings> {
@@ -227,6 +229,14 @@ export async function setDiscountCodeActive(
   return res.json()
 }
 
+export class ApiError extends Error {
+  status: number
+  constructor(status: number, message: string) {
+    super(message)
+    this.status = status
+  }
+}
+
 export async function uploadAndProcess(files: File[], idToken?: string): Promise<Blob> {
   const formData = new FormData()
   files.forEach((file) => formData.append("files", file))
@@ -238,7 +248,14 @@ export async function uploadAndProcess(files: File[], idToken?: string): Promise
   })
 
   if (!response.ok) {
-    throw new Error(`Processing failed: ${response.status}`)
+    let message = `Processing failed: ${response.status}`
+    try {
+      const body = await response.json()
+      if (typeof body?.detail === "string") message = body.detail
+    } catch {
+      // non-JSON error body, fall back to the generic message
+    }
+    throw new ApiError(response.status, message)
   }
 
   return response.blob()

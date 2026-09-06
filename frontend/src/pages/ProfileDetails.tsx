@@ -234,9 +234,14 @@ export function ProfileDetails() {
                     </span>
                   )
                 ) : (
-                  <span className="text-body-sm text-on-surface-variant">
-                    Upgrade for unlimited processing and priority detection.
-                  </span>
+                  <>
+                    <span className="text-body-sm text-on-surface-variant">
+                      {settings.tracks_processed_this_period} / 25 tracks used this month
+                    </span>
+                    <span className="text-body-sm text-on-surface-variant">
+                      Upgrade for more tracks and priority detection.
+                    </span>
+                  </>
                 )}
               </div>
               <button

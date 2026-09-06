@@ -1,9 +1,10 @@
 import { unzipSync } from "fflate"
 import { useCallback, useState } from "react"
 import { useDropzone } from "react-dropzone"
+import { useNavigate } from "react-router-dom"
 import heroBg from "../assets/hero-bg.jpg"
 import { useAuth } from "../hooks/useAuth"
-import { uploadAndProcess } from "../services/api"
+import { ApiError, uploadAndProcess } from "../services/api"
 
 interface ManifestEntry {
   bpm?: number | null
@@ -23,7 +24,7 @@ interface ProcessedTrack {
   failed: boolean
 }
 
-type Phase = "idle" | "processing" | "done" | "error"
+type Phase = "idle" | "auth-required" | "processing" | "done" | "error"
 
 async function parseManifest(blob: Blob): Promise<ProcessedTrack[]> {
   const bytes = new Uint8Array(await blob.arrayBuffer())
@@ -47,16 +48,26 @@ async function parseManifest(blob: Blob): Promise<ProcessedTrack[]> {
 
 export function Hero() {
   const { user, isVerified } = useAuth()
+  const navigate = useNavigate()
   const [phase, setPhase] = useState<Phase>("idle")
   const [fileCount, setFileCount] = useState(0)
   const [results, setResults] = useState<ProcessedTrack[]>([])
   const [zipBlob, setZipBlob] = useState<Blob | null>(null)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
-  const onDrop = useCallback((acceptedFiles: File[]) => {
-    if (acceptedFiles.length === 0) return
-    void processFiles(acceptedFiles)
+  const onDrop = useCallback(
+    (acceptedFiles: File[]) => {
+      if (acceptedFiles.length === 0) return
+      if (!user || !isVerified) {
+        setFileCount(acceptedFiles.length)
+        setPhase("auth-required")
+        return
+      }
+      void processFiles(acceptedFiles)
+    },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+    [user, isVerified]
+  )
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -70,13 +81,18 @@ export function Hero() {
     setFileCount(files.length)
     setPhase("processing")
     try {
-      const idToken = user && isVerified ? await user.getIdToken() : undefined
+      const idToken = await user!.getIdToken()
       const blob = await uploadAndProcess(files, idToken)
       const parsed = await parseManifest(blob)
       setZipBlob(blob)
       setResults(parsed)
       setPhase("done")
-    } catch {
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 402) {
+        setErrorMessage(err.message)
+      } else {
+        setErrorMessage(null)
+      }
       setPhase("error")
     }
   }
@@ -96,6 +112,7 @@ export function Hero() {
     setFileCount(0)
     setResults([])
     setZipBlob(null)
+    setErrorMessage(null)
   }
 
   return (
@@ -167,19 +184,65 @@ export function Hero() {
             </div>
           )}
 
+          {phase === "auth-required" && (
+            <div className="flex w-full flex-col items-center gap-4 rounded border-2 border-white/20 bg-white/10 p-12 text-center backdrop-blur-md">
+              <span className="material-symbols-outlined text-[36px] text-secondary-container">
+                lock
+              </span>
+              <h3 className="text-headline-sm text-white">
+                Sign in to process {fileCount} file{fileCount === 1 ? "" : "s"}
+              </h3>
+              <p className="text-body-md text-white/70">
+                Creating a free account takes a few seconds and unlocks 25 tracks
+                a month, no credit card required.
+              </p>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => navigate("/auth")}
+                  className="rounded-full bg-secondary-container px-6 py-2 text-body-sm font-semibold text-on-primary transition-opacity hover:opacity-90"
+                >
+                  Sign in / Sign up
+                </button>
+                <button
+                  onClick={reset}
+                  className="text-body-sm font-semibold text-white/70 underline hover:text-white"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
           {phase === "error" && (
             <div className="flex w-full flex-col items-center gap-4 rounded border-2 border-red-400/30 bg-red-500/10 p-12 text-center backdrop-blur-md">
               <span className="material-symbols-outlined text-[36px] text-red-300">error</span>
-              <h3 className="text-headline-sm text-white">Processing failed</h3>
+              <h3 className="text-headline-sm text-white">
+                {errorMessage ? "Monthly limit reached" : "Processing failed"}
+              </h3>
               <p className="text-body-md text-white/70">
-                The backend didn't respond. Check that it's awake and try again.
+                {errorMessage ??
+                  "The backend didn't respond. Check that it's awake and try again."}
               </p>
-              <button
-                onClick={reset}
-                className="rounded-full bg-secondary-container px-6 py-2 text-body-sm font-semibold text-on-primary transition-opacity hover:opacity-90"
-              >
-                Try again
-              </button>
+              <div className="flex items-center gap-3">
+                {errorMessage && (
+                  <button
+                    onClick={() => navigate("/#pricing")}
+                    className="rounded-full bg-secondary-container px-6 py-2 text-body-sm font-semibold text-on-primary transition-opacity hover:opacity-90"
+                  >
+                    Upgrade to Pro
+                  </button>
+                )}
+                <button
+                  onClick={reset}
+                  className={
+                    errorMessage
+                      ? "text-body-sm font-semibold text-white/70 underline hover:text-white"
+                      : "rounded-full bg-secondary-container px-6 py-2 text-body-sm font-semibold text-on-primary transition-opacity hover:opacity-90"
+                  }
+                >
+                  Try again
+                </button>
+              </div>
             </div>
           )}
 

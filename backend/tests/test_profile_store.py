@@ -62,3 +62,40 @@ def test_delete_settings_removes_doc(fake_collection):
     profile_store.save_settings("uid-1", {"name": "Andrei"})
     profile_store.delete_settings("uid-1")
     assert profile_store.get_settings("uid-1") == profile_store.DEFAULT_SETTINGS
+
+
+def test_check_and_reserve_usage_pro_is_unlimited(fake_collection):
+    profile_store.check_and_reserve_usage("uid-1", 999, "pro")
+    # no-op: doesn't even create a doc
+    assert profile_store.get_settings("uid-1") == profile_store.DEFAULT_SETTINGS
+
+
+def test_check_and_reserve_usage_free_tracks_usage(fake_collection):
+    profile_store.check_and_reserve_usage("uid-1", 10, "free")
+    settings = profile_store.get_settings("uid-1")
+    assert settings["tracks_processed_this_period"] == 10
+    assert settings["usage_period_start"] == profile_store._current_period_key()
+
+    profile_store.check_and_reserve_usage("uid-1", 10, "free")
+    assert profile_store.get_settings("uid-1")["tracks_processed_this_period"] == 20
+
+
+def test_check_and_reserve_usage_free_rejects_over_limit(fake_collection):
+    profile_store.check_and_reserve_usage("uid-1", 25, "free")
+    with pytest.raises(ValueError):
+        profile_store.check_and_reserve_usage("uid-1", 1, "free")
+    # rejection doesn't mutate the stored count
+    assert profile_store.get_settings("uid-1")["tracks_processed_this_period"] == 25
+
+
+def test_check_and_reserve_usage_resets_on_period_rollover(fake_collection):
+    profile_store.check_and_reserve_usage("uid-1", 25, "free")
+    with pytest.raises(ValueError):
+        profile_store.check_and_reserve_usage("uid-1", 1, "free")
+
+    fake_collection.document("uid-1").set({"usage_period_start": "2000-01"}, merge=True)
+    # a new period: the old count no longer applies
+    profile_store.check_and_reserve_usage("uid-1", 5, "free")
+    settings = profile_store.get_settings("uid-1")
+    assert settings["tracks_processed_this_period"] == 5
+    assert settings["usage_period_start"] == profile_store._current_period_key()

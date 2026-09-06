@@ -58,7 +58,27 @@ def test_process_requires_files_field(client):
     assert res.status_code == 422
 
 
-def test_process_rejects_unsupported_extension(client):
+def test_process_requires_auth(client):
+    res = client.post(
+        "/process",
+        files=[("files", ("track.mp3", b"fake audio", "audio/mpeg"))],
+    )
+    assert res.status_code == 401
+
+
+def test_process_rejects_unsupported_extension(client, monkeypatch):
+    monkeypatch.setattr(main, "get_current_user", lambda request: "uid-1")
+    monkeypatch.setattr(
+        main,
+        "get_settings",
+        lambda uid: {
+            "plan": "free",
+            "discogs_deep_search": False,
+            "filename_template": None,
+            "tracks_processed_this_period": 0,
+            "usage_period_start": None,
+        },
+    )
     res = client.post(
         "/process",
         files=[("files", ("track.txt", b"not audio", "text/plain"))],
