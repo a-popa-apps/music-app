@@ -34,10 +34,12 @@ export function HowItWorks() {
       className="relative w-full overflow-hidden bg-black px-4 py-16 lg:px-12"
       style={{ backgroundImage: `url(${bgSite})`, backgroundRepeat: "repeat" }}
     >
-      {/* Fades the tiled texture down into solid black by the bottom of this
-          section -- everything after is flat black, so the fade only needs
-          to happen once, here, rather than at every section boundary. */}
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black" />
+      {/* Fades in from black at the top (matching Hero's own solid-black
+          bottom edge, so there's no hard seam where the two meet) and back
+          out to black at the bottom (matching Features' flat black, so nothing
+          downstream needs its own fade). The texture is only ever visible in
+          the middle of this one section. */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black via-transparent to-black" />
       <div className="relative z-10 mx-auto flex max-w-7xl flex-col gap-12">
         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
           <div>
