@@ -7,6 +7,7 @@ import { createCheckoutSession } from "../services/api"
 const FREE_INCLUDED = [
   "25 tracks per month",
   "Standard BPM & key detection",
+  "FLAC, AIFF & WAV 24-bit precision",
   "Rekordbox-ready .m3u8 playlist export",
 ]
 
@@ -15,7 +16,6 @@ const FREE_EXCLUDED = ["Custom filename syntax templating", "Priority processing
 const PRO_CHECKLIST = [
   "Everything in Free, plus:",
   "Up to 50 tracks per batch",
-  "FLAC, AIFF & WAV 24-bit precision",
   "Rekordbox, Serato & Traktor XML export",
   "Custom filename syntax templating",
   "Priority harmonic key analyzer",
@@ -109,18 +109,11 @@ export function Pricing() {
           {/* Pro plan */}
           <div className="h-full rounded-[calc(1rem+4px)] bg-gradient-to-r from-secondary-container to-[#ff3d78] p-[2px] shadow-[0_0_70px_rgba(255,107,53,0.3)]">
             <div className="flex h-full w-full flex-col rounded-2xl bg-[#12122a]/90 p-10 backdrop-blur-md">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <h3 className="text-headline-lg font-bold text-white">CratePrep Pro</h3>
-                  <span className="text-body-sm text-white/70">
-                    Complete autonomy for working selectors
-                  </span>
-                </div>
-                {billing === "annual" && (
-                  <span className="whitespace-nowrap rounded-full border border-secondary-container/40 bg-secondary-container/10 px-3 py-1 font-mono text-meta-badge font-bold uppercase tracking-wider text-secondary-container">
-                    Best Value &mdash; Save 38%
-                  </span>
-                )}
+              <div>
+                <h3 className="text-headline-lg font-bold text-white">CratePrep Pro</h3>
+                <span className="text-body-sm text-white/70">
+                  Complete autonomy for working selectors
+                </span>
               </div>
 
               <div className="flex items-baseline gap-1 pt-6">
@@ -169,16 +162,20 @@ export function Pricing() {
                 )}
               </div>
 
-              <button
-                onClick={handleGetPro}
-                disabled={checkoutLoading}
-                className="mt-auto w-full rounded-full bg-gradient-to-r from-secondary-container to-[#ff3d78] px-6 py-4 text-center text-headline-sm font-semibold text-on-primary shadow-[0_8px_30px_rgba(255,107,53,0.45)] transition-transform hover:scale-[1.02] active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {checkoutLoading ? "Loading..." : "Get CratePrep Pro"}
-              </button>
-              <span className="mt-2 text-center font-mono text-meta-numeric text-white/60">
-                7-day free trial &bull; Cancel anytime
-              </span>
+              <div className="mt-auto flex flex-col items-center gap-3 pt-8">
+                <button
+                  onClick={handleGetPro}
+                  disabled={checkoutLoading}
+                  className="w-full rounded-full bg-gradient-to-r from-secondary-container to-[#ff3d78] px-6 py-4 text-center text-headline-sm font-semibold text-on-primary shadow-[0_8px_30px_rgba(255,107,53,0.45)] transition-transform hover:scale-[1.02] active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {checkoutLoading ? "Loading..." : "Get CratePrep Pro"}
+                </button>
+                {billing === "annual" && (
+                  <span className="whitespace-nowrap rounded-full border border-secondary-container/40 bg-secondary-container/10 px-3 py-1 font-mono text-meta-badge font-bold uppercase tracking-wider text-secondary-container">
+                    Best Value &mdash; Save 38%
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         </div>
