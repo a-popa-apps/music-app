@@ -14,11 +14,11 @@ const FEATURES = [
     footnote: "99.8% Beat-Grid Transient Lock",
   },
   {
-    icon: "auto_awesome_motion",
-    title: "Genre-Sorted Playlists",
+    icon: "sell",
+    title: "Verified Genre & Energy Tags",
     description:
-      "Acoustic fingerprinting organizes your chaos into logical energy brackets and subgenres: Warmup, Peak-Time, Closing.",
-    footnote: "Automated Subfolder Taxonomy",
+      "Cross-references Spotify and Discogs to tag every track's real genre, then rates its energy 1-10 from loudness -- no more guessing by ear.",
+    footnote: "Spotify + Discogs Verified",
   },
 ]
 
