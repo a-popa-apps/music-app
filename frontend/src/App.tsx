@@ -1,5 +1,4 @@
 import { Route, Routes } from "react-router-dom"
-import bgSite from "./assets/bg-site.png"
 import { FAQ } from "./components/FAQ"
 import { Features } from "./components/Features"
 import { FeedbackWidget } from "./components/FeedbackWidget"
@@ -24,16 +23,10 @@ function Landing() {
       <Header />
       <main className="w-full pt-16">
         <Hero />
-        {/* One continuous tiled background behind every section below the
-            hero, applied once here rather than per-section, so the pattern
-            is a single seamless canvas with no repeat-boundary at each
-            section's edge. */}
-        <div style={{ backgroundImage: `url(${bgSite})`, backgroundRepeat: "repeat" }}>
-          <HowItWorks />
-          <Features />
-          <Pricing />
-          <FAQ />
-        </div>
+        <HowItWorks />
+        <Features />
+        <Pricing />
+        <FAQ />
       </main>
       <Footer />
     </>

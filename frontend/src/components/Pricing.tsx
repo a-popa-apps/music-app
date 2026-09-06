@@ -50,7 +50,7 @@ export function Pricing() {
   }
 
   return (
-    <section id="pricing" className="relative w-full overflow-hidden px-4 py-16 lg:px-12">
+    <section id="pricing" className="relative w-full overflow-hidden bg-black px-4 py-16 lg:px-12">
       <div className="relative z-10 mx-auto flex max-w-5xl flex-col items-center text-center">
         <span className="mb-1 font-mono text-meta-badge font-bold uppercase tracking-wider text-secondary-container">
           Fair Selector Pricing

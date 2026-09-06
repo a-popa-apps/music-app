@@ -1,3 +1,5 @@
+import bgSite from "../assets/bg-site.png"
+
 const STEPS = [
   {
     number: "01",
@@ -27,7 +29,15 @@ const STEPS = [
 
 export function HowItWorks() {
   return (
-    <section id="how-it-works" className="relative w-full overflow-hidden px-4 py-16 lg:px-12">
+    <section
+      id="how-it-works"
+      className="relative w-full overflow-hidden bg-black px-4 py-16 lg:px-12"
+      style={{ backgroundImage: `url(${bgSite})`, backgroundRepeat: "repeat" }}
+    >
+      {/* Fades the tiled texture down into solid black by the bottom of this
+          section -- everything after is flat black, so the fade only needs
+          to happen once, here, rather than at every section boundary. */}
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black" />
       <div className="relative z-10 mx-auto flex max-w-7xl flex-col gap-12">
         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
           <div>

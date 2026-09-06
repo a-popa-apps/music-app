@@ -24,7 +24,7 @@ const FEATURES = [
 
 export function Features() {
   return (
-    <section id="features" className="relative w-full overflow-hidden px-4 py-16 lg:px-12">
+    <section id="features" className="relative w-full overflow-hidden bg-black px-4 py-16 lg:px-12">
       <div className="relative z-10 mx-auto flex max-w-7xl flex-col gap-12">
         <div className="flex max-w-2xl flex-col gap-1">
           <span className="font-mono text-meta-badge font-bold uppercase tracking-wider text-secondary-container">
