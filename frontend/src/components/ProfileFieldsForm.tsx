@@ -22,9 +22,19 @@ export const GENRES = [
 
 export const MAX_GENRES = 3
 
-export function Section({ title, children }: { title: string; children: React.ReactNode }) {
+export function Section({
+  title,
+  children,
+  className = "",
+}: {
+  title: string
+  children: React.ReactNode
+  className?: string
+}) {
   return (
-    <div className="flex flex-col gap-6 rounded border border-white/10 bg-white/10 p-8 backdrop-blur-md">
+    <div
+      className={`flex flex-col gap-6 rounded border border-white/10 bg-white/10 p-8 backdrop-blur-md ${className}`}
+    >
       <h2 className="text-headline-sm text-white">{title}</h2>
       {children}
     </div>
@@ -87,7 +97,7 @@ export function ProfileFieldsForm({
 
   return (
     <>
-      <Section title="Personal Details">
+      <Section title="Personal Details" className={countryOpen ? "relative z-20" : ""}>
         <label className="flex flex-col gap-1">
           <span className="text-body-sm font-semibold text-white">Name</span>
           <input
