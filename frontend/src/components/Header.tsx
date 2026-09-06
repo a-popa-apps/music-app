@@ -149,6 +149,16 @@ export function Header() {
               <span className={`text-body-sm ${overHero ? "text-white/70" : "text-on-surface-variant"}`}>
                 {user.email}
               </span>
+              {profile?.plan === "free" && (
+                <a
+                  href="/#pricing"
+                  onClick={() => setMenuOpen(false)}
+                  className="mt-2 inline-flex w-fit items-center gap-1 rounded-full bg-gradient-to-r from-secondary-container to-[#ff3d78] px-4 py-1.5 text-body-sm font-semibold text-on-primary shadow-[0_4px_16px_rgba(255,61,120,0.4)]"
+                >
+                  <span className="material-symbols-outlined text-[16px]">bolt</span>
+                  Upgrade
+                </a>
+              )}
               {isAdmin && (
                 <Link
                   to="/admin"
