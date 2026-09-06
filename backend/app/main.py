@@ -1,4 +1,6 @@
 import os
+import time
+from datetime import datetime, timezone
 
 import essentia.standard as es
 import mutagen
@@ -287,6 +289,13 @@ class FeedbackCreate(BaseModel):
     message: str
     email: str | None = None
     subject: str | None = None
+    # Anti-spam, both optional and never surfaced to the user as validation
+    # errors -- a bot that gets an error message just learns to adapt.
+    website: str | None = None  # honeypot: real users never see or fill this
+    form_rendered_at: float | None = None  # JS epoch-ms when the form appeared
+
+
+MIN_FEEDBACK_SUBMIT_SECONDS = 2
 
 
 @app.post("/feedback")
@@ -296,6 +305,27 @@ def submit_feedback(body: FeedbackCreate, request: Request):
     # the client's IP when no key is given, same as any other unauthed use).
     enforce_rate_limit(request)
     uid = get_current_user(request)  # opportunistic -- None for anonymous
+
+    filled_honeypot = bool(body.website)
+    submitted_too_fast = (
+        body.form_rendered_at is not None
+        and (time.time() * 1000 - body.form_rendered_at) < MIN_FEEDBACK_SUBMIT_SECONDS * 1000
+    )
+    if filled_honeypot or submitted_too_fast:
+        # Silently discard rather than erroring -- an error response teaches
+        # a bot what tripped it and invites it to adapt. Return a normal-
+        # looking success instead, without actually persisting anything.
+        return {
+            "feedback_id": "discarded",
+            "category": body.category,
+            "subject": body.subject,
+            "message": body.message,
+            "email": body.email,
+            "uid": uid,
+            "submitted_at": datetime.now(timezone.utc).isoformat(),
+            "read": False,
+        }
+
     try:
         return create_feedback(
             body.category, body.message, email=body.email, subject=body.subject, uid=uid

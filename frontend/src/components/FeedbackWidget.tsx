@@ -17,9 +17,11 @@ function FeedbackForm({
   const [subject, setSubject] = useState("")
   const [message, setMessage] = useState("")
   const [email, setEmail] = useState(user?.email ?? "")
+  const [website, setWebsite] = useState("") // honeypot -- real users never see this field
   const [submitting, setSubmitting] = useState(false)
   const [done, setDone] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [formRenderedAt] = useState(() => Date.now())
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -31,6 +33,8 @@ function FeedbackForm({
         email: email || undefined,
         subject: category === "support" ? subject || undefined : undefined,
         idToken,
+        website: website || undefined,
+        formRenderedAt,
       })
       setDone(true)
       setTimeout(onClose, 2000)
@@ -52,6 +56,23 @@ function FeedbackForm({
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      {/* Honeypot -- hidden from real users (off-screen, unreachable by tab,
+          skipped by screen readers), but a bot filling every input blindly
+          will fill this too. Any non-empty value here silently discards the
+          submission server-side without erroring, so a bot never learns why. */}
+      <div className="absolute -left-[9999px]" aria-hidden="true">
+        <label>
+          Website
+          <input
+            type="text"
+            name="website"
+            tabIndex={-1}
+            autoComplete="off"
+            value={website}
+            onChange={(e) => setWebsite(e.target.value)}
+          />
+        </label>
+      </div>
       {category === "support" && (
         <label className="flex flex-col gap-1">
           <span className="text-body-sm font-semibold text-on-surface">Subject</span>

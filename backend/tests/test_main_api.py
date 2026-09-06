@@ -135,6 +135,58 @@ def test_submit_feedback_works_anonymously(client, monkeypatch):
     assert res.json()["read"] is False
 
 
+def test_submit_feedback_honeypot_filled_is_discarded(client, monkeypatch):
+    calls = []
+    monkeypatch.setattr(main, "create_feedback", lambda *a, **k: calls.append((a, k)))
+
+    res = client.post(
+        "/feedback",
+        json={"category": "feedback", "message": "buy cheap watches", "website": "http://spam.example"},
+    )
+    assert res.status_code == 200
+    assert calls == []  # never actually persisted
+
+
+def test_submit_feedback_too_fast_is_discarded(client, monkeypatch):
+    import time as time_module
+
+    calls = []
+    monkeypatch.setattr(main, "create_feedback", lambda *a, **k: calls.append((a, k)))
+
+    res = client.post(
+        "/feedback",
+        json={
+            "category": "feedback",
+            "message": "hi",
+            "form_rendered_at": time_module.time() * 1000,  # submitted "instantly"
+        },
+    )
+    assert res.status_code == 200
+    assert calls == []
+
+
+def test_submit_feedback_normal_timing_is_not_discarded(client, monkeypatch):
+    import time as time_module
+
+    calls = []
+    monkeypatch.setattr(
+        main,
+        "create_feedback",
+        lambda *a, **k: calls.append((a, k)) or {"feedback_id": "f1", "read": False},
+    )
+
+    res = client.post(
+        "/feedback",
+        json={
+            "category": "feedback",
+            "message": "hi",
+            "form_rendered_at": (time_module.time() - 5) * 1000,  # 5s ago, a real human pace
+        },
+    )
+    assert res.status_code == 200
+    assert len(calls) == 1
+
+
 def test_submit_feedback_rejects_invalid_category(client):
     res = client.post("/feedback", json={"category": "nonsense", "message": "hi"})
     assert res.status_code == 400

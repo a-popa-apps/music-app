@@ -338,7 +338,13 @@ export interface FeedbackSubmission {
 export async function submitFeedback(
   category: "support" | "feedback",
   message: string,
-  options?: { email?: string; subject?: string; idToken?: string }
+  options?: {
+    email?: string
+    subject?: string
+    idToken?: string
+    website?: string
+    formRenderedAt?: number
+  }
 ): Promise<FeedbackSubmission> {
   const res = await fetch(`${BACKEND_URL}/feedback`, {
     method: "POST",
@@ -346,7 +352,14 @@ export async function submitFeedback(
       "Content-Type": "application/json",
       ...(options?.idToken ? { Authorization: `Bearer ${options.idToken}` } : {}),
     },
-    body: JSON.stringify({ category, message, email: options?.email, subject: options?.subject }),
+    body: JSON.stringify({
+      category,
+      message,
+      email: options?.email,
+      subject: options?.subject,
+      website: options?.website,
+      form_rendered_at: options?.formRenderedAt,
+    }),
   })
   if (!res.ok) {
     let msg = `Failed to submit: ${res.status}`
