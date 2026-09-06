@@ -61,6 +61,17 @@ export function ProfileDetails() {
     }
   }, [user])
 
+  const isDirty = JSON.stringify(settings) !== JSON.stringify(savedSettings)
+
+  useEffect(() => {
+    if (!isDirty) return
+    function handleBeforeUnload(e: BeforeUnloadEvent) {
+      e.preventDefault()
+    }
+    window.addEventListener("beforeunload", handleBeforeUnload)
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload)
+  }, [isDirty])
+
   if (!authLoading && (!user || !isVerified)) {
     return <Navigate to="/auth" replace />
   }
@@ -118,8 +129,6 @@ export function ProfileDetails() {
       setSaving(false)
     }
   }
-
-  const isDirty = JSON.stringify(settings) !== JSON.stringify(savedSettings)
 
   async function handleUpgrade() {
     if (!user) return
