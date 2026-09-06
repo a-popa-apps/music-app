@@ -329,13 +329,24 @@ export function ProfileDetails() {
             <span className="text-body-sm text-on-surface-variant">
               {saved ? "Your changes have been saved." : "You have unsaved changes."}
             </span>
-            <button
-              onClick={handleSave}
-              disabled={saving || !isDirty}
-              className="whitespace-nowrap rounded-full bg-secondary-container px-6 py-2 text-body-sm font-semibold text-on-primary transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              {saving ? "Saving..." : saved ? "Saved!" : "Save"}
-            </button>
+            <div className="flex items-center gap-2">
+              {isDirty && !saved && (
+                <button
+                  onClick={() => setSettings(savedSettings)}
+                  disabled={saving}
+                  className="whitespace-nowrap rounded-full border border-outline-variant px-6 py-2 text-body-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container-low disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Discard
+                </button>
+              )}
+              <button
+                onClick={handleSave}
+                disabled={saving || !isDirty}
+                className="whitespace-nowrap rounded-full bg-secondary-container px-6 py-2 text-body-sm font-semibold text-on-primary transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {saving ? "Saving..." : saved ? "Saved!" : "Save"}
+              </button>
+            </div>
           </div>
         </div>
       )}
