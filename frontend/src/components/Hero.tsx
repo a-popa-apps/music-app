@@ -172,7 +172,7 @@ export function Hero() {
         </div>
 
         <h1 className="mb-4 max-w-4xl text-display-hero-mobile tracking-tighter text-white lg:text-display-hero">
-          Your crate. Prepped in seconds.
+          Your crate. Ready in seconds.
         </h1>
 
         <p className="mb-10 max-w-2xl text-body-lg text-white/80">
