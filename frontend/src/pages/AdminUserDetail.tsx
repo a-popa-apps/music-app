@@ -6,9 +6,11 @@ import { useAuth } from "../hooks/useAuth"
 import { useIsAdmin } from "../hooks/useIsAdmin"
 import {
   getAdminUsers,
+  getUserHistoryAsAdmin,
   getUserProfileAsAdmin,
   resetUserUsage,
   saveUserProfileAsAdmin,
+  type HistoryEntry,
   type ProfileSettings,
 } from "../services/api"
 
@@ -27,6 +29,7 @@ export function AdminUserDetail() {
   const [error, setError] = useState<string | null>(null)
   const [resettingUsage, setResettingUsage] = useState(false)
   const [usageResetDone, setUsageResetDone] = useState(false)
+  const [history, setHistory] = useState<HistoryEntry[] | null>(null)
 
   useEffect(() => {
     if (user) user.getIdToken().then(setToken)
@@ -38,14 +41,16 @@ export function AdminUserDetail() {
     let cancelled = false
     async function load() {
       try {
-        const [profile, users] = await Promise.all([
+        const [profile, users, userHistory] = await Promise.all([
           getUserProfileAsAdmin(token!, uid!),
           getAdminUsers(token!),
+          getUserHistoryAsAdmin(token!, uid!).catch(() => []),
         ])
         if (cancelled) return
         setSettings(profile)
         setSavedSettings(profile)
         setEmail(users.find((u) => u.uid === uid)?.email ?? "")
+        setHistory(userHistory)
       } catch {
         if (!cancelled) setError("Couldn't load this user's profile.")
       } finally {
@@ -170,6 +175,52 @@ export function AdminUserDetail() {
                   </button>
                 </div>
               )}
+
+              <div className="rounded bg-surface-container-lowest p-6 shadow-sm">
+                <h2 className="mb-3 text-headline-sm text-on-surface">Processing history</h2>
+                {!history ? (
+                  <p className="text-body-sm text-on-surface-variant">Loading...</p>
+                ) : history.length === 0 ? (
+                  <p className="text-body-sm text-on-surface-variant">
+                    Hasn't processed any tracks yet.
+                  </p>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    <span className="text-body-sm text-on-surface-variant">
+                      {history.length} track{history.length === 1 ? "" : "s"} processed --
+                      showing the 10 most recent
+                    </span>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-body-sm">
+                        <thead>
+                          <tr className="border-b border-outline-variant text-on-surface-variant">
+                            <th className="py-1 pr-4">Filename</th>
+                            <th className="py-1 pr-4">Date</th>
+                            <th className="py-1 pr-4">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {history.slice(0, 10).map((h) => (
+                            <tr key={h.history_id} className="border-b border-outline-variant/50">
+                              <td className="py-1 pr-4 text-on-surface">{h.filename}</td>
+                              <td className="py-1 pr-4 text-on-surface-variant">
+                                {new Date(h.processed_at).toLocaleDateString()}
+                              </td>
+                              <td
+                                className={`py-1 pr-4 font-mono text-meta-badge font-bold uppercase ${
+                                  h.failed ? "text-red-600" : "text-secondary-container"
+                                }`}
+                              >
+                                {h.failed ? "Error" : "Done"}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </div>
 
               <ProfileFieldsForm settings={settings} onChange={update} email={email} />
 

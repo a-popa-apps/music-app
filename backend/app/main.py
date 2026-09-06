@@ -156,6 +156,12 @@ def admin_update_user_profile(uid: str, update: ProfileUpdate, request: Request)
         raise HTTPException(400, str(e))
 
 
+@app.get("/admin/users/{uid}/history")
+def admin_read_user_history(uid: str, request: Request):
+    _require_admin(request)
+    return list_history(uid)
+
+
 @app.get("/admin/stats")
 def admin_stats(request: Request):
     _require_admin(request)

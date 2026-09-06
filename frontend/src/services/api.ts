@@ -211,6 +211,17 @@ export async function getUserProfileAsAdmin(
   return res.json()
 }
 
+export async function getUserHistoryAsAdmin(
+  idToken: string,
+  uid: string
+): Promise<HistoryEntry[]> {
+  const res = await fetch(`${BACKEND_URL}/admin/users/${uid}/history`, {
+    headers: adminHeaders(idToken),
+  })
+  if (!res.ok) throw new Error(`Failed to load history: ${res.status}`)
+  return res.json()
+}
+
 export async function saveUserProfileAsAdmin(
   idToken: string,
   uid: string,

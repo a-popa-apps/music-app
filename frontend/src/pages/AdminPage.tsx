@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { Navigate, useNavigate } from "react-router-dom"
 import { Header } from "../components/Header"
 import { useAuth } from "../hooks/useAuth"
@@ -32,32 +32,30 @@ function Card({ children }: { children: React.ReactNode }) {
   )
 }
 
-function UsersTab({ token, currentUid }: { token: string; currentUid: string }) {
+function UsersTab({
+  token,
+  currentUid,
+  users,
+  error,
+  onReload,
+}: {
+  token: string
+  currentUid: string
+  users: AdminUser[] | null
+  error: string | null
+  onReload: () => void
+}) {
   const navigate = useNavigate()
-  const [users, setUsers] = useState<AdminUser[] | null>(null)
-  const [error, setError] = useState<string | null>(null)
   const [busyUid, setBusyUid] = useState<string | null>(null)
-
-  async function load() {
-    try {
-      setUsers(await getAdminUsers(token))
-    } catch {
-      setError("Couldn't load users.")
-    }
-  }
-
-  useEffect(() => {
-    load()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  const [search, setSearch] = useState("")
 
   async function handlePlanChange(uid: string, plan: "free" | "pro") {
     setBusyUid(uid)
     try {
       await setUserPlan(token, uid, plan)
-      await load()
+      onReload()
     } catch {
-      setError("Couldn't update plan.")
+      // surfaced via the shared `error` prop on next reload
     } finally {
       setBusyUid(null)
     }
@@ -73,9 +71,7 @@ function UsersTab({ token, currentUid }: { token: string; currentUid: string }) 
     setBusyUid(uid)
     try {
       await setUserAdmin(token, uid, isAdmin)
-      await load()
-    } catch {
-      setError("Couldn't update admin status.")
+      onReload()
     } finally {
       setBusyUid(null)
     }
@@ -89,9 +85,8 @@ function UsersTab({ token, currentUid }: { token: string; currentUid: string }) 
     setBusyUid(user.uid)
     try {
       await deleteUserAsAdmin(token, user.uid)
-      await load()
-    } catch {
-      setError("Couldn't delete user.")
+      onReload()
+    } finally {
       setBusyUid(null)
     }
   }
@@ -99,8 +94,22 @@ function UsersTab({ token, currentUid }: { token: string; currentUid: string }) 
   if (error) return <p className="text-body-sm text-red-600">{error}</p>
   if (!users) return <p className="text-body-md text-on-surface-variant">Loading...</p>
 
+  const query = search.trim().toLowerCase()
+  const visible = query
+    ? users.filter((u) =>
+        [u.name, u.artist_name, u.email].some((f) => f?.toLowerCase().includes(query))
+      )
+    : users
+
   return (
     <Card>
+      <input
+        type="text"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        placeholder="Search by name or email..."
+        className="rounded border border-outline-variant bg-surface-container-lowest px-4 py-2 text-body-md text-on-surface outline-none focus:border-secondary-container"
+      />
       <div className="overflow-x-auto">
         <table className="w-full text-left text-body-sm">
           <thead>
@@ -113,7 +122,7 @@ function UsersTab({ token, currentUid }: { token: string; currentUid: string }) 
             </tr>
           </thead>
           <tbody>
-            {users.map((u) => (
+            {visible.map((u) => (
               <tr
                 key={u.uid}
                 onClick={() => navigate(`/admin/users/${u.uid}`)}
@@ -163,22 +172,17 @@ function UsersTab({ token, currentUid }: { token: string; currentUid: string }) 
             ))}
           </tbody>
         </table>
+        {visible.length === 0 && (
+          <p className="py-6 text-center text-body-md text-on-surface-variant">
+            No users match your search.
+          </p>
+        )}
       </div>
     </Card>
   )
 }
 
-function StatsTab({ token }: { token: string }) {
-  const [stats, setStats] = useState<AdminStats | null>(null)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    getAdminStats(token)
-      .then(setStats)
-      .catch(() => setError("Couldn't load stats."))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
+function StatsTab({ stats, error }: { stats: AdminStats | null; error: string | null }) {
   if (error) return <p className="text-body-sm text-red-600">{error}</p>
   if (!stats) return <p className="text-body-md text-on-surface-variant">Loading...</p>
 
@@ -218,34 +222,30 @@ function StatsTab({ token }: { token: string }) {
   )
 }
 
-function DiscountCodesTab({ token }: { token: string }) {
-  const [codes, setCodes] = useState<DiscountCode[] | null>(null)
+function DiscountCodesTab({
+  token,
+  codes,
+  error,
+  onReload,
+}: {
+  token: string
+  codes: DiscountCode[] | null
+  error: string | null
+  onReload: () => void
+}) {
   const [percentOff, setPercentOff] = useState(25)
   const [maxUses, setMaxUses] = useState(1)
   const [creating, setCreating] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  async function load() {
-    try {
-      setCodes(await getDiscountCodes(token))
-    } catch {
-      setError("Couldn't load discount codes.")
-    }
-  }
-
-  useEffect(() => {
-    load()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  const [createError, setCreateError] = useState<string | null>(null)
 
   async function handleCreate() {
     setCreating(true)
-    setError(null)
+    setCreateError(null)
     try {
       await createDiscountCode(token, percentOff, maxUses)
-      await load()
+      onReload()
     } catch {
-      setError("Couldn't create discount code.")
+      setCreateError("Couldn't create discount code.")
     } finally {
       setCreating(false)
     }
@@ -254,9 +254,9 @@ function DiscountCodesTab({ token }: { token: string }) {
   async function handleToggleActive(code: DiscountCode) {
     try {
       await setDiscountCodeActive(token, code.code, !code.active)
-      await load()
+      onReload()
     } catch {
-      setError("Couldn't update discount code.")
+      setCreateError("Couldn't update discount code.")
     }
   }
 
@@ -297,7 +297,9 @@ function DiscountCodesTab({ token }: { token: string }) {
             {creating ? "Creating..." : "Generate code"}
           </button>
         </div>
-        {error && <p className="text-body-sm text-red-600">{error}</p>}
+        {(createError || error) && (
+          <p className="text-body-sm text-red-600">{createError ?? error}</p>
+        )}
       </Card>
 
       <Card>
@@ -357,21 +359,17 @@ function formatCents(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`
 }
 
-function BillingTab({ token }: { token: string }) {
-  const [stats, setStats] = useState<AdminStats | null>(null)
-  const [billing, setBilling] = useState<BillingStats | null>(null)
-  const [codes, setCodes] = useState<DiscountCode[] | null>(null)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    getAdminStats(token).then(setStats).catch(() => {})
-    getBillingStats(token)
-      .then(setBilling)
-      .catch(() => setError("Couldn't load billing stats. Is Stripe configured?"))
-    getDiscountCodes(token).then(setCodes).catch(() => {})
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
+function BillingTab({
+  stats,
+  billing,
+  codes,
+  error,
+}: {
+  stats: AdminStats | null
+  billing: BillingStats | null
+  codes: DiscountCode[] | null
+  error: string | null
+}) {
   return (
     <div className="flex flex-col gap-6">
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -467,9 +465,72 @@ export function AdminPage() {
   const [tab, setTab] = useState<Tab>("Stats")
   const [token, setToken] = useState<string | null>(null)
 
+  // Fetched once per admin session and shared across tabs instead of each
+  // tab re-fetching on every switch -- list_discount_codes() makes one live
+  // Stripe API call per code, and list_users()/getAdminStats() does one
+  // Firestore read per registered user, so repeat fetches for unchanged
+  // data were pure waste.
+  const [users, setUsers] = useState<AdminUser[] | null>(null)
+  const [usersError, setUsersError] = useState<string | null>(null)
+  const [stats, setStats] = useState<AdminStats | null>(null)
+  const [statsError, setStatsError] = useState<string | null>(null)
+  const [billing, setBilling] = useState<BillingStats | null>(null)
+  const [billingError, setBillingError] = useState<string | null>(null)
+  const [codes, setCodes] = useState<DiscountCode[] | null>(null)
+  const [codesError, setCodesError] = useState<string | null>(null)
+
+  const reloadUsers = useCallback(async () => {
+    if (!token) return
+    try {
+      setUsers(await getAdminUsers(token))
+      setUsersError(null)
+    } catch {
+      setUsersError("Couldn't load users.")
+    }
+  }, [token])
+
+  const reloadStats = useCallback(async () => {
+    if (!token) return
+    try {
+      setStats(await getAdminStats(token))
+      setStatsError(null)
+    } catch {
+      setStatsError("Couldn't load stats.")
+    }
+  }, [token])
+
+  const reloadBilling = useCallback(async () => {
+    if (!token) return
+    try {
+      setBilling(await getBillingStats(token))
+      setBillingError(null)
+    } catch {
+      setBillingError("Couldn't load billing stats. Is Stripe configured?")
+    }
+  }, [token])
+
+  const reloadCodes = useCallback(async () => {
+    if (!token) return
+    try {
+      setCodes(await getDiscountCodes(token))
+      setCodesError(null)
+    } catch {
+      setCodesError("Couldn't load discount codes.")
+    }
+  }, [token])
+
   useEffect(() => {
     if (user) user.getIdToken().then(setToken)
   }, [user])
+
+  useEffect(() => {
+    if (!token) return
+    reloadUsers()
+    reloadStats()
+    reloadBilling()
+    reloadCodes()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token])
 
   if (!authLoading && (!user || !isVerified)) {
     return <Navigate to="/auth" replace />
@@ -523,10 +584,22 @@ export function AdminPage() {
             ))}
           </div>
 
-          {tab === "Stats" && <StatsTab token={token} />}
-          {tab === "Users" && <UsersTab token={token} currentUid={user!.uid} />}
-          {tab === "Discounts" && <DiscountCodesTab token={token} />}
-          {tab === "Billing" && <BillingTab token={token} />}
+          {tab === "Stats" && <StatsTab stats={stats} error={statsError} />}
+          {tab === "Users" && (
+            <UsersTab
+              token={token}
+              currentUid={user!.uid}
+              users={users}
+              error={usersError}
+              onReload={reloadUsers}
+            />
+          )}
+          {tab === "Discounts" && (
+            <DiscountCodesTab token={token} codes={codes} error={codesError} onReload={reloadCodes} />
+          )}
+          {tab === "Billing" && (
+            <BillingTab stats={stats} billing={billing} codes={codes} error={billingError} />
+          )}
         </div>
       </div>
     </>

@@ -99,6 +99,25 @@ def test_admin_reset_usage_allowed_for_admin(client, monkeypatch):
     assert res.json()["tracks_processed_this_period"] == 0
 
 
+def test_admin_read_user_history_requires_auth(client):
+    assert client.get("/admin/users/target-uid/history").status_code == 401
+
+
+def test_admin_read_user_history_forbidden_for_non_admin(client, monkeypatch):
+    monkeypatch.setattr(main, "get_current_user", lambda request: "uid-1")
+    monkeypatch.setattr(main, "get_settings", lambda uid: {"is_admin": False})
+    assert client.get("/admin/users/target-uid/history").status_code == 403
+
+
+def test_admin_read_user_history_allowed_for_admin(client, monkeypatch):
+    monkeypatch.setattr(main, "get_current_user", lambda request: "admin-uid")
+    monkeypatch.setattr(main, "get_settings", lambda uid: {"is_admin": True})
+    monkeypatch.setattr(main, "list_history", lambda uid: [{"filename": "a.mp3", "uid": uid}])
+    res = client.get("/admin/users/target-uid/history")
+    assert res.status_code == 200
+    assert res.json() == [{"filename": "a.mp3", "uid": "target-uid"}]
+
+
 def test_admin_billing_stats_requires_auth(client):
     assert client.get("/admin/billing-stats").status_code == 401
 
