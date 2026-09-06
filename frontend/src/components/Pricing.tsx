@@ -56,7 +56,7 @@ export function Pricing() {
           Fair Selector Pricing
         </span>
         <h2 className="mb-4 text-headline-xl tracking-tight text-white">
-          Start free. Go Pro when you're ready.
+          Free for one-off gigs. Pro for the grind.
         </h2>
         <p className="mb-12 max-w-xl text-body-lg text-white/70">
           No complicated tiers. Start free to prep this weekend's gig,
