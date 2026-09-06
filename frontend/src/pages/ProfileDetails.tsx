@@ -18,6 +18,15 @@ const SUBSCRIPTION_WARNINGS: Record<string, string> = {
   incomplete: "Your subscription setup is incomplete.",
 }
 
+// The monthly quota always rolls over at the start of the next calendar
+// month (UTC), regardless of settings.usage_period_start -- matches
+// check_and_reserve_usage's rollover logic in profile_store.py.
+function quotaResetLabel(): string {
+  const now = new Date()
+  const resetDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1))
+  return resetDate.toLocaleDateString(undefined, { month: "short", day: "numeric" })
+}
+
 export function ProfileDetails() {
   const { user, isVerified, loading: authLoading, logOut } = useAuth()
   const navigate = useNavigate()
@@ -216,8 +225,9 @@ export function ProfileDetails() {
                     Go Pro for more tracks &amp; priority detection
                   </span>
                   <span className="text-body-sm text-on-primary/80">
-                    {settings.tracks_processed_this_period} / 25 tracks used this month —
-                    unlock 50/batch, custom filename templates &amp; more.
+                    {settings.tracks_processed_this_period} / 25 tracks used this month
+                    (resets {quotaResetLabel()}) — unlock 50/batch, custom filename
+                    templates &amp; more.
                   </span>
                 </div>
               </div>
@@ -261,6 +271,7 @@ export function ProfileDetails() {
                   <>
                     <span className="text-body-sm text-on-surface-variant">
                       {settings.tracks_processed_this_period} / 25 tracks used this month
+                      (resets {quotaResetLabel()})
                     </span>
                     <span className="text-body-sm text-on-surface-variant">
                       Upgrade for more tracks and priority detection.
