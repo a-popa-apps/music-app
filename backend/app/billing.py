@@ -170,29 +170,6 @@ def _uid_from_customer(client, customer_id: str | None) -> str | None:
         return None
 
 
-def _track_discount_usage(subscription) -> None:
-    """Best-effort: if this subscription has a discount applied, credit the
-    matching discount code's used_count. Imports admin_store locally rather
-    than at module level -- admin_store already imports get_stripe from this
-    module, so a top-level import here would be circular."""
-    try:
-        from .admin_store import increment_discount_code_usage
-
-        sub_data = subscription.to_dict()
-        discount = sub_data.get("discount")
-        if not discount:
-            discounts = sub_data.get("discounts") or []
-            discount = discounts[0] if discounts else None
-        if not discount:
-            return
-
-        promotion_code_id = discount.get("promotion_code") if isinstance(discount, dict) else None
-        if promotion_code_id:
-            increment_discount_code_usage(promotion_code_id)
-    except Exception:
-        pass
-
-
 def handle_webhook_event(payload: bytes, sig_header: str) -> None:
     client = get_stripe()
     if client is None:
@@ -212,9 +189,8 @@ def handle_webhook_event(payload: bytes, sig_header: str) -> None:
         subscription_id = data.get("subscription")
         status = "active"
         if subscription_id:
-            subscription = client.Subscription.retrieve(subscription_id, expand=["discount"])
+            subscription = client.Subscription.retrieve(subscription_id)
             status = subscription.status
-            _track_discount_usage(subscription)
 
         _users_collection().document(uid).set(
             {

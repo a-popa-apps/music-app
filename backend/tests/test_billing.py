@@ -102,67 +102,6 @@ def test_webhook_checkout_completed_activates_plan(fake_users, fake_stripe):
     assert settings["stripe_customer_id"] == "cus_123"
     assert settings["stripe_subscription_id"] == "sub_123"
     assert settings["subscription_status"] == "active"
-    fake_stripe.Subscription.retrieve.assert_called_once_with("sub_123", expand=["discount"])
-
-
-@pytest.fixture
-def fake_discount_codes(monkeypatch):
-    from app import admin_store
-
-    collection = FakeCollection()
-    monkeypatch.setattr(admin_store, "_discount_codes_collection", lambda: collection)
-    return collection
-
-
-def test_webhook_checkout_completed_credits_discount_usage(
-    fake_users, fake_stripe, fake_discount_codes
-):
-    fake_discount_codes.document("SAVE25-ABCD").set(
-        {"code": "SAVE25-ABCD", "used_count": 0, "stripe_promotion_code_id": "promo_123"}
-    )
-
-    subscription = MagicMock(status="active")
-    subscription.to_dict.return_value = {
-        "status": "active",
-        "discount": {"promotion_code": "promo_123"},
-    }
-    fake_stripe.Subscription.retrieve.return_value = subscription
-    fake_stripe.Webhook.construct_event.return_value = {
-        "type": "checkout.session.completed",
-        "data": {
-            "object": _stripe_obj(
-                {"metadata": {"uid": "uid-1"}, "customer": "cus_123", "subscription": "sub_123"}
-            )
-        },
-    }
-
-    billing.handle_webhook_event(b"payload", "sig")
-
-    assert fake_discount_codes.document("SAVE25-ABCD").get().to_dict()["used_count"] == 1
-
-
-def test_webhook_checkout_completed_no_discount_leaves_codes_untouched(
-    fake_users, fake_stripe, fake_discount_codes
-):
-    fake_discount_codes.document("SAVE25-ABCD").set(
-        {"code": "SAVE25-ABCD", "used_count": 0, "stripe_promotion_code_id": "promo_123"}
-    )
-
-    subscription = MagicMock(status="active")
-    subscription.to_dict.return_value = {"status": "active"}
-    fake_stripe.Subscription.retrieve.return_value = subscription
-    fake_stripe.Webhook.construct_event.return_value = {
-        "type": "checkout.session.completed",
-        "data": {
-            "object": _stripe_obj(
-                {"metadata": {"uid": "uid-1"}, "customer": "cus_123", "subscription": "sub_123"}
-            )
-        },
-    }
-
-    billing.handle_webhook_event(b"payload", "sig")
-
-    assert fake_discount_codes.document("SAVE25-ABCD").get().to_dict()["used_count"] == 0
 
 
 def test_webhook_subscription_deleted_reverts_to_free(fake_users, fake_stripe):

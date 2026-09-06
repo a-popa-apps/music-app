@@ -130,17 +130,41 @@ def test_set_discount_code_active_rejects_unknown_code(fake_discount_codes):
         admin_store.set_discount_code_active("NOPE", False)
 
 
-def test_increment_discount_code_usage_finds_matching_code(fake_discount_codes):
+def test_list_discount_codes_overlays_live_stripe_redemption_count(
+    fake_discount_codes, fake_stripe
+):
     fake_discount_codes.document("SAVE25-ABCD").set(
-        {"code": "SAVE25-ABCD", "used_count": 2, "stripe_promotion_code_id": "promo_123"}
+        {"code": "SAVE25-ABCD", "used_count": 0, "stripe_promotion_code_id": "promo_123"}
     )
-    admin_store.increment_discount_code_usage("promo_123")
-    assert fake_discount_codes.document("SAVE25-ABCD").get().to_dict()["used_count"] == 3
+    fake_stripe.PromotionCode.retrieve.return_value = MagicMock(
+        to_dict=lambda: {"times_redeemed": 5}
+    )
+
+    codes = admin_store.list_discount_codes()
+
+    assert codes[0]["used_count"] == 5
+    fake_stripe.PromotionCode.retrieve.assert_called_once_with("promo_123")
 
 
-def test_increment_discount_code_usage_noops_for_unknown_promo_id(fake_discount_codes):
+def test_list_discount_codes_falls_back_when_stripe_unconfigured(fake_discount_codes, monkeypatch):
     fake_discount_codes.document("SAVE25-ABCD").set(
-        {"code": "SAVE25-ABCD", "used_count": 2, "stripe_promotion_code_id": "promo_123"}
+        {"code": "SAVE25-ABCD", "used_count": 3, "stripe_promotion_code_id": "promo_123"}
     )
-    admin_store.increment_discount_code_usage("promo_does_not_exist")
-    assert fake_discount_codes.document("SAVE25-ABCD").get().to_dict()["used_count"] == 2
+    monkeypatch.setattr(admin_store, "get_stripe", lambda: None)
+
+    codes = admin_store.list_discount_codes()
+
+    assert codes[0]["used_count"] == 3
+
+
+def test_list_discount_codes_falls_back_for_legacy_code_without_promo_id(
+    fake_discount_codes, fake_stripe
+):
+    fake_discount_codes.document("LEGACY10").set(
+        {"code": "LEGACY10", "used_count": 0, "percent_off": 10}
+    )
+
+    codes = admin_store.list_discount_codes()
+
+    assert codes[0]["used_count"] == 0
+    fake_stripe.PromotionCode.retrieve.assert_not_called()

@@ -136,19 +136,29 @@ def create_discount_code(percent_off: int, uid: str, max_uses: int = 1) -> dict:
 
 
 def list_discount_codes() -> list[dict]:
-    return [doc.to_dict() for doc in _discount_codes_collection().stream()]
+    """Redemption counts come live from Stripe's PromotionCode.times_redeemed
+    rather than a counter we maintain ourselves -- a discount can be applied
+    at checkout *or* later via the billing portal, each firing a different
+    webhook event, and Stripe already tracks this authoritatively. Falls
+    back to the stored `used_count` (still 0 for a legacy code, or if
+    Stripe/the lookup is unavailable) rather than failing the whole list."""
+    codes = [doc.to_dict() for doc in _discount_codes_collection().stream()]
 
+    client = get_stripe()
+    if client is None:
+        return codes
 
-def increment_discount_code_usage(promotion_code_id: str) -> None:
-    """No-op if no stored code matches -- e.g. a promo code from before
-    Stripe sync existed, or one not created by this system at all."""
-    for doc in _discount_codes_collection().stream():
-        data = doc.to_dict()
-        if data.get("stripe_promotion_code_id") == promotion_code_id:
-            _discount_codes_collection().document(data["code"]).set(
-                {"used_count": data.get("used_count", 0) + 1}, merge=True
-            )
-            return
+    for code in codes:
+        promotion_code_id = code.get("stripe_promotion_code_id")
+        if not promotion_code_id:
+            continue
+        try:
+            promotion_code = client.PromotionCode.retrieve(promotion_code_id)
+            code["used_count"] = promotion_code.to_dict().get("times_redeemed", code["used_count"])
+        except Exception:
+            pass
+
+    return codes
 
 
 def set_discount_code_active(code: str, active: bool) -> dict:
