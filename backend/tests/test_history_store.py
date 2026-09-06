@@ -82,6 +82,15 @@ def test_list_history_respects_limit(fake_history):
     assert len(entries) == 2
 
 
+def test_fake_collection_where_filters_to_matching_docs(fake_history):
+    fake_history.document("a").set({"uid": "uid-1", "val": 1})
+    fake_history.document("b").set({"uid": "uid-2", "val": 2})
+    fake_history.document("c").set({"uid": "uid-1", "val": 3})
+
+    docs = [d.to_dict() for d in fake_history.where("uid", "==", "uid-1").stream()]
+    assert {d["val"] for d in docs} == {1, 3}
+
+
 def test_clear_history_removes_only_target_uid(fake_history):
     history_store.add_history_entries("uid-1", {"a.mp3": _manifest_entry()})
     history_store.add_history_entries("uid-2", {"b.mp3": _manifest_entry()})

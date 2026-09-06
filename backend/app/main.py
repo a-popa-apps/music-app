@@ -301,6 +301,7 @@ async def process(request: Request, files: list[UploadFile] = File(...)):
     filename_template = None
     deep_search = False
     plan = "free"
+    settings = None
     try:
         settings = get_settings(uid)
         plan = settings.get("plan", "free")
@@ -311,6 +312,7 @@ async def process(request: Request, files: list[UploadFile] = File(...)):
         filename_template = None  # don't let a profile lookup failure block processing
         deep_search = False
         plan = "free"
+        settings = None
 
     max_requests = MAX_REQUESTS_PRO if plan == "pro" else MAX_REQUESTS_FREE
     enforce_rate_limit(request, key=uid, max_requests=max_requests)
@@ -319,7 +321,9 @@ async def process(request: Request, files: list[UploadFile] = File(...)):
     validate_files(files, max_files=max_files)
 
     try:
-        check_and_reserve_usage(uid, len(files), plan)
+        # Reuse the settings already fetched above (when available) instead
+        # of check_and_reserve_usage reading the same document a second time.
+        check_and_reserve_usage(uid, len(files), plan, settings=settings)
     except ValueError as e:
         raise HTTPException(402, str(e))
 

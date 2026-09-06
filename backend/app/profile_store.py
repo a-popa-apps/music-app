@@ -93,16 +93,23 @@ def _current_period_key() -> str:
     return f"{now.year:04d}-{now.month:02d}"
 
 
-def check_and_reserve_usage(uid: str, file_count: int, plan: str) -> None:
+def check_and_reserve_usage(
+    uid: str, file_count: int, plan: str, settings: dict | None = None
+) -> None:
     """Enforces the Free plan's monthly track quota. Pro is unlimited here
     (still bounded by the per-batch MAX_FILES_PRO cap elsewhere). Raises
     ValueError if this batch would exceed the quota; otherwise reserves the
     capacity by incrementing the counter, resetting it first if the
-    calendar month has rolled over since the last reserved batch."""
+    calendar month has rolled over since the last reserved batch.
+
+    Pass `settings` when the caller already fetched this user's settings
+    (e.g. /process already needs plan/filename_template from it) to avoid
+    reading the same document twice in one request; fetches its own
+    otherwise."""
     if plan == "pro":
         return
 
-    settings = get_settings(uid)
+    settings = settings if settings is not None else get_settings(uid)
     period = _current_period_key()
     used = settings["tracks_processed_this_period"] if settings["usage_period_start"] == period else 0
 

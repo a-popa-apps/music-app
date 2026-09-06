@@ -43,9 +43,10 @@ def add_history_entries(uid: str, manifest: dict) -> None:
 
 
 def list_history(uid: str, limit: int = 1000) -> list[dict]:
-    docs = [
-        doc.to_dict() for doc in _history_collection().stream() if doc.to_dict().get("uid") == uid
-    ]
+    # Filtered server-side (Firestore `where`) rather than streaming every
+    # user's history and filtering in Python -- this used to cost reads
+    # proportional to the whole system's history size on every call.
+    docs = [doc.to_dict() for doc in _history_collection().where("uid", "==", uid).stream()]
     docs.sort(key=lambda d: d.get("processed_at") or "", reverse=True)
     return docs[:limit]
 
@@ -53,9 +54,8 @@ def list_history(uid: str, limit: int = 1000) -> list[dict]:
 def clear_history(uid: str) -> int:
     collection = _history_collection()
     deleted = 0
-    for doc in collection.stream():
+    for doc in collection.where("uid", "==", uid).stream():
         data = doc.to_dict()
-        if data.get("uid") == uid:
-            collection.document(data["history_id"]).delete()
-            deleted += 1
+        collection.document(data["history_id"]).delete()
+        deleted += 1
     return deleted

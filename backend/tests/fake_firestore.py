@@ -34,6 +34,23 @@ class _FakeDocRef:
         self._store.pop(self._doc_id, None)
 
 
+class _FakeQuery:
+    """A filtered view over a FakeCollection's docs -- just enough of
+    Firestore's query builder interface (.where().stream()) to test code
+    that filters server-side instead of streaming everything."""
+
+    def __init__(self, docs: list[dict]):
+        self._docs = docs
+
+    def where(self, field: str, op: str, value) -> "_FakeQuery":
+        if op not in ("==", "eq"):
+            raise NotImplementedError(f"FakeCollection.where only supports '==', got {op!r}")
+        return _FakeQuery([d for d in self._docs if d.get(field) == value])
+
+    def stream(self):
+        return [_FakeSnapshot(data) for data in self._docs]
+
+
 class FakeCollection:
     def __init__(self):
         self._store: dict[str, dict] = {}
@@ -43,3 +60,6 @@ class FakeCollection:
 
     def stream(self):
         return [_FakeSnapshot(data) for data in self._store.values()]
+
+    def where(self, field: str, op: str, value) -> _FakeQuery:
+        return _FakeQuery(list(self._store.values())).where(field, op, value)
