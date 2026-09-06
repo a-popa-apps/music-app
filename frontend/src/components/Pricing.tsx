@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom"
 import { GrainOverlay } from "./GrainOverlay"
 import { useAuth } from "../hooks/useAuth"
 import { useProfile } from "../hooks/useProfile"
-import { createCheckoutSession } from "../services/api"
+import { createBillingPortalSession, createCheckoutSession } from "../services/api"
 
 const FREE_INCLUDED = [
   "25 tracks per month",
@@ -41,7 +41,9 @@ export function Pricing() {
     setCheckoutLoading(true)
     try {
       const token = await user.getIdToken()
-      const url = await createCheckoutSession(token, billing)
+      const url = isPro
+        ? await createBillingPortalSession(token)
+        : await createCheckoutSession(token, billing)
       window.location.href = url
     } catch {
       setCheckoutLoading(false)
@@ -181,7 +183,7 @@ export function Pricing() {
                   disabled={checkoutLoading}
                   className="w-full rounded-full bg-gradient-to-r from-secondary-container to-[#ff3d78] px-6 py-4 text-center text-headline-sm font-semibold text-on-primary shadow-[0_8px_30px_rgba(255,107,53,0.45)] transition-transform hover:scale-[1.02] active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {checkoutLoading ? "Loading..." : "Get CratePrep Pro"}
+                  {checkoutLoading ? "Loading..." : isPro ? "Manage Billing" : "Get CratePrep Pro"}
                 </button>
               </div>
             </div>
