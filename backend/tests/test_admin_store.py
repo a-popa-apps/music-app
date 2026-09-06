@@ -76,7 +76,9 @@ def test_create_discount_code_syncs_to_stripe(fake_discount_codes, fake_stripe):
 
     fake_stripe.Coupon.create.assert_called_once_with(percent_off=50, duration="once")
     fake_stripe.PromotionCode.create.assert_called_once_with(
-        coupon="coupon_123", code=doc["code"], max_redemptions=3
+        promotion={"type": "coupon", "coupon": "coupon_123"},
+        code=doc["code"],
+        max_redemptions=3,
     )
 
 

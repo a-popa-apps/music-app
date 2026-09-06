@@ -108,8 +108,14 @@ def create_discount_code(percent_off: int, uid: str, max_uses: int = 1) -> dict:
     # reverts to full price. Not "forever", which would also discount every
     # future renewal (a meaningful revenue difference, especially at 100%).
     coupon = client.Coupon.create(percent_off=percent_off, duration="once")
+    # This stripe-python version (15.6.1) nests the coupon reference under
+    # `promotion` instead of a flat `coupon=` kwarg -- confirmed against the
+    # installed SDK's PromotionCodeCreateParams after a live 400 ("Received
+    # unknown parameter: coupon") surfaced the mismatch.
     promotion_code = client.PromotionCode.create(
-        coupon=coupon.id, code=code, max_redemptions=max_uses
+        promotion={"type": "coupon", "coupon": coupon.id},
+        code=code,
+        max_redemptions=max_uses,
     )
 
     ref = _discount_codes_collection().document(code)
