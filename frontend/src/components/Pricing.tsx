@@ -162,7 +162,7 @@ export function Pricing() {
                 )}
               </div>
 
-              <div className="mt-auto flex flex-col items-center gap-3 pt-8">
+              <div className="mt-auto pt-8">
                 <button
                   onClick={handleGetPro}
                   disabled={checkoutLoading}
@@ -170,11 +170,6 @@ export function Pricing() {
                 >
                   {checkoutLoading ? "Loading..." : "Get CratePrep Pro"}
                 </button>
-                {billing === "annual" && (
-                  <span className="whitespace-nowrap rounded-full border border-secondary-container/40 bg-secondary-container/10 px-3 py-1 font-mono text-meta-badge font-bold uppercase tracking-wider text-secondary-container">
-                    Best Value &mdash; Save 38%
-                  </span>
-                )}
               </div>
             </div>
           </div>

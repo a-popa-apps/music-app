@@ -207,6 +207,30 @@ export function ProfileDetails() {
             </div>
           )}
 
+          {settings.plan === "free" && (
+            <div className="flex flex-col items-start gap-4 rounded-2xl bg-gradient-to-r from-secondary-container to-[#ff3d78] p-6 text-on-primary shadow-[0_8px_30px_rgba(255,61,120,0.35)] sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-3">
+                <span className="material-symbols-outlined text-[32px]">bolt</span>
+                <div className="flex flex-col">
+                  <span className="text-headline-sm font-bold">
+                    Go Pro for more tracks &amp; priority detection
+                  </span>
+                  <span className="text-body-sm text-on-primary/80">
+                    {settings.tracks_processed_this_period} / 25 tracks used this month —
+                    unlock 50/batch, custom filename templates &amp; more.
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={handleUpgrade}
+                disabled={billingLoading}
+                className="whitespace-nowrap rounded-full bg-white px-5 py-2 text-body-sm font-semibold text-[#ff3d78] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {billingLoading ? "Loading..." : "Upgrade to Pro"}
+              </button>
+            </div>
+          )}
+
           <ProfileFieldsForm settings={settings} onChange={update} email={user?.email ?? ""} />
 
           <Section title="Billing">

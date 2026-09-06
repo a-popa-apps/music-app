@@ -71,7 +71,16 @@ export function Header() {
               }`}
             />
           ) : loggedIn ? (
-            <div className="hidden md:block">
+            <div className="hidden items-center gap-3 md:flex">
+              {profile?.plan === "free" && (
+                <a
+                  href="/#pricing"
+                  className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-secondary-container to-[#ff3d78] px-4 py-1.5 text-body-sm font-semibold text-on-primary shadow-[0_4px_16px_rgba(255,61,120,0.4)] transition-transform hover:scale-[1.03] active:scale-95"
+                >
+                  <span className="material-symbols-outlined text-[16px]">bolt</span>
+                  Upgrade
+                </a>
+              )}
               <AccountMenu profile={profile} />
             </div>
           ) : (
