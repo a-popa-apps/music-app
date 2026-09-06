@@ -118,7 +118,17 @@ def test_admin_read_user_history_allowed_for_admin(client, monkeypatch):
     assert res.json() == [{"filename": "a.mp3", "uid": "target-uid"}]
 
 
-def test_submit_feedback_works_anonymously(client):
+def test_submit_feedback_works_anonymously(client, monkeypatch):
+    monkeypatch.setattr(
+        main,
+        "create_feedback",
+        lambda category, message, email=None, subject=None, uid=None: {
+            "feedback_id": "f1",
+            "category": category,
+            "message": message,
+            "read": False,
+        },
+    )
     res = client.post("/feedback", json={"category": "feedback", "message": "Love the app!"})
     assert res.status_code == 200
     assert res.json()["category"] == "feedback"
