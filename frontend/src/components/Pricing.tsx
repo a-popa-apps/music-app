@@ -2,6 +2,7 @@ import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { GrainOverlay } from "./GrainOverlay"
 import { useAuth } from "../hooks/useAuth"
+import { useProfile } from "../hooks/useProfile"
 import { createCheckoutSession } from "../services/api"
 
 const FREE_INCLUDED = [
@@ -23,6 +24,8 @@ const PRO_CHECKLIST = [
 
 export function Pricing() {
   const { user, isVerified } = useAuth()
+  const { profile } = useProfile()
+  const isPro = Boolean(user && isVerified && profile?.plan === "pro")
   const navigate = useNavigate()
   const [billing, setBilling] = useState<"monthly" | "annual">("annual")
   const [checkoutLoading, setCheckoutLoading] = useState(false)
@@ -95,15 +98,25 @@ export function Pricing() {
               ))}
             </div>
 
-            <button
-              onClick={() => navigate("/auth")}
-              className="mt-auto w-full rounded-full border border-white/20 bg-white/10 px-6 py-4 text-center text-headline-sm font-semibold text-white transition-colors hover:bg-white/15"
-            >
-              Get Started Free
-            </button>
-            <span className="mt-2 text-center font-mono text-meta-numeric text-white/60">
-              No credit card required
-            </span>
+            {!isPro && (
+              <>
+                {user && isVerified ? (
+                  <div className="mt-auto w-full rounded-full border border-white/10 bg-white/5 px-6 py-4 text-center text-headline-sm font-semibold text-white/50">
+                    Your Current Plan
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => navigate("/auth")}
+                    className="mt-auto w-full rounded-full border border-white/20 bg-white/10 px-6 py-4 text-center text-headline-sm font-semibold text-white transition-colors hover:bg-white/15"
+                  >
+                    Get Started Free
+                  </button>
+                )}
+                <span className="mt-2 text-center font-mono text-meta-numeric text-white/60">
+                  {user && isVerified ? "You're all set" : "No credit card required"}
+                </span>
+              </>
+            )}
           </div>
 
           {/* Pro plan */}

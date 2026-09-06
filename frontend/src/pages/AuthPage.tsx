@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { Navigate, useNavigate } from "react-router-dom"
 import { Header } from "../components/Header"
 import { useAuth } from "../hooks/useAuth"
 import { checkPwnedPassword } from "../utils/checkPwnedPassword"
@@ -26,7 +26,7 @@ function firebaseErrorMessage(error: unknown): string {
 }
 
 export function AuthPage() {
-  const { signUp, logIn, signInWithGoogle, resendVerification } = useAuth()
+  const { user, isVerified, signUp, logIn, signInWithGoogle, resendVerification } = useAuth()
   const navigate = useNavigate()
 
   const [mode, setMode] = useState<Mode>("login")
@@ -84,6 +84,10 @@ export function AuthPage() {
     } catch {
       setError("Couldn't resend the email. Try logging in again.")
     }
+  }
+
+  if (user && isVerified) {
+    return <Navigate to="/" replace />
   }
 
   return (
