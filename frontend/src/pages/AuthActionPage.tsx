@@ -109,25 +109,25 @@ export function AuthActionPage() {
 
   return (
     <>
-      <Header />
-      <div className="flex min-h-screen w-full items-center justify-center bg-surface px-4 py-12 pt-32">
-        <div className="w-full max-w-md rounded bg-surface-container-lowest p-8 text-center shadow-md">
+      <Header dark />
+      <div className="flex min-h-screen w-full items-center justify-center bg-black px-4 py-12 pt-32">
+        <div className="w-full max-w-md rounded border border-white/10 bg-white/10 p-8 text-center backdrop-blur-md">
           {status === "checking" && (
             <>
               <span className="material-symbols-outlined animate-spin text-[40px] text-secondary-container">
                 progress_activity
               </span>
-              <h1 className="mt-4 text-headline-lg text-on-surface">One moment...</h1>
+              <h1 className="mt-4 text-headline-lg text-white">One moment...</h1>
             </>
           )}
 
           {status === "verified" && (
             <>
-              <span className="material-symbols-outlined text-[48px] text-green-600">
+              <span className="material-symbols-outlined text-[48px] text-green-400">
                 check_circle
               </span>
-              <h1 className="mt-4 text-headline-lg text-on-surface">Email verified!</h1>
-              <p className="mt-2 text-body-md text-on-surface-variant">
+              <h1 className="mt-4 text-headline-lg text-white">Email verified!</h1>
+              <p className="mt-2 text-body-md text-white/70">
                 Taking you to CratePrep in {secondsLeft}s...
               </p>
               <button
@@ -141,17 +141,17 @@ export function AuthActionPage() {
 
           {status === "reset-form" && (
             <div className="text-left">
-              <h1 className="text-center text-headline-lg text-on-surface">
+              <h1 className="text-center text-headline-lg text-white">
                 Set a new password
               </h1>
               {resetEmail && (
-                <p className="mt-2 text-center text-body-sm text-on-surface-variant">
+                <p className="mt-2 text-center text-body-sm text-white/60">
                   for {resetEmail}
                 </p>
               )}
               <form onSubmit={handleResetSubmit} className="mt-6 flex flex-col gap-4">
                 <label className="flex flex-col gap-1">
-                  <span className="text-body-sm font-semibold text-on-surface">
+                  <span className="text-body-sm font-semibold text-white">
                     New password
                   </span>
                   <input
@@ -161,11 +161,11 @@ export function AuthActionPage() {
                     autoFocus
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    className="rounded border border-outline-variant bg-surface-container-lowest px-4 py-3 text-body-md text-on-surface outline-none focus:border-secondary-container"
+                    className="rounded border border-white/20 bg-white/5 px-4 py-3 text-body-md text-white outline-none focus:border-secondary-container"
                   />
                 </label>
                 <label className="flex flex-col gap-1">
-                  <span className="text-body-sm font-semibold text-on-surface">
+                  <span className="text-body-sm font-semibold text-white">
                     Confirm password
                   </span>
                   <input
@@ -174,10 +174,10 @@ export function AuthActionPage() {
                     minLength={6}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="rounded border border-outline-variant bg-surface-container-lowest px-4 py-3 text-body-md text-on-surface outline-none focus:border-secondary-container"
+                    className="rounded border border-white/20 bg-white/5 px-4 py-3 text-body-md text-white outline-none focus:border-secondary-container"
                   />
                 </label>
-                {resetError && <p className="text-body-sm text-red-600">{resetError}</p>}
+                {resetError && <p className="text-body-sm text-red-400">{resetError}</p>}
                 <button
                   type="submit"
                   disabled={submitting}
@@ -191,11 +191,11 @@ export function AuthActionPage() {
 
           {status === "reset-success" && (
             <>
-              <span className="material-symbols-outlined text-[48px] text-green-600">
+              <span className="material-symbols-outlined text-[48px] text-green-400">
                 check_circle
               </span>
-              <h1 className="mt-4 text-headline-lg text-on-surface">Password updated!</h1>
-              <p className="mt-2 text-body-md text-on-surface-variant">
+              <h1 className="mt-4 text-headline-lg text-white">Password updated!</h1>
+              <p className="mt-2 text-body-md text-white/70">
                 Taking you to sign in in {secondsLeft}s...
               </p>
               <button
@@ -209,11 +209,11 @@ export function AuthActionPage() {
 
           {status === "error" && (
             <>
-              <span className="material-symbols-outlined text-[48px] text-red-600">error</span>
-              <h1 className="mt-4 text-headline-lg text-on-surface">
+              <span className="material-symbols-outlined text-[48px] text-red-400">error</span>
+              <h1 className="mt-4 text-headline-lg text-white">
                 This link is invalid or has expired
               </h1>
-              <p className="mt-2 text-body-md text-on-surface-variant">
+              <p className="mt-2 text-body-md text-white/70">
                 Log in and request a new one from there.
               </p>
               <button

@@ -4,12 +4,12 @@ import { Header } from "../components/Header"
 export function NotFound() {
   return (
     <>
-      <Header />
-      <div className="flex min-h-screen w-full flex-col items-center justify-center gap-4 bg-surface px-4 pt-16 text-center">
-        <span className="font-mono text-display-hero-mobile tracking-tighter text-on-surface">
+      <Header dark />
+      <div className="flex min-h-screen w-full flex-col items-center justify-center gap-4 bg-black px-4 pt-16 text-center">
+        <span className="font-mono text-display-hero-mobile tracking-tighter text-white">
           404
         </span>
-        <p className="text-body-lg text-on-surface-variant">
+        <p className="text-body-lg text-white/70">
           This page doesn't exist.
         </p>
         <Link
