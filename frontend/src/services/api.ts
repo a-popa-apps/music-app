@@ -323,3 +323,60 @@ export async function uploadAndProcess(files: File[], idToken?: string): Promise
 
   return response.blob()
 }
+
+export interface FeedbackSubmission {
+  feedback_id: string
+  category: "support" | "feedback"
+  subject: string | null
+  message: string
+  email: string | null
+  uid: string | null
+  submitted_at: string
+  read: boolean
+}
+
+export async function submitFeedback(
+  category: "support" | "feedback",
+  message: string,
+  options?: { email?: string; subject?: string; idToken?: string }
+): Promise<FeedbackSubmission> {
+  const res = await fetch(`${BACKEND_URL}/feedback`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(options?.idToken ? { Authorization: `Bearer ${options.idToken}` } : {}),
+    },
+    body: JSON.stringify({ category, message, email: options?.email, subject: options?.subject }),
+  })
+  if (!res.ok) {
+    let msg = `Failed to submit: ${res.status}`
+    try {
+      const body = await res.json()
+      if (typeof body?.detail === "string") msg = body.detail
+    } catch {
+      // non-JSON error body, fall back to the generic message
+    }
+    throw new Error(msg)
+  }
+  return res.json()
+}
+
+export async function getFeedback(idToken: string): Promise<FeedbackSubmission[]> {
+  const res = await fetch(`${BACKEND_URL}/admin/feedback`, { headers: adminHeaders(idToken) })
+  if (!res.ok) throw new Error(`Failed to load feedback: ${res.status}`)
+  return res.json()
+}
+
+export async function setFeedbackRead(
+  idToken: string,
+  feedbackId: string,
+  read: boolean
+): Promise<FeedbackSubmission> {
+  const res = await fetch(`${BACKEND_URL}/admin/feedback/${feedbackId}`, {
+    method: "PATCH",
+    headers: adminHeaders(idToken),
+    body: JSON.stringify({ read }),
+  })
+  if (!res.ok) throw new Error(`Failed to update feedback: ${res.status}`)
+  return res.json()
+}

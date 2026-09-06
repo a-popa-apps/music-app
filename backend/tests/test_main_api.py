@@ -118,6 +118,49 @@ def test_admin_read_user_history_allowed_for_admin(client, monkeypatch):
     assert res.json() == [{"filename": "a.mp3", "uid": "target-uid"}]
 
 
+def test_submit_feedback_works_anonymously(client):
+    res = client.post("/feedback", json={"category": "feedback", "message": "Love the app!"})
+    assert res.status_code == 200
+    assert res.json()["category"] == "feedback"
+    assert res.json()["read"] is False
+
+
+def test_submit_feedback_rejects_invalid_category(client):
+    res = client.post("/feedback", json={"category": "nonsense", "message": "hi"})
+    assert res.status_code == 400
+
+
+def test_admin_feedback_requires_auth(client):
+    assert client.get("/admin/feedback").status_code == 401
+    assert client.patch("/admin/feedback/some-id", json={"read": True}).status_code == 401
+
+
+def test_admin_feedback_forbidden_for_non_admin(client, monkeypatch):
+    monkeypatch.setattr(main, "get_current_user", lambda request: "uid-1")
+    monkeypatch.setattr(main, "get_settings", lambda uid: {"is_admin": False})
+    assert client.get("/admin/feedback").status_code == 403
+
+
+def test_admin_feedback_allowed_for_admin(client, monkeypatch):
+    monkeypatch.setattr(main, "get_current_user", lambda request: "admin-uid")
+    monkeypatch.setattr(main, "get_settings", lambda uid: {"is_admin": True})
+    monkeypatch.setattr(main, "list_feedback", lambda: [{"feedback_id": "f1", "read": False}])
+    res = client.get("/admin/feedback")
+    assert res.status_code == 200
+    assert res.json() == [{"feedback_id": "f1", "read": False}]
+
+
+def test_admin_mark_feedback_read_allowed_for_admin(client, monkeypatch):
+    monkeypatch.setattr(main, "get_current_user", lambda request: "admin-uid")
+    monkeypatch.setattr(main, "get_settings", lambda uid: {"is_admin": True})
+    monkeypatch.setattr(
+        main, "mark_feedback_read", lambda feedback_id, read: {"feedback_id": feedback_id, "read": read}
+    )
+    res = client.patch("/admin/feedback/f1", json={"read": True})
+    assert res.status_code == 200
+    assert res.json() == {"feedback_id": "f1", "read": True}
+
+
 def test_admin_billing_stats_requires_auth(client):
     assert client.get("/admin/billing-stats").status_code == 401
 

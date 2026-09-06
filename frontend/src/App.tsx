@@ -1,6 +1,7 @@
 import { Route, Routes } from "react-router-dom"
 import { FAQ } from "./components/FAQ"
 import { Features } from "./components/Features"
+import { FeedbackWidget } from "./components/FeedbackWidget"
 import { Footer } from "./components/Footer"
 import { Header } from "./components/Header"
 import { Hero } from "./components/Hero"
@@ -34,18 +35,21 @@ function Landing() {
 
 function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Landing />} />
-      <Route path="/auth" element={<AuthPage />} />
-      <Route path="/auth/action" element={<AuthActionPage />} />
-      <Route path="/profile" element={<ProfileDetails />} />
-      <Route path="/history" element={<HistoryPage />} />
-      <Route path="/admin" element={<AdminPage />} />
-      <Route path="/admin/users/:uid" element={<AdminUserDetail />} />
-      <Route path="/terms" element={<TermsPage />} />
-      <Route path="/privacy" element={<PrivacyPage />} />
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+    <>
+      <Routes>
+        <Route path="/" element={<Landing />} />
+        <Route path="/auth" element={<AuthPage />} />
+        <Route path="/auth/action" element={<AuthActionPage />} />
+        <Route path="/profile" element={<ProfileDetails />} />
+        <Route path="/history" element={<HistoryPage />} />
+        <Route path="/admin" element={<AdminPage />} />
+        <Route path="/admin/users/:uid" element={<AdminUserDetail />} />
+        <Route path="/terms" element={<TermsPage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+      <FeedbackWidget />
+    </>
   )
 }
 

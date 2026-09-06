@@ -26,6 +26,7 @@ from .billing import (
     handle_webhook_event,
 )
 from .detect_bpm import warm_up
+from .feedback_store import create_feedback, list_feedback, mark_feedback_read
 from .history_store import add_history_entries, clear_history, list_history
 from .process_audio import MAX_FILES_FREE, MAX_FILES_PRO, build_zip, validate_files
 from .profile_store import check_and_reserve_usage, delete_settings, get_settings, save_settings
@@ -209,6 +210,25 @@ def admin_set_discount_code_active(code: str, body: DiscountCodeActiveUpdate, re
         raise HTTPException(502, f"Stripe error: {type(e).__name__}: {e}")
 
 
+class FeedbackReadUpdate(BaseModel):
+    read: bool
+
+
+@app.get("/admin/feedback")
+def admin_list_feedback(request: Request):
+    _require_admin(request)
+    return list_feedback()
+
+
+@app.patch("/admin/feedback/{feedback_id}")
+def admin_mark_feedback_read(feedback_id: str, body: FeedbackReadUpdate, request: Request):
+    _require_admin(request)
+    try:
+        return mark_feedback_read(feedback_id, body.read)
+    except ValueError as e:
+        raise HTTPException(404, str(e))
+
+
 def _frontend_base_url(request: Request) -> str:
     origin = request.headers.get("origin")
     if origin in ALLOWED_ORIGINS:
@@ -260,6 +280,28 @@ async def billing_webhook(request: Request):
     except Exception as e:
         raise HTTPException(400, f"Webhook error: {e}")
     return {"status": "ok"}
+
+
+class FeedbackCreate(BaseModel):
+    category: str
+    message: str
+    email: str | None = None
+    subject: str | None = None
+
+
+@app.post("/feedback")
+def submit_feedback(body: FeedbackCreate, request: Request):
+    # Public -- works for logged-out visitors, so this can't require auth.
+    # Still IP-rate-limited to bound spam (enforce_rate_limit falls back to
+    # the client's IP when no key is given, same as any other unauthed use).
+    enforce_rate_limit(request)
+    uid = get_current_user(request)  # opportunistic -- None for anonymous
+    try:
+        return create_feedback(
+            body.category, body.message, email=body.email, subject=body.subject, uid=uid
+        )
+    except ValueError as e:
+        raise HTTPException(400, str(e))
 
 
 @app.get("/profile")

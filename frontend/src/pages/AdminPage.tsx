@@ -10,16 +10,19 @@ import {
   getAdminUsers,
   getBillingStats,
   getDiscountCodes,
+  getFeedback,
   setDiscountCodeActive,
+  setFeedbackRead,
   setUserAdmin,
   setUserPlan,
   type AdminStats,
   type AdminUser,
   type BillingStats,
   type DiscountCode,
+  type FeedbackSubmission,
 } from "../services/api"
 
-const TABS = ["Stats", "Users", "Discounts", "Billing"] as const
+const TABS = ["Stats", "Users", "Discounts", "Billing", "Feedback"] as const
 type Tab = (typeof TABS)[number]
 
 const PERCENT_OPTIONS = [25, 50, 75, 100]
@@ -459,6 +462,93 @@ function BillingTab({
   )
 }
 
+function FeedbackTab({
+  token,
+  feedback,
+  error,
+  onReload,
+}: {
+  token: string
+  feedback: FeedbackSubmission[] | null
+  error: string | null
+  onReload: () => void
+}) {
+  const [busyId, setBusyId] = useState<string | null>(null)
+
+  async function handleToggleRead(f: FeedbackSubmission) {
+    setBusyId(f.feedback_id)
+    try {
+      await setFeedbackRead(token, f.feedback_id, !f.read)
+      onReload()
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  if (error) return <p className="text-body-sm text-red-600">{error}</p>
+  if (!feedback) return <p className="text-body-md text-on-surface-variant">Loading...</p>
+
+  return (
+    <Card>
+      {feedback.length === 0 ? (
+        <p className="text-body-md text-on-surface-variant">No submissions yet.</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-body-sm">
+            <thead>
+              <tr className="border-b border-outline-variant text-on-surface-variant">
+                <th className="py-2 pr-4">Type</th>
+                <th className="py-2 pr-4">Subject / Message</th>
+                <th className="py-2 pr-4">Email</th>
+                <th className="py-2 pr-4">Date</th>
+                <th className="py-2 pr-4">Read</th>
+              </tr>
+            </thead>
+            <tbody>
+              {feedback.map((f) => (
+                <tr
+                  key={f.feedback_id}
+                  className={`border-b border-outline-variant/50 ${f.read ? "" : "bg-secondary-container/5"}`}
+                >
+                  <td className="py-2 pr-4 text-on-surface-variant">
+                    {f.category === "support" ? "Support" : "Feedback"}
+                  </td>
+                  <td className="py-2 pr-4 text-on-surface">
+                    {f.subject && <div className="font-semibold">{f.subject}</div>}
+                    <div className="max-w-md truncate text-on-surface-variant">{f.message}</div>
+                  </td>
+                  <td className="py-2 pr-4 text-on-surface-variant">{f.email || "—"}</td>
+                  <td className="py-2 pr-4 text-on-surface-variant">
+                    {new Date(f.submitted_at).toLocaleDateString()}
+                  </td>
+                  <td className="py-2 pr-4">
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={f.read}
+                      disabled={busyId === f.feedback_id}
+                      onClick={() => handleToggleRead(f)}
+                      className={`h-6 w-11 rounded-full transition-colors ${
+                        f.read ? "bg-secondary-container" : "bg-outline-variant"
+                      }`}
+                    >
+                      <span
+                        className={`block h-5 w-5 rounded-full bg-white transition-transform ${
+                          f.read ? "translate-x-5" : "translate-x-0.5"
+                        }`}
+                      />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </Card>
+  )
+}
+
 export function AdminPage() {
   const { user, isVerified, loading: authLoading } = useAuth()
   const { isAdmin, loading: adminLoading } = useIsAdmin()
@@ -478,6 +568,8 @@ export function AdminPage() {
   const [billingError, setBillingError] = useState<string | null>(null)
   const [codes, setCodes] = useState<DiscountCode[] | null>(null)
   const [codesError, setCodesError] = useState<string | null>(null)
+  const [feedback, setFeedback] = useState<FeedbackSubmission[] | null>(null)
+  const [feedbackError, setFeedbackError] = useState<string | null>(null)
 
   const reloadUsers = useCallback(async () => {
     if (!token) return
@@ -519,6 +611,16 @@ export function AdminPage() {
     }
   }, [token])
 
+  const reloadFeedback = useCallback(async () => {
+    if (!token) return
+    try {
+      setFeedback(await getFeedback(token))
+      setFeedbackError(null)
+    } catch {
+      setFeedbackError("Couldn't load feedback.")
+    }
+  }, [token])
+
   useEffect(() => {
     if (user) user.getIdToken().then(setToken)
   }, [user])
@@ -529,8 +631,11 @@ export function AdminPage() {
     reloadStats()
     reloadBilling()
     reloadCodes()
+    reloadFeedback()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token])
+
+  const unreadFeedbackCount = feedback?.filter((f) => !f.read).length ?? 0
 
   if (!authLoading && (!user || !isVerified)) {
     return <Navigate to="/auth" replace />
@@ -573,13 +678,18 @@ export function AdminPage() {
               <button
                 key={t}
                 onClick={() => setTab(t)}
-                className={`px-4 py-2 text-body-md font-semibold ${
+                className={`relative px-4 py-2 text-body-md font-semibold ${
                   tab === t
                     ? "border-b-2 border-secondary-container text-on-surface"
                     : "text-on-surface-variant"
                 }`}
               >
                 {t}
+                {t === "Feedback" && unreadFeedbackCount > 0 && (
+                  <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 font-mono text-[11px] font-bold text-white">
+                    {unreadFeedbackCount > 99 ? "99+" : unreadFeedbackCount}
+                  </span>
+                )}
               </button>
             ))}
           </div>
@@ -599,6 +709,14 @@ export function AdminPage() {
           )}
           {tab === "Billing" && (
             <BillingTab stats={stats} billing={billing} codes={codes} error={billingError} />
+          )}
+          {tab === "Feedback" && (
+            <FeedbackTab
+              token={token}
+              feedback={feedback}
+              error={feedbackError}
+              onReload={reloadFeedback}
+            />
           )}
         </div>
       </div>
