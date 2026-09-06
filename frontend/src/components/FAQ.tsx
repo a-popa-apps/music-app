@@ -53,6 +53,7 @@ export function FAQ() {
               >
                 <button
                   onClick={() => setOpenIndex(isOpen ? null : i)}
+                  aria-expanded={isOpen}
                   className="flex w-full items-center justify-between text-left text-headline-sm text-white"
                 >
                   <span>{faq.question}</span>

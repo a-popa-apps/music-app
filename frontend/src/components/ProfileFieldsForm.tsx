@@ -237,6 +237,7 @@ export function ProfileFieldsForm({
               type="button"
               onClick={() => setShowDiscogsHelp((v) => !v)}
               aria-label="What is deep catalog search?"
+              aria-expanded={showDiscogsHelp}
               className="relative flex h-5 w-5 items-center justify-center rounded-full bg-surface-container text-on-surface-variant"
             >
               ?

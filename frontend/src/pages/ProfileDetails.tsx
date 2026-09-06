@@ -255,6 +255,7 @@ export function ProfileDetails() {
           <div className="rounded border border-outline-variant p-3">
             <button
               onClick={() => setDangerZoneOpen((o) => !o)}
+              aria-expanded={dangerZoneOpen}
               className="flex w-full items-center justify-between text-left"
             >
               <span className="text-body-sm font-semibold text-on-surface-variant">
