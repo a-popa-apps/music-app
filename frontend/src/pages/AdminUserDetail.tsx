@@ -71,9 +71,9 @@ export function AdminUserDetail() {
   if (authLoading || adminLoading) {
     return (
       <>
-        <Header />
-        <div className="flex min-h-screen items-center justify-center bg-surface pt-16">
-          <p className="text-body-md text-on-surface-variant">Loading...</p>
+        <Header dark />
+        <div className="flex min-h-screen items-center justify-center bg-black pt-16">
+          <p className="text-body-md text-white/60">Loading...</p>
         </div>
       </>
     )
@@ -82,9 +82,9 @@ export function AdminUserDetail() {
   if (!isAdmin) {
     return (
       <>
-        <Header />
-        <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-surface px-4 pt-16 text-center">
-          <p className="text-headline-sm text-on-surface">Not authorized</p>
+        <Header dark />
+        <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-black px-4 pt-16 text-center">
+          <p className="text-headline-sm text-white">Not authorized</p>
         </div>
       </>
     )
@@ -140,28 +140,28 @@ export function AdminUserDetail() {
 
   return (
     <>
-      <Header />
-      <div className="min-h-screen w-full bg-surface px-4 py-12 pt-32">
+      <Header dark />
+      <div className="min-h-screen w-full bg-black px-4 py-12 pt-32">
         <div className="mx-auto max-w-2xl">
           <Link
             to="/admin"
-            className="mb-4 inline-block text-body-sm font-semibold text-on-surface-variant hover:text-on-surface"
+            className="mb-4 inline-block text-body-sm font-semibold text-white/60 hover:text-white"
           >
             &larr; Back to Admin
           </Link>
-          <h1 className="mb-6 text-headline-lg text-on-surface">Edit User</h1>
+          <h1 className="mb-6 text-headline-lg text-white">Edit User</h1>
 
           {loading || !settings ? (
-            <p className="text-body-md text-on-surface-variant">
+            <p className="text-body-md text-white/60">
               {error ?? "Loading..."}
             </p>
           ) : (
             <div className="flex flex-col gap-6">
               {settings.plan === "free" && (
-                <div className="flex items-center justify-between gap-4 rounded bg-surface-container-lowest p-6 shadow-sm">
+                <div className="flex items-center justify-between gap-4 rounded border border-white/10 bg-white/10 p-6 backdrop-blur-md">
                   <div className="flex flex-col gap-1">
-                    <h2 className="text-headline-sm text-on-surface">Monthly usage</h2>
-                    <span className="text-body-sm text-on-surface-variant">
+                    <h2 className="text-headline-sm text-white">Monthly usage</h2>
+                    <span className="text-body-sm text-white/60">
                       {settings.tracks_processed_this_period} / 25 tracks used
                       {settings.usage_period_start ? ` (${settings.usage_period_start})` : ""}
                     </span>
@@ -169,31 +169,31 @@ export function AdminUserDetail() {
                   <button
                     onClick={handleResetUsage}
                     disabled={resettingUsage || settings.tracks_processed_this_period === 0}
-                    className="whitespace-nowrap rounded-full border border-outline-variant px-4 py-2 text-body-sm font-semibold text-on-surface transition-colors hover:bg-surface-container-low disabled:cursor-not-allowed disabled:opacity-50"
+                    className="whitespace-nowrap rounded-full border border-white/20 px-4 py-2 text-body-sm font-semibold text-white transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {resettingUsage ? "Resetting..." : usageResetDone ? "Reset!" : "Reset usage"}
                   </button>
                 </div>
               )}
 
-              <div className="rounded bg-surface-container-lowest p-6 shadow-sm">
-                <h2 className="mb-3 text-headline-sm text-on-surface">Processing history</h2>
+              <div className="rounded border border-white/10 bg-white/10 p-6 backdrop-blur-md">
+                <h2 className="mb-3 text-headline-sm text-white">Processing history</h2>
                 {!history ? (
-                  <p className="text-body-sm text-on-surface-variant">Loading...</p>
+                  <p className="text-body-sm text-white/60">Loading...</p>
                 ) : history.length === 0 ? (
-                  <p className="text-body-sm text-on-surface-variant">
+                  <p className="text-body-sm text-white/60">
                     Hasn't processed any tracks yet.
                   </p>
                 ) : (
                   <div className="flex flex-col gap-2">
-                    <span className="text-body-sm text-on-surface-variant">
+                    <span className="text-body-sm text-white/60">
                       {history.length} track{history.length === 1 ? "" : "s"} processed --
                       showing the 10 most recent
                     </span>
                     <div className="overflow-x-auto">
                       <table className="w-full text-left text-body-sm">
                         <thead>
-                          <tr className="border-b border-outline-variant text-on-surface-variant">
+                          <tr className="border-b border-white/10 text-white/60">
                             <th className="py-1 pr-4">Filename</th>
                             <th className="py-1 pr-4">Date</th>
                             <th className="py-1 pr-4">Status</th>
@@ -201,14 +201,14 @@ export function AdminUserDetail() {
                         </thead>
                         <tbody>
                           {history.slice(0, 10).map((h) => (
-                            <tr key={h.history_id} className="border-b border-outline-variant/50">
-                              <td className="py-1 pr-4 text-on-surface">{h.filename}</td>
-                              <td className="py-1 pr-4 text-on-surface-variant">
+                            <tr key={h.history_id} className="border-b border-white/10">
+                              <td className="py-1 pr-4 text-white">{h.filename}</td>
+                              <td className="py-1 pr-4 text-white/60">
                                 {new Date(h.processed_at).toLocaleDateString()}
                               </td>
                               <td
                                 className={`py-1 pr-4 font-mono text-meta-badge font-bold uppercase ${
-                                  h.failed ? "text-red-600" : "text-secondary-container"
+                                  h.failed ? "text-red-400" : "text-secondary-container"
                                 }`}
                               >
                                 {h.failed ? "Error" : "Done"}
@@ -224,7 +224,7 @@ export function AdminUserDetail() {
 
               <ProfileFieldsForm settings={settings} onChange={update} email={email} />
 
-              {error && <p className="text-body-sm text-red-600">{error}</p>}
+              {error && <p className="text-body-sm text-red-400">{error}</p>}
 
               <button
                 onClick={handleSave}

@@ -16,7 +16,7 @@ const SORT_LABELS: { key: SortKey; label: string }[] = [
 
 function Card({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex flex-col gap-4 rounded bg-surface-container-lowest p-6 shadow-sm">
+    <div className="flex flex-col gap-4 rounded border border-white/10 bg-white/10 p-6 backdrop-blur-md">
       {children}
     </div>
   )
@@ -120,29 +120,29 @@ export function HistoryPage() {
 
   return (
     <>
-      <Header />
-      <div className="min-h-screen w-full bg-surface px-4 py-12 pt-32">
+      <Header dark />
+      <div className="min-h-screen w-full bg-black px-4 py-12 pt-32">
         <div className="mx-auto max-w-5xl">
           <div className="mb-6 flex items-center justify-between gap-4">
-            <h1 className="text-headline-lg text-on-surface">History</h1>
+            <h1 className="text-headline-lg text-white">History</h1>
             {history && history.length > 0 && (
               <button
                 onClick={handleClear}
                 disabled={clearing}
-                className="whitespace-nowrap rounded-full border border-red-600 px-4 py-2 text-body-sm font-semibold text-red-700 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                className="whitespace-nowrap rounded-full border border-red-400 px-4 py-2 text-body-sm font-semibold text-red-300 transition-colors hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {clearing ? "Clearing..." : "Clear History"}
               </button>
             )}
           </div>
 
-          {error && <p className="mb-4 text-body-sm text-red-600">{error}</p>}
+          {error && <p className="mb-4 text-body-sm text-red-400">{error}</p>}
 
           {!history ? (
-            <p className="text-body-md text-on-surface-variant">Loading...</p>
+            <p className="text-body-md text-white/60">Loading...</p>
           ) : history.length === 0 ? (
             <Card>
-              <p className="text-body-md text-on-surface-variant">
+              <p className="text-body-md text-white/60">
                 You haven't processed any tracks yet. Drop some files on the home page to get
                 started.
               </p>
@@ -155,12 +155,12 @@ export function HistoryPage() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search by filename..."
-                  className="flex-1 rounded border border-outline-variant bg-surface-container-lowest px-4 py-2 text-body-md text-on-surface outline-none focus:border-secondary-container"
+                  className="flex-1 rounded border border-white/20 bg-white/5 px-4 py-2 text-body-md text-white outline-none placeholder:text-white/40 focus:border-secondary-container"
                 />
                 <select
                   value={genreFilter}
                   onChange={(e) => setGenreFilter(e.target.value)}
-                  className="rounded border border-outline-variant bg-surface-container-lowest px-3 py-2 text-body-sm text-on-surface"
+                  className="rounded border border-white/20 bg-white/5 px-3 py-2 text-body-sm text-white"
                 >
                   <option value="all">All genres</option>
                   {genres.map((g) => (
@@ -172,7 +172,7 @@ export function HistoryPage() {
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-                  className="rounded border border-outline-variant bg-surface-container-lowest px-3 py-2 text-body-sm text-on-surface"
+                  className="rounded border border-white/20 bg-white/5 px-3 py-2 text-body-sm text-white"
                 >
                   <option value="all">All statuses</option>
                   <option value="success">Successful</option>
@@ -183,13 +183,13 @@ export function HistoryPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-body-sm">
                   <thead>
-                    <tr className="border-b border-outline-variant text-on-surface-variant">
+                    <tr className="border-b border-white/10 text-white/60">
                       <th className="py-2 pr-4">Filename</th>
                       {SORT_LABELS.map(({ key, label }) => (
                         <th key={key} className="py-2 pr-4">
                           <button
                             onClick={() => toggleSort(key)}
-                            className="flex items-center gap-1 font-semibold hover:text-on-surface"
+                            className="flex items-center gap-1 font-semibold hover:text-white"
                           >
                             {label}
                             {sortKey === key && (
@@ -205,31 +205,31 @@ export function HistoryPage() {
                   </thead>
                   <tbody>
                     {visible.map((e) => (
-                      <tr key={e.history_id} className="border-b border-outline-variant/50">
+                      <tr key={e.history_id} className="border-b border-white/10">
                         <td className="py-2 pr-4">
                           <div className="flex flex-col">
-                            <span className="font-semibold text-on-surface">{e.filename}</span>
+                            <span className="font-semibold text-white">{e.filename}</span>
                             {e.original_filename !== e.filename && (
-                              <span className="text-body-sm text-on-surface-variant">
+                              <span className="text-body-sm text-white/60">
                                 was: {e.original_filename}
                               </span>
                             )}
                           </div>
                         </td>
-                        <td className="py-2 pr-4 text-on-surface-variant">
+                        <td className="py-2 pr-4 text-white/60">
                           {new Date(e.processed_at).toLocaleString()}
                         </td>
-                        <td className="py-2 pr-4 text-on-surface-variant">
+                        <td className="py-2 pr-4 text-white/60">
                           {e.bpm !== null ? Math.round(e.bpm) : "—"}
                         </td>
-                        <td className="py-2 pr-4 text-on-surface-variant">
+                        <td className="py-2 pr-4 text-white/60">
                           {e.camelot ?? "—"}
                         </td>
-                        <td className="py-2 pr-4 text-on-surface-variant">{e.genre ?? "—"}</td>
+                        <td className="py-2 pr-4 text-white/60">{e.genre ?? "—"}</td>
                         <td className="py-2 pr-4">
                           <span
                             className={`font-mono text-meta-badge font-bold uppercase ${
-                              e.failed ? "text-red-600" : "text-secondary-container"
+                              e.failed ? "text-red-400" : "text-secondary-container"
                             }`}
                           >
                             {e.failed ? "Error" : "Done"}
@@ -240,7 +240,7 @@ export function HistoryPage() {
                   </tbody>
                 </table>
                 {visible.length === 0 && (
-                  <p className="py-6 text-center text-body-md text-on-surface-variant">
+                  <p className="py-6 text-center text-body-md text-white/60">
                     No tracks match your filters.
                   </p>
                 )}

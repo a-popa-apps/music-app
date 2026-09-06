@@ -29,7 +29,7 @@ const PERCENT_OPTIONS = [25, 50, 75, 100]
 
 function Card({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex flex-col gap-4 rounded bg-surface-container-lowest p-6 shadow-sm">
+    <div className="flex flex-col gap-4 rounded border border-white/10 bg-white/10 p-6 backdrop-blur-md">
       {children}
     </div>
   )
@@ -94,8 +94,8 @@ function UsersTab({
     }
   }
 
-  if (error) return <p className="text-body-sm text-red-600">{error}</p>
-  if (!users) return <p className="text-body-md text-on-surface-variant">Loading...</p>
+  if (error) return <p className="text-body-sm text-red-400">{error}</p>
+  if (!users) return <p className="text-body-md text-white/60">Loading...</p>
 
   const query = search.trim().toLowerCase()
   const visible = query
@@ -111,12 +111,12 @@ function UsersTab({
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         placeholder="Search by name or email..."
-        className="rounded border border-outline-variant bg-surface-container-lowest px-4 py-2 text-body-md text-on-surface outline-none focus:border-secondary-container"
+        className="rounded border border-white/20 bg-white/5 px-4 py-2 text-body-md text-white outline-none placeholder:text-white/40 focus:border-secondary-container"
       />
       <div className="overflow-x-auto">
         <table className="w-full text-left text-body-sm">
           <thead>
-            <tr className="border-b border-outline-variant text-on-surface-variant">
+            <tr className="border-b border-white/10 text-white/60">
               <th className="py-2 pr-4">Name</th>
               <th className="py-2 pr-4">Email</th>
               <th className="py-2 pr-4">Plan</th>
@@ -129,16 +129,16 @@ function UsersTab({
               <tr
                 key={u.uid}
                 onClick={() => navigate(`/admin/users/${u.uid}`)}
-                className="cursor-pointer border-b border-outline-variant/50 hover:bg-surface-container-low"
+                className="cursor-pointer border-b border-white/10 hover:bg-white/5"
               >
-                <td className="py-2 pr-4 text-on-surface">{u.name || u.artist_name || "—"}</td>
-                <td className="py-2 pr-4 text-on-surface-variant">{u.email}</td>
+                <td className="py-2 pr-4 text-white">{u.name || u.artist_name || "—"}</td>
+                <td className="py-2 pr-4 text-white/60">{u.email}</td>
                 <td className="py-2 pr-4" onClick={(e) => e.stopPropagation()}>
                   <select
                     value={u.plan}
                     disabled={busyUid === u.uid}
                     onChange={(e) => handlePlanChange(u.uid, e.target.value as "free" | "pro")}
-                    className="rounded border border-outline-variant bg-surface-container-lowest px-2 py-1 text-body-sm text-on-surface"
+                    className="rounded border border-white/20 bg-white/5 px-2 py-1 text-body-sm text-white"
                   >
                     <option value="free">Free</option>
                     <option value="pro">Pro</option>
@@ -152,7 +152,7 @@ function UsersTab({
                     disabled={busyUid === u.uid}
                     onClick={() => handleAdminToggle(u.uid, !u.is_admin)}
                     className={`h-6 w-11 rounded-full transition-colors ${
-                      u.is_admin ? "bg-secondary-container" : "bg-outline-variant"
+                      u.is_admin ? "bg-secondary-container" : "bg-white/20"
                     }`}
                   >
                     <span
@@ -166,7 +166,7 @@ function UsersTab({
                   <button
                     onClick={() => handleDelete(u)}
                     disabled={busyUid === u.uid}
-                    className="rounded-full border border-red-600 px-3 py-1 text-body-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50"
+                    className="rounded-full border border-red-400 px-3 py-1 text-body-sm font-semibold text-red-300 hover:bg-red-500/10 disabled:opacity-50"
                   >
                     Delete
                   </button>
@@ -176,7 +176,7 @@ function UsersTab({
           </tbody>
         </table>
         {visible.length === 0 && (
-          <p className="py-6 text-center text-body-md text-on-surface-variant">
+          <p className="py-6 text-center text-body-md text-white/60">
             No users match your search.
           </p>
         )}
@@ -186,35 +186,35 @@ function UsersTab({
 }
 
 function StatsTab({ stats, error }: { stats: AdminStats | null; error: string | null }) {
-  if (error) return <p className="text-body-sm text-red-600">{error}</p>
-  if (!stats) return <p className="text-body-md text-on-surface-variant">Loading...</p>
+  if (error) return <p className="text-body-sm text-red-400">{error}</p>
+  if (!stats) return <p className="text-body-md text-white/60">Loading...</p>
 
   return (
     <div className="flex flex-col gap-6">
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <Card>
-          <span className="text-body-sm text-on-surface-variant">Total users</span>
-          <span className="text-headline-lg text-on-surface">{stats.total_users}</span>
+          <span className="text-body-sm text-white/60">Total users</span>
+          <span className="text-headline-lg text-white">{stats.total_users}</span>
         </Card>
         <Card>
-          <span className="text-body-sm text-on-surface-variant">Free</span>
-          <span className="text-headline-lg text-on-surface">{stats.by_plan.free ?? 0}</span>
+          <span className="text-body-sm text-white/60">Free</span>
+          <span className="text-headline-lg text-white">{stats.by_plan.free ?? 0}</span>
         </Card>
         <Card>
-          <span className="text-body-sm text-on-surface-variant">Pro</span>
-          <span className="text-headline-lg text-on-surface">{stats.by_plan.pro ?? 0}</span>
+          <span className="text-body-sm text-white/60">Pro</span>
+          <span className="text-headline-lg text-white">{stats.by_plan.pro ?? 0}</span>
         </Card>
         <Card>
-          <span className="text-body-sm text-on-surface-variant">Admins</span>
-          <span className="text-headline-lg text-on-surface">{stats.admin_count}</span>
+          <span className="text-body-sm text-white/60">Admins</span>
+          <span className="text-headline-lg text-white">{stats.admin_count}</span>
         </Card>
       </div>
 
       <Card>
-        <h3 className="text-headline-sm text-on-surface">Recent signups</h3>
+        <h3 className="text-headline-sm text-white">Recent signups</h3>
         <ul className="flex flex-col gap-2">
           {stats.recent_signups.map((u) => (
-            <li key={u.uid} className="flex justify-between text-body-sm text-on-surface-variant">
+            <li key={u.uid} className="flex justify-between text-body-sm text-white/60">
               <span>{u.email}</span>
               <span>{new Date(u.created_at).toLocaleDateString()}</span>
             </li>
@@ -266,14 +266,14 @@ function DiscountCodesTab({
   return (
     <div className="flex flex-col gap-6">
       <Card>
-        <h3 className="text-headline-sm text-on-surface">Generate a code</h3>
+        <h3 className="text-headline-sm text-white">Generate a code</h3>
         <div className="flex flex-wrap items-end gap-4">
           <label className="flex flex-col gap-1">
-            <span className="text-body-sm font-semibold text-on-surface">% off</span>
+            <span className="text-body-sm font-semibold text-white">% off</span>
             <select
               value={percentOff}
               onChange={(e) => setPercentOff(Number(e.target.value))}
-              className="rounded border border-outline-variant bg-surface-container-lowest px-3 py-2 text-body-md text-on-surface"
+              className="rounded border border-white/20 bg-white/5 px-3 py-2 text-body-md text-white"
             >
               {PERCENT_OPTIONS.map((p) => (
                 <option key={p} value={p}>
@@ -283,13 +283,13 @@ function DiscountCodesTab({
             </select>
           </label>
           <label className="flex flex-col gap-1">
-            <span className="text-body-sm font-semibold text-on-surface">Max uses</span>
+            <span className="text-body-sm font-semibold text-white">Max uses</span>
             <input
               type="number"
               min={1}
               value={maxUses}
               onChange={(e) => setMaxUses(Math.max(1, Number(e.target.value)))}
-              className="w-24 rounded border border-outline-variant bg-surface-container-lowest px-3 py-2 text-body-md text-on-surface"
+              className="w-24 rounded border border-white/20 bg-white/5 px-3 py-2 text-body-md text-white"
             />
           </label>
           <button
@@ -301,21 +301,21 @@ function DiscountCodesTab({
           </button>
         </div>
         {(createError || error) && (
-          <p className="text-body-sm text-red-600">{createError ?? error}</p>
+          <p className="text-body-sm text-red-400">{createError ?? error}</p>
         )}
       </Card>
 
       <Card>
-        <h3 className="text-headline-sm text-on-surface">Existing codes</h3>
+        <h3 className="text-headline-sm text-white">Existing codes</h3>
         {!codes ? (
-          <p className="text-body-md text-on-surface-variant">Loading...</p>
+          <p className="text-body-md text-white/60">Loading...</p>
         ) : codes.length === 0 ? (
-          <p className="text-body-md text-on-surface-variant">No discount codes yet.</p>
+          <p className="text-body-md text-white/60">No discount codes yet.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-body-sm">
               <thead>
-                <tr className="border-b border-outline-variant text-on-surface-variant">
+                <tr className="border-b border-white/10 text-white/60">
                   <th className="py-2 pr-4">Code</th>
                   <th className="py-2 pr-4">% off</th>
                   <th className="py-2 pr-4">Uses</th>
@@ -324,10 +324,10 @@ function DiscountCodesTab({
               </thead>
               <tbody>
                 {codes.map((c) => (
-                  <tr key={c.code} className="border-b border-outline-variant/50">
-                    <td className="py-2 pr-4 font-mono text-on-surface">{c.code}</td>
-                    <td className="py-2 pr-4 text-on-surface-variant">{c.percent_off}%</td>
-                    <td className="py-2 pr-4 text-on-surface-variant">
+                  <tr key={c.code} className="border-b border-white/10">
+                    <td className="py-2 pr-4 font-mono text-white">{c.code}</td>
+                    <td className="py-2 pr-4 text-white/60">{c.percent_off}%</td>
+                    <td className="py-2 pr-4 text-white/60">
                       {c.used_count} / {c.max_uses}
                     </td>
                     <td className="py-2 pr-4">
@@ -337,7 +337,7 @@ function DiscountCodesTab({
                         aria-checked={c.active}
                         onClick={() => handleToggleActive(c)}
                         className={`h-6 w-11 rounded-full transition-colors ${
-                          c.active ? "bg-secondary-container" : "bg-outline-variant"
+                          c.active ? "bg-secondary-container" : "bg-white/20"
                         }`}
                       >
                         <span
@@ -377,46 +377,46 @@ function BillingTab({
     <div className="flex flex-col gap-6">
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <Card>
-          <span className="text-body-sm text-on-surface-variant">MRR</span>
-          <span className="text-headline-lg text-on-surface">
+          <span className="text-body-sm text-white/60">MRR</span>
+          <span className="text-headline-lg text-white">
             {billing ? formatCents(billing.mrr_cents) : "—"}
           </span>
         </Card>
         <Card>
-          <span className="text-body-sm text-on-surface-variant">Active subscribers</span>
-          <span className="text-headline-lg text-on-surface">
+          <span className="text-body-sm text-white/60">Active subscribers</span>
+          <span className="text-headline-lg text-white">
             {billing?.active_subscribers ?? "—"}
           </span>
         </Card>
         <Card>
-          <span className="text-body-sm text-on-surface-variant">Trialing</span>
-          <span className="text-headline-lg text-on-surface">
+          <span className="text-body-sm text-white/60">Trialing</span>
+          <span className="text-headline-lg text-white">
             {billing?.trialing_subscribers ?? "—"}
           </span>
         </Card>
         <Card>
-          <span className="text-body-sm text-on-surface-variant">Canceled (30d)</span>
-          <span className="text-headline-lg text-on-surface">
+          <span className="text-body-sm text-white/60">Canceled (30d)</span>
+          <span className="text-headline-lg text-white">
             {billing?.canceled_last_30_days ?? "—"}
           </span>
         </Card>
       </div>
 
       <Card>
-        <span className="text-body-sm text-on-surface-variant">
+        <span className="text-body-sm text-white/60">
           Revenue collected, last 30 days
         </span>
-        <span className="text-headline-lg text-on-surface">
+        <span className="text-headline-lg text-white">
           {billing ? formatCents(billing.revenue_last_30_days_cents) : "—"}
         </span>
       </Card>
 
-      {error && <p className="text-body-sm text-red-600">{error}</p>}
+      {error && <p className="text-body-sm text-red-400">{error}</p>}
 
       {stats && (
         <Card>
-          <h3 className="text-headline-sm text-on-surface">Signups by plan</h3>
-          <div className="flex gap-6 text-body-md text-on-surface">
+          <h3 className="text-headline-sm text-white">Signups by plan</h3>
+          <div className="flex gap-6 text-body-md text-white">
             <span>Free: {stats.by_plan.free ?? 0}</span>
             <span>Pro: {stats.by_plan.pro ?? 0}</span>
           </div>
@@ -424,16 +424,16 @@ function BillingTab({
       )}
 
       <Card>
-        <h3 className="text-headline-sm text-on-surface">Discount code usage</h3>
+        <h3 className="text-headline-sm text-white">Discount code usage</h3>
         {!codes ? (
-          <p className="text-body-md text-on-surface-variant">Loading...</p>
+          <p className="text-body-md text-white/60">Loading...</p>
         ) : codes.length === 0 ? (
-          <p className="text-body-md text-on-surface-variant">No discount codes yet.</p>
+          <p className="text-body-md text-white/60">No discount codes yet.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-body-sm">
               <thead>
-                <tr className="border-b border-outline-variant text-on-surface-variant">
+                <tr className="border-b border-white/10 text-white/60">
                   <th className="py-2 pr-4">Code</th>
                   <th className="py-2 pr-4">% off</th>
                   <th className="py-2 pr-4">Used</th>
@@ -442,13 +442,13 @@ function BillingTab({
               </thead>
               <tbody>
                 {codes.map((c) => (
-                  <tr key={c.code} className="border-b border-outline-variant/50">
-                    <td className="py-2 pr-4 font-mono text-on-surface">{c.code}</td>
-                    <td className="py-2 pr-4 text-on-surface-variant">{c.percent_off}%</td>
-                    <td className="py-2 pr-4 text-on-surface-variant">
+                  <tr key={c.code} className="border-b border-white/10">
+                    <td className="py-2 pr-4 font-mono text-white">{c.code}</td>
+                    <td className="py-2 pr-4 text-white/60">{c.percent_off}%</td>
+                    <td className="py-2 pr-4 text-white/60">
                       {c.used_count} / {c.max_uses}
                     </td>
-                    <td className="py-2 pr-4 text-on-surface-variant">
+                    <td className="py-2 pr-4 text-white/60">
                       {c.active ? "Yes" : "No"}
                     </td>
                   </tr>
@@ -485,18 +485,18 @@ function FeedbackTab({
     }
   }
 
-  if (error) return <p className="text-body-sm text-red-600">{error}</p>
-  if (!feedback) return <p className="text-body-md text-on-surface-variant">Loading...</p>
+  if (error) return <p className="text-body-sm text-red-400">{error}</p>
+  if (!feedback) return <p className="text-body-md text-white/60">Loading...</p>
 
   return (
     <Card>
       {feedback.length === 0 ? (
-        <p className="text-body-md text-on-surface-variant">No submissions yet.</p>
+        <p className="text-body-md text-white/60">No submissions yet.</p>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-left text-body-sm">
             <thead>
-              <tr className="border-b border-outline-variant text-on-surface-variant">
+              <tr className="border-b border-white/10 text-white/60">
                 <th className="py-2 pr-4">Type</th>
                 <th className="py-2 pr-4">Subject / Message</th>
                 <th className="py-2 pr-4">Email</th>
@@ -508,17 +508,17 @@ function FeedbackTab({
               {feedback.map((f) => (
                 <tr
                   key={f.feedback_id}
-                  className={`border-b border-outline-variant/50 ${f.read ? "" : "bg-secondary-container/5"}`}
+                  className={`border-b border-white/10 ${f.read ? "" : "bg-secondary-container/10"}`}
                 >
-                  <td className="py-2 pr-4 text-on-surface-variant">
+                  <td className="py-2 pr-4 text-white/60">
                     {f.category === "support" ? "Support" : "Feedback"}
                   </td>
-                  <td className="py-2 pr-4 text-on-surface">
+                  <td className="py-2 pr-4 text-white">
                     {f.subject && <div className="font-semibold">{f.subject}</div>}
-                    <div className="max-w-md truncate text-on-surface-variant">{f.message}</div>
+                    <div className="max-w-md truncate text-white/60">{f.message}</div>
                   </td>
-                  <td className="py-2 pr-4 text-on-surface-variant">{f.email || "—"}</td>
-                  <td className="py-2 pr-4 text-on-surface-variant">
+                  <td className="py-2 pr-4 text-white/60">{f.email || "—"}</td>
+                  <td className="py-2 pr-4 text-white/60">
                     {new Date(f.submitted_at).toLocaleDateString()}
                   </td>
                   <td className="py-2 pr-4">
@@ -529,7 +529,7 @@ function FeedbackTab({
                       disabled={busyId === f.feedback_id}
                       onClick={() => handleToggleRead(f)}
                       className={`h-6 w-11 rounded-full transition-colors ${
-                        f.read ? "bg-secondary-container" : "bg-outline-variant"
+                        f.read ? "bg-secondary-container" : "bg-white/20"
                       }`}
                     >
                       <span
@@ -644,9 +644,9 @@ export function AdminPage() {
   if (authLoading || adminLoading || !token) {
     return (
       <>
-        <Header />
-        <div className="flex min-h-screen items-center justify-center bg-surface pt-16">
-          <p className="text-body-md text-on-surface-variant">Loading...</p>
+        <Header dark />
+        <div className="flex min-h-screen items-center justify-center bg-black pt-16">
+          <p className="text-body-md text-white/60">Loading...</p>
         </div>
       </>
     )
@@ -655,10 +655,10 @@ export function AdminPage() {
   if (!isAdmin) {
     return (
       <>
-        <Header />
-        <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-surface px-4 pt-16 text-center">
-          <p className="text-headline-sm text-on-surface">Not authorized</p>
-          <p className="text-body-md text-on-surface-variant">
+        <Header dark />
+        <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-black px-4 pt-16 text-center">
+          <p className="text-headline-sm text-white">Not authorized</p>
+          <p className="text-body-md text-white/60">
             You don't have access to the admin area.
           </p>
         </div>
@@ -668,20 +668,20 @@ export function AdminPage() {
 
   return (
     <>
-      <Header />
-      <div className="min-h-screen w-full bg-surface px-4 py-12 pt-32">
+      <Header dark />
+      <div className="min-h-screen w-full bg-black px-4 py-12 pt-32">
         <div className="mx-auto max-w-4xl">
-          <h1 className="mb-6 text-headline-lg text-on-surface">Admin</h1>
+          <h1 className="mb-6 text-headline-lg text-white">Admin</h1>
 
-          <div className="mb-6 flex gap-2 border-b border-outline-variant">
+          <div className="mb-6 flex gap-2 border-b border-white/10">
             {TABS.map((t) => (
               <button
                 key={t}
                 onClick={() => setTab(t)}
                 className={`relative px-4 py-2 text-body-md font-semibold ${
                   tab === t
-                    ? "border-b-2 border-secondary-container text-on-surface"
-                    : "text-on-surface-variant"
+                    ? "border-b-2 border-secondary-container text-white"
+                    : "text-white/60"
                 }`}
               >
                 {t}
