@@ -11,7 +11,10 @@ const NAV_LINKS = [
   { label: "FAQ", href: "/#faq" },
 ]
 
-export function Header() {
+// `dark` forces the same translucent-over-dark treatment normally reserved
+// for sitting on top of the hero image, for pages with a solid black
+// background of their own (e.g. the restyled Profile page).
+export function Header({ dark = false }: { dark?: boolean }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const { user, isVerified, logOut, loading } = useAuth()
@@ -19,7 +22,7 @@ export function Header() {
   const isAdmin = profile?.is_admin ?? false
   const loggedIn = user && isVerified
   const location = useLocation()
-  const overHero = location.pathname === "/" && !scrolled
+  const overHero = dark || (location.pathname === "/" && !scrolled)
   const headerRef = useRef<HTMLElement>(null)
 
   useEffect(() => {

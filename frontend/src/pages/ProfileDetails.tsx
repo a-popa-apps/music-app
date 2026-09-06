@@ -88,12 +88,12 @@ export function ProfileDetails() {
   if (loading) {
     return (
       <>
-        <Header />
-        <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-surface pt-16">
+        <Header dark />
+        <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-black pt-16">
           <span className="material-symbols-outlined animate-spin text-[40px] text-secondary-container">
             progress_activity
           </span>
-          <p className="text-headline-sm text-on-surface">Loading your profile...</p>
+          <p className="text-headline-sm text-white">Loading your profile...</p>
         </div>
       </>
     )
@@ -102,9 +102,9 @@ export function ProfileDetails() {
   if (!settings) {
     return (
       <>
-        <Header />
-        <div className="flex min-h-screen items-center justify-center bg-surface pt-16">
-          <p className="text-body-md text-red-600">
+        <Header dark />
+        <div className="flex min-h-screen items-center justify-center bg-black pt-16">
+          <p className="text-body-md text-red-400">
             {error ?? "Couldn't load your profile."}
           </p>
         </div>
@@ -187,14 +187,14 @@ export function ProfileDetails() {
 
   return (
     <>
-      <Header />
-      <div className="min-h-screen w-full bg-surface px-4 py-12 pb-28 pt-32">
+      <Header dark />
+      <div className="min-h-screen w-full bg-black px-4 py-12 pb-28 pt-32">
       <div className="mx-auto max-w-2xl">
-        <h1 className="mb-6 text-headline-lg text-on-surface">Profile Details</h1>
+        <h1 className="mb-6 text-headline-lg text-white">Profile Details</h1>
 
         <div className="flex flex-col gap-6">
           {checkoutResult === "success" && (
-            <div className="rounded border border-green-200 bg-green-50 px-4 py-3 text-body-sm text-green-800">
+            <div className="rounded border border-green-400/30 bg-green-500/10 px-4 py-3 text-body-sm text-green-300">
               Welcome to Pro! Your subscription is now active.
               <button
                 onClick={() => setSearchParams({}, { replace: true })}
@@ -205,7 +205,7 @@ export function ProfileDetails() {
             </div>
           )}
           {checkoutResult === "cancelled" && (
-            <div className="rounded border border-outline-variant bg-surface-container-low px-4 py-3 text-body-sm text-on-surface-variant">
+            <div className="rounded border border-white/10 bg-white/5 px-4 py-3 text-body-sm text-white/70">
               Checkout was cancelled — no changes were made.
               <button
                 onClick={() => setSearchParams({}, { replace: true })}
@@ -246,7 +246,7 @@ export function ProfileDetails() {
           <Section title="Billing">
             <div className="flex items-center justify-between gap-4">
               <div className="flex flex-col gap-1">
-                <span className="flex items-center gap-1 text-body-md text-on-surface">
+                <span className="flex items-center gap-1 text-body-md text-white">
                   Current plan:{" "}
                   <strong className="inline-flex items-center gap-1">
                     {settings.plan === "pro" ? "Pro" : "Free"}
@@ -259,21 +259,21 @@ export function ProfileDetails() {
                 </span>
                 {settings.plan === "pro" ? (
                   settings.subscription_status && SUBSCRIPTION_WARNINGS[settings.subscription_status] ? (
-                    <span className="text-body-sm text-red-600">
+                    <span className="text-body-sm text-red-400">
                       {SUBSCRIPTION_WARNINGS[settings.subscription_status]}
                     </span>
                   ) : (
-                    <span className="text-body-sm text-on-surface-variant">
+                    <span className="text-body-sm text-white/60">
                       Manage your payment method, invoices, or cancel anytime.
                     </span>
                   )
                 ) : (
                   <>
-                    <span className="text-body-sm text-on-surface-variant">
+                    <span className="text-body-sm text-white/60">
                       {settings.tracks_processed_this_period} / 25 tracks used this month
                       (resets {quotaResetLabel()})
                     </span>
-                    <span className="text-body-sm text-on-surface-variant">
+                    <span className="text-body-sm text-white/60">
                       Upgrade for more tracks and priority detection.
                     </span>
                   </>
@@ -293,19 +293,19 @@ export function ProfileDetails() {
             </div>
           </Section>
 
-          {error && <p className="text-body-sm text-red-600">{error}</p>}
+          {error && <p className="text-body-sm text-red-400">{error}</p>}
 
-          <div className="rounded border border-outline-variant p-3">
+          <div className="rounded border border-white/10 p-3">
             <button
               onClick={() => setDangerZoneOpen((o) => !o)}
               aria-expanded={dangerZoneOpen}
               className="flex w-full items-center justify-between text-left"
             >
-              <span className="text-body-sm font-semibold text-on-surface-variant">
+              <span className="text-body-sm font-semibold text-white/70">
                 Danger Zone
               </span>
               <span
-                className={`material-symbols-outlined text-[18px] text-on-surface-variant transition-transform ${
+                className={`material-symbols-outlined text-[18px] text-white/70 transition-transform ${
                   dangerZoneOpen ? "rotate-180" : ""
                 }`}
               >
@@ -314,21 +314,21 @@ export function ProfileDetails() {
             </button>
             {dangerZoneOpen && (
               <div className="mt-3 flex flex-col gap-3">
-                <p className="text-body-sm text-on-surface-variant">
+                <p className="text-body-sm text-white/60">
                   Permanently delete your account and all saved settings. This cannot be
                   undone.
                 </p>
                 {!confirmingDelete ? (
                   <button
                     onClick={() => setConfirmingDelete(true)}
-                    className="self-start rounded-full border border-red-600 px-6 py-2 text-body-sm font-semibold text-red-700 transition-colors hover:bg-red-100"
+                    className="self-start rounded-full border border-red-400 px-6 py-2 text-body-sm font-semibold text-red-300 transition-colors hover:bg-red-500/10"
                   >
                     Delete Account
                   </button>
                 ) : (
-                  <div className="flex flex-col gap-2 rounded border border-red-200 bg-red-50 p-4">
+                  <div className="flex flex-col gap-2 rounded border border-red-400/30 bg-red-500/10 p-4">
                     <label className="flex flex-col gap-1">
-                      <span className="text-body-sm text-red-700">
+                      <span className="text-body-sm text-red-300">
                         Type <strong>Delete</strong> to confirm.
                       </span>
                       <input
@@ -336,7 +336,7 @@ export function ProfileDetails() {
                         value={deleteConfirmText}
                         onChange={(e) => setDeleteConfirmText(e.target.value)}
                         autoFocus
-                        className="rounded border border-red-300 bg-surface-container-lowest px-3 py-2 text-body-md text-on-surface outline-none focus:border-red-600"
+                        className="rounded border border-red-400/40 bg-black/40 px-3 py-2 text-body-md text-white outline-none focus:border-red-400"
                       />
                     </label>
                     <div className="flex gap-2">
@@ -353,7 +353,7 @@ export function ProfileDetails() {
                           setDeleteConfirmText("")
                         }}
                         disabled={deleting}
-                        className="rounded-full border border-outline-variant px-6 py-2 text-body-sm font-semibold text-on-surface-variant hover:bg-surface-container-low"
+                        className="rounded-full border border-white/20 px-6 py-2 text-body-sm font-semibold text-white/70 hover:bg-white/10"
                       >
                         Cancel
                       </button>
@@ -367,9 +367,9 @@ export function ProfileDetails() {
       </div>
       </div>
       {(isDirty || saved) && (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-outline-variant bg-surface/95 px-4 py-3 backdrop-blur-md">
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-black/95 px-4 py-3 backdrop-blur-md">
           <div className="mx-auto flex max-w-2xl items-center justify-between gap-4">
-            <span className="text-body-sm text-on-surface-variant">
+            <span className="text-body-sm text-white/70">
               {saved ? "Your changes have been saved." : "You have unsaved changes."}
             </span>
             <div className="flex items-center gap-2">
@@ -377,7 +377,7 @@ export function ProfileDetails() {
                 <button
                   onClick={() => setSettings(savedSettings)}
                   disabled={saving}
-                  className="whitespace-nowrap rounded-full border border-outline-variant px-6 py-2 text-body-sm font-semibold text-on-surface-variant transition-colors hover:bg-surface-container-low disabled:cursor-not-allowed disabled:opacity-40"
+                  className="whitespace-nowrap rounded-full border border-white/20 px-6 py-2 text-body-sm font-semibold text-white/70 transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   Discard
                 </button>
