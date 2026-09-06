@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom"
+
 const PRODUCT_LINKS = [
   { label: "Key & BPM Analysis", href: "#features" },
   { label: "Genre Sorting", href: "#features" },
@@ -9,11 +11,17 @@ const RESOURCE_LINKS = [
   { label: "How it works", href: "#how-it-works" },
 ]
 
+const LEGAL_LINKS = [
+  { label: "Privacy Policy", href: "/privacy" },
+  { label: "Terms of Service", href: "/terms" },
+  { label: "Cookie Policy", href: "/cookie-policy" },
+]
+
 export function Footer() {
   return (
     <footer className="w-full bg-tertiary-container text-inverse-on-surface">
       <div className="mx-auto w-full max-w-7xl px-4 pb-12 pt-16 lg:px-12">
-        <div className="grid grid-cols-1 gap-8 pb-12 md:grid-cols-4">
+        <div className="grid grid-cols-1 gap-8 pb-12 md:grid-cols-5">
           <div className="flex flex-col gap-2 md:col-span-2">
             <span className="text-headline-sm font-bold tracking-tight text-inverse-on-surface">
               crateprep.
@@ -49,6 +57,20 @@ export function Footer() {
               >
                 {link.label}
               </a>
+            ))}
+          </div>
+          <div className="flex flex-col gap-2">
+            <span className="font-mono text-meta-badge font-semibold uppercase tracking-wider text-on-tertiary-container">
+              Legal
+            </span>
+            {LEGAL_LINKS.map((link) => (
+              <Link
+                key={link.label}
+                to={link.href}
+                className="text-body-sm text-inverse-on-surface transition-colors hover:text-secondary-container"
+              >
+                {link.label}
+              </Link>
             ))}
           </div>
         </div>

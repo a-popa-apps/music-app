@@ -11,6 +11,7 @@ import { AdminPage } from "./pages/AdminPage"
 import { AdminUserDetail } from "./pages/AdminUserDetail"
 import { AuthActionPage } from "./pages/AuthActionPage"
 import { AuthPage } from "./pages/AuthPage"
+import { CookiePolicyPage } from "./pages/CookiePolicyPage"
 import { HistoryPage } from "./pages/HistoryPage"
 import { NotFound } from "./pages/NotFound"
 import { PrivacyPage } from "./pages/PrivacyPage"
@@ -46,6 +47,7 @@ function App() {
         <Route path="/admin/users/:uid" element={<AdminUserDetail />} />
         <Route path="/terms" element={<TermsPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/cookie-policy" element={<CookiePolicyPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       <FeedbackWidget />

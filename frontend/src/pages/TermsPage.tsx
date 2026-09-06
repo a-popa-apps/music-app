@@ -7,7 +7,7 @@ export function TermsPage() {
       sections={[
         {
           heading: "1. Acceptance of Terms",
-          body: "TODO: standard acceptance-of-terms language, reviewed by a lawyer before launch.",
+          body: "By creating an account or using CratePrep, you agree to these Terms and our Privacy Policy. If you don't agree to them, please don't use the service.",
         },
         {
           heading: "2. Description of Service",
@@ -19,7 +19,7 @@ export function TermsPage() {
         },
         {
           heading: "4. Acceptable Use",
-          body: "TODO: define prohibited uses (e.g. uploading content you don't have rights to, abuse of the service, etc.).",
+          body: "You agree not to: upload audio you don't have the rights to use or process; attempt to disrupt, overload, or gain unauthorized access to the service or its infrastructure; use the service to violate any applicable law; or resell or redistribute access to the service without our permission. We may suspend or terminate accounts that violate this policy.",
         },
         {
           heading: "5. Your Content",
@@ -27,15 +27,15 @@ export function TermsPage() {
         },
         {
           heading: "6. Disclaimers and Limitation of Liability",
-          body: "TODO: standard disclaimer/liability limitation language, reviewed by a lawyer before launch.",
+          body: "CratePrep is provided \"as is\" and \"as available,\" without warranties of any kind, express or implied, including as to the accuracy of detected BPM, key, genre, or energy metadata. To the fullest extent permitted by law, CratePrep and its operators are not liable for any indirect, incidental, or consequential damages arising from your use of the service, including loss of data or files. Our total liability for any claim relating to the service is limited to the amount you paid us in the 12 months before the claim arose.",
         },
         {
           heading: "7. Changes to These Terms",
-          body: "TODO: how and when these terms may be updated, and how users are notified.",
+          body: "We may update these Terms from time to time. If we make material changes, we'll post a notice in the app before they take effect. Continuing to use the service after changes take effect means you accept the updated Terms.",
         },
         {
           heading: "8. Contact",
-          body: "TODO: a real contact email or address.",
+          body: "Questions about these Terms? Reach us through the \"Contact Support\" option available from the \"?\" button on any page.",
         },
       ]}
     />

@@ -27,19 +27,19 @@ export function PrivacyPage() {
         },
         {
           heading: "6. Cookies and Local Storage",
-          body: "TODO: document any cookies/local storage used (e.g. Firebase Auth's session persistence) once finalized.",
+          body: "We use only strictly necessary cookies and local storage required to keep you signed in, via Firebase Authentication — no advertising, analytics, or tracking cookies. See our Cookie Policy for details.",
         },
         {
           heading: "7. Children's Privacy",
-          body: "TODO: standard children's-privacy language, reviewed by a lawyer before launch.",
+          body: "CratePrep is not directed at children under 16, and we do not knowingly collect personal information from anyone under 16. If you believe a child has provided us with personal information, contact us and we'll delete it.",
         },
         {
           heading: "8. Changes to This Policy",
-          body: "TODO: how and when this policy may be updated, and how users are notified.",
+          body: "We may update this Privacy Policy from time to time. If we make material changes, we'll post a notice in the app before they take effect.",
         },
         {
           heading: "9. Contact",
-          body: "TODO: a real contact email or address.",
+          body: "Questions about this policy? Reach us through the \"Contact Support\" option available from the \"?\" button on any page.",
         },
       ]}
     />
