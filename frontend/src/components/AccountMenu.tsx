@@ -73,6 +73,14 @@ export function AccountMenu({ profile }: { profile: ProfileSettings | null }) {
             </span>
             Profile Details
           </Link>
+          <Link
+            to="/history"
+            onClick={() => setOpen(false)}
+            className="flex items-center gap-2 rounded px-3 py-2 text-body-md text-inverse-on-surface hover:bg-white/10"
+          >
+            <span className="material-symbols-outlined text-[18px]">history</span>
+            History
+          </Link>
           <button
             onClick={handleChangePassword}
             className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-body-md text-inverse-on-surface hover:bg-white/10"

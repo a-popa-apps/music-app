@@ -188,7 +188,7 @@ async def build_zip(
     files: list[UploadFile],
     filename_template: str | None = None,
     deep_search: bool = False,
-) -> bytes:
+) -> tuple[bytes, dict]:
     buffer = io.BytesIO()
     manifest = {}
     seen_names: set[str] = set()
@@ -235,4 +235,4 @@ async def build_zip(
         zip_file.writestr("crateprep-playlist.m3u8", build_playlist(playlist_tracks))
 
     buffer.seek(0)
-    return buffer.read()
+    return buffer.read(), manifest

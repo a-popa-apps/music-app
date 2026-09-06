@@ -165,6 +165,13 @@ export function Header() {
               >
                 Profile Details
               </Link>
+              <Link
+                to="/history"
+                onClick={() => setMenuOpen(false)}
+                className={`py-1 text-body-md font-semibold ${overHero ? "text-white" : "text-on-surface"}`}
+              >
+                History
+              </Link>
               <button
                 onClick={() => logOut()}
                 className={`py-1 text-left text-body-sm font-semibold underline ${

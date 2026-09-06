@@ -31,6 +31,29 @@ def test_profile_requires_auth(client):
     assert client.delete("/profile").status_code == 401
 
 
+def test_history_requires_auth(client):
+    assert client.get("/history").status_code == 401
+    assert client.delete("/history").status_code == 401
+
+
+def test_history_returns_list_for_authed_user(client, monkeypatch):
+    monkeypatch.setattr(main, "get_current_user", lambda request: "uid-1")
+    monkeypatch.setattr(main, "list_history", lambda uid: [{"filename": "a.mp3"}])
+    res = client.get("/history")
+    assert res.status_code == 200
+    assert res.json() == [{"filename": "a.mp3"}]
+
+
+def test_delete_history_clears_for_authed_user(client, monkeypatch):
+    monkeypatch.setattr(main, "get_current_user", lambda request: "uid-1")
+    calls = []
+    monkeypatch.setattr(main, "clear_history", lambda uid: calls.append(uid))
+    res = client.delete("/history")
+    assert res.status_code == 200
+    assert res.json() == {"status": "cleared"}
+    assert calls == ["uid-1"]
+
+
 def test_admin_endpoints_require_auth(client):
     assert client.get("/admin/users").status_code == 401
     assert client.get("/admin/stats").status_code == 401

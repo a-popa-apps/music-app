@@ -21,6 +21,7 @@ from .admin_store import (
 from .auth import delete_user, get_app, get_current_user
 from .billing import create_billing_portal_session, create_checkout_session, handle_webhook_event
 from .detect_bpm import warm_up
+from .history_store import add_history_entries, clear_history, list_history
 from .process_audio import MAX_FILES_FREE, MAX_FILES_PRO, build_zip, validate_files
 from .profile_store import check_and_reserve_usage, delete_settings, get_settings, save_settings
 from .rate_limit import MAX_REQUESTS_FREE, MAX_REQUESTS_PRO, enforce_rate_limit
@@ -252,9 +253,23 @@ def update_profile(update: ProfileUpdate, request: Request):
 @app.delete("/profile")
 def delete_account(request: Request):
     uid = _require_user(request)
+    clear_history(uid)
     delete_settings(uid)
     delete_user(uid)
     return {"status": "deleted"}
+
+
+@app.get("/history")
+def read_history(request: Request):
+    uid = _require_user(request)
+    return list_history(uid)
+
+
+@app.delete("/history")
+def delete_history(request: Request):
+    uid = _require_user(request)
+    clear_history(uid)
+    return {"status": "cleared"}
 
 
 @app.post("/process")
@@ -286,7 +301,14 @@ async def process(request: Request, files: list[UploadFile] = File(...)):
     except ValueError as e:
         raise HTTPException(402, str(e))
 
-    zip_bytes = await build_zip(files, filename_template=filename_template, deep_search=deep_search)
+    zip_bytes, manifest = await build_zip(
+        files, filename_template=filename_template, deep_search=deep_search
+    )
+    try:
+        add_history_entries(uid, manifest)
+    except Exception:
+        pass  # don't let a history-write failure block returning the processed zip
+
     return Response(
         content=zip_bytes,
         media_type="application/zip",

@@ -7,7 +7,7 @@ export function PrivacyPage() {
       sections={[
         {
           heading: "1. Information We Collect",
-          body: "Your email address (for account creation), and any profile details you choose to provide (name, artist name, country, role, genre preferences, filename template). Audio files you upload are processed in memory for the duration of a single request and are not retained afterward.",
+          body: "Your email address (for account creation), and any profile details you choose to provide (name, artist name, country, role, genre preferences, filename template). Audio files you upload are processed in memory for the duration of a single request and are not retained afterward. If you're signed in, we also keep a history of the tracks you've processed — filename, detected BPM/key/genre, and duration — so you can review it later; this history never includes the audio itself.",
         },
         {
           heading: "2. How We Use Your Information",
@@ -19,7 +19,7 @@ export function PrivacyPage() {
         },
         {
           heading: "4. Data Retention",
-          body: "Uploaded audio is never retained. Account and profile data is kept until you delete your account, which you can do at any time from Profile Details.",
+          body: "Uploaded audio is never retained. Account and profile data is kept until you delete your account, which you can do at any time from Profile Details. Processing history (metadata only, never audio) is kept until you clear it from the History page or delete your account.",
         },
         {
           heading: "5. Your Rights",

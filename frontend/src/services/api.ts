@@ -37,6 +37,35 @@ export async function getProfile(idToken: string): Promise<ProfileSettings> {
   return res.json()
 }
 
+export interface HistoryEntry {
+  history_id: string
+  filename: string
+  original_filename: string
+  bpm: number | null
+  key: string | null
+  camelot: string | null
+  genre: string | null
+  duration_seconds: number | null
+  failed: boolean
+  processed_at: string
+}
+
+export async function getHistory(idToken: string): Promise<HistoryEntry[]> {
+  const res = await fetch(`${BACKEND_URL}/history`, {
+    headers: { Authorization: `Bearer ${idToken}` },
+  })
+  if (!res.ok) throw new Error(`Failed to load history: ${res.status}`)
+  return res.json()
+}
+
+export async function clearHistory(idToken: string): Promise<void> {
+  const res = await fetch(`${BACKEND_URL}/history`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${idToken}` },
+  })
+  if (!res.ok) throw new Error(`Failed to clear history: ${res.status}`)
+}
+
 export async function saveProfile(
   idToken: string,
   settings: Partial<Omit<ProfileSettings, "plan">>

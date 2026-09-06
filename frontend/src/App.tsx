@@ -10,6 +10,7 @@ import { AdminPage } from "./pages/AdminPage"
 import { AdminUserDetail } from "./pages/AdminUserDetail"
 import { AuthActionPage } from "./pages/AuthActionPage"
 import { AuthPage } from "./pages/AuthPage"
+import { HistoryPage } from "./pages/HistoryPage"
 import { NotFound } from "./pages/NotFound"
 import { PrivacyPage } from "./pages/PrivacyPage"
 import { ProfileDetails } from "./pages/ProfileDetails"
@@ -38,6 +39,7 @@ function App() {
       <Route path="/auth" element={<AuthPage />} />
       <Route path="/auth/action" element={<AuthActionPage />} />
       <Route path="/profile" element={<ProfileDetails />} />
+      <Route path="/history" element={<HistoryPage />} />
       <Route path="/admin" element={<AdminPage />} />
       <Route path="/admin/users/:uid" element={<AdminUserDetail />} />
       <Route path="/terms" element={<TermsPage />} />
