@@ -19,7 +19,12 @@ from .admin_store import (
     set_user_plan,
 )
 from .auth import delete_user, get_app, get_current_user
-from .billing import create_billing_portal_session, create_checkout_session, handle_webhook_event
+from .billing import (
+    create_billing_portal_session,
+    create_checkout_session,
+    get_billing_stats,
+    handle_webhook_event,
+)
 from .detect_bpm import warm_up
 from .history_store import add_history_entries, clear_history, list_history
 from .process_audio import MAX_FILES_FREE, MAX_FILES_PRO, build_zip, validate_files
@@ -155,6 +160,15 @@ def admin_update_user_profile(uid: str, update: ProfileUpdate, request: Request)
 def admin_stats(request: Request):
     _require_admin(request)
     return get_stats()
+
+
+@app.get("/admin/billing-stats")
+def admin_billing_stats(request: Request):
+    _require_admin(request)
+    try:
+        return get_billing_stats()
+    except RuntimeError as e:
+        raise HTTPException(503, str(e))
 
 
 @app.get("/admin/discount-codes")

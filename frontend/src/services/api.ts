@@ -231,6 +231,20 @@ export async function getAdminStats(idToken: string): Promise<AdminStats> {
   return res.json()
 }
 
+export interface BillingStats {
+  mrr_cents: number
+  active_subscribers: number
+  trialing_subscribers: number
+  canceled_last_30_days: number
+  revenue_last_30_days_cents: number
+}
+
+export async function getBillingStats(idToken: string): Promise<BillingStats> {
+  const res = await fetch(`${BACKEND_URL}/admin/billing-stats`, { headers: adminHeaders(idToken) })
+  if (!res.ok) throw new Error(`Failed to load billing stats: ${res.status}`)
+  return res.json()
+}
+
 export async function getDiscountCodes(idToken: string): Promise<DiscountCode[]> {
   const res = await fetch(`${BACKEND_URL}/admin/discount-codes`, {
     headers: adminHeaders(idToken),

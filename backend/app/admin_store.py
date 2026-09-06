@@ -139,6 +139,18 @@ def list_discount_codes() -> list[dict]:
     return [doc.to_dict() for doc in _discount_codes_collection().stream()]
 
 
+def increment_discount_code_usage(promotion_code_id: str) -> None:
+    """No-op if no stored code matches -- e.g. a promo code from before
+    Stripe sync existed, or one not created by this system at all."""
+    for doc in _discount_codes_collection().stream():
+        data = doc.to_dict()
+        if data.get("stripe_promotion_code_id") == promotion_code_id:
+            _discount_codes_collection().document(data["code"]).set(
+                {"used_count": data.get("used_count", 0) + 1}, merge=True
+            )
+            return
+
+
 def set_discount_code_active(code: str, active: bool) -> dict:
     ref = _discount_codes_collection().document(code)
     doc = ref.get()

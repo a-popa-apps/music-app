@@ -128,3 +128,19 @@ def test_set_discount_code_active_skips_stripe_for_legacy_code_without_promo_id(
 def test_set_discount_code_active_rejects_unknown_code(fake_discount_codes):
     with pytest.raises(ValueError):
         admin_store.set_discount_code_active("NOPE", False)
+
+
+def test_increment_discount_code_usage_finds_matching_code(fake_discount_codes):
+    fake_discount_codes.document("SAVE25-ABCD").set(
+        {"code": "SAVE25-ABCD", "used_count": 2, "stripe_promotion_code_id": "promo_123"}
+    )
+    admin_store.increment_discount_code_usage("promo_123")
+    assert fake_discount_codes.document("SAVE25-ABCD").get().to_dict()["used_count"] == 3
+
+
+def test_increment_discount_code_usage_noops_for_unknown_promo_id(fake_discount_codes):
+    fake_discount_codes.document("SAVE25-ABCD").set(
+        {"code": "SAVE25-ABCD", "used_count": 2, "stripe_promotion_code_id": "promo_123"}
+    )
+    admin_store.increment_discount_code_usage("promo_does_not_exist")
+    assert fake_discount_codes.document("SAVE25-ABCD").get().to_dict()["used_count"] == 2

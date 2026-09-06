@@ -8,12 +8,14 @@ import {
   deleteUserAsAdmin,
   getAdminStats,
   getAdminUsers,
+  getBillingStats,
   getDiscountCodes,
   setDiscountCodeActive,
   setUserAdmin,
   setUserPlan,
   type AdminStats,
   type AdminUser,
+  type BillingStats,
   type DiscountCode,
 } from "../services/api"
 
@@ -351,29 +353,111 @@ function DiscountCodesTab({ token }: { token: string }) {
   )
 }
 
+function formatCents(cents: number): string {
+  return `$${(cents / 100).toFixed(2)}`
+}
+
 function BillingTab({ token }: { token: string }) {
   const [stats, setStats] = useState<AdminStats | null>(null)
+  const [billing, setBilling] = useState<BillingStats | null>(null)
+  const [codes, setCodes] = useState<DiscountCode[] | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     getAdminStats(token).then(setStats).catch(() => {})
+    getBillingStats(token)
+      .then(setBilling)
+      .catch(() => setError("Couldn't load billing stats. Is Stripe configured?"))
+    getDiscountCodes(token).then(setCodes).catch(() => {})
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   return (
-    <Card>
-      <h3 className="text-headline-sm text-on-surface">Plan distribution</h3>
-      <p className="text-body-sm text-on-surface-variant">
-        Stripe billing is live (checkout, portal, and webhooks). Revenue reporting
-        isn't built here yet — for now this shows plan counts only; check the Stripe
-        dashboard for actual revenue.
-      </p>
+    <div className="flex flex-col gap-6">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <Card>
+          <span className="text-body-sm text-on-surface-variant">MRR</span>
+          <span className="text-headline-lg text-on-surface">
+            {billing ? formatCents(billing.mrr_cents) : "—"}
+          </span>
+        </Card>
+        <Card>
+          <span className="text-body-sm text-on-surface-variant">Active subscribers</span>
+          <span className="text-headline-lg text-on-surface">
+            {billing?.active_subscribers ?? "—"}
+          </span>
+        </Card>
+        <Card>
+          <span className="text-body-sm text-on-surface-variant">Trialing</span>
+          <span className="text-headline-lg text-on-surface">
+            {billing?.trialing_subscribers ?? "—"}
+          </span>
+        </Card>
+        <Card>
+          <span className="text-body-sm text-on-surface-variant">Canceled (30d)</span>
+          <span className="text-headline-lg text-on-surface">
+            {billing?.canceled_last_30_days ?? "—"}
+          </span>
+        </Card>
+      </div>
+
+      <Card>
+        <span className="text-body-sm text-on-surface-variant">
+          Revenue collected, last 30 days
+        </span>
+        <span className="text-headline-lg text-on-surface">
+          {billing ? formatCents(billing.revenue_last_30_days_cents) : "—"}
+        </span>
+      </Card>
+
+      {error && <p className="text-body-sm text-red-600">{error}</p>}
+
       {stats && (
-        <div className="flex gap-6 text-body-md text-on-surface">
-          <span>Free: {stats.by_plan.free ?? 0}</span>
-          <span>Pro: {stats.by_plan.pro ?? 0}</span>
-        </div>
+        <Card>
+          <h3 className="text-headline-sm text-on-surface">Signups by plan</h3>
+          <div className="flex gap-6 text-body-md text-on-surface">
+            <span>Free: {stats.by_plan.free ?? 0}</span>
+            <span>Pro: {stats.by_plan.pro ?? 0}</span>
+          </div>
+        </Card>
       )}
-    </Card>
+
+      <Card>
+        <h3 className="text-headline-sm text-on-surface">Discount code usage</h3>
+        {!codes ? (
+          <p className="text-body-md text-on-surface-variant">Loading...</p>
+        ) : codes.length === 0 ? (
+          <p className="text-body-md text-on-surface-variant">No discount codes yet.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-body-sm">
+              <thead>
+                <tr className="border-b border-outline-variant text-on-surface-variant">
+                  <th className="py-2 pr-4">Code</th>
+                  <th className="py-2 pr-4">% off</th>
+                  <th className="py-2 pr-4">Used</th>
+                  <th className="py-2 pr-4">Active</th>
+                </tr>
+              </thead>
+              <tbody>
+                {codes.map((c) => (
+                  <tr key={c.code} className="border-b border-outline-variant/50">
+                    <td className="py-2 pr-4 font-mono text-on-surface">{c.code}</td>
+                    <td className="py-2 pr-4 text-on-surface-variant">{c.percent_off}%</td>
+                    <td className="py-2 pr-4 text-on-surface-variant">
+                      {c.used_count} / {c.max_uses}
+                    </td>
+                    <td className="py-2 pr-4 text-on-surface-variant">
+                      {c.active ? "Yes" : "No"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
+    </div>
   )
 }
 
