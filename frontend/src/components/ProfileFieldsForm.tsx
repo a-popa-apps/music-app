@@ -45,6 +45,14 @@ export function ProfileFieldsForm({
   useClickOutside(discogsHelpRef, () => setShowDiscogsHelp(false), showDiscogsHelp)
   const templateInputRef = useRef<HTMLInputElement>(null)
 
+  const [countryOpen, setCountryOpen] = useState(false)
+  const [countrySearch, setCountrySearch] = useState("")
+  const countryContainerRef = useRef<HTMLDivElement>(null)
+  useClickOutside(countryContainerRef, () => setCountryOpen(false), countryOpen)
+  const filteredCountries = COUNTRIES.filter((c) =>
+    c.toLowerCase().includes(countrySearch.toLowerCase())
+  )
+
   function insertPlaceholder(tag: string) {
     const current = settings.filename_template ?? ""
     const input = templateInputRef.current
@@ -103,18 +111,45 @@ export function ProfileFieldsForm({
 
         <label className="flex flex-col gap-1">
           <span className="text-body-sm font-semibold text-on-surface">Country</span>
-          <select
-            value={settings.country}
-            onChange={(e) => onChange("country", e.target.value)}
-            className="rounded border border-outline-variant bg-surface-container-lowest px-4 py-3 text-body-md text-on-surface outline-none focus:border-secondary-container"
-          >
-            <option value="">Select country...</option>
-            {COUNTRIES.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
+          <div className="relative" ref={countryContainerRef}>
+            <input
+              type="text"
+              value={countryOpen ? countrySearch : settings.country}
+              onChange={(e) => setCountrySearch(e.target.value)}
+              onFocus={() => {
+                setCountrySearch("")
+                setCountryOpen(true)
+              }}
+              placeholder="Select country..."
+              className="w-full rounded border border-outline-variant bg-surface-container-lowest px-4 py-3 text-body-md text-on-surface outline-none focus:border-secondary-container"
+            />
+            {countryOpen && (
+              <div className="absolute z-10 mt-1 max-h-56 w-full overflow-y-auto rounded border border-outline-variant bg-surface-container-lowest shadow-md">
+                {filteredCountries.length === 0 ? (
+                  <div className="px-4 py-2 text-body-sm text-on-surface-variant">
+                    No matches
+                  </div>
+                ) : (
+                  filteredCountries.map((c) => (
+                    <button
+                      type="button"
+                      key={c}
+                      onClick={() => {
+                        onChange("country", c)
+                        setCountryOpen(false)
+                        setCountrySearch("")
+                      }}
+                      className={`block w-full px-4 py-2 text-left text-body-md hover:bg-surface-container-low ${
+                        c === settings.country ? "bg-surface-container-low font-semibold" : ""
+                      }`}
+                    >
+                      {c}
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
         </label>
       </Section>
 

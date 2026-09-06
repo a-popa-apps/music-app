@@ -80,8 +80,11 @@ export function ProfileDetails() {
     return (
       <>
         <Header />
-        <div className="flex min-h-screen items-center justify-center bg-surface pt-16">
-          <p className="text-body-md text-on-surface-variant">Loading...</p>
+        <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-surface pt-16">
+          <span className="material-symbols-outlined animate-spin text-[40px] text-secondary-container">
+            progress_activity
+          </span>
+          <p className="text-headline-sm text-on-surface">Loading your profile...</p>
         </div>
       </>
     )
