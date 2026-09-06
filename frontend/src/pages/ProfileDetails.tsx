@@ -176,7 +176,7 @@ export function ProfileDetails() {
   return (
     <>
       <Header />
-      <div className="min-h-screen w-full bg-surface px-4 py-12 pt-32">
+      <div className="min-h-screen w-full bg-surface px-4 py-12 pb-28 pt-32">
       <div className="mx-auto max-w-2xl">
         <h1 className="mb-6 text-headline-lg text-on-surface">Profile Details</h1>
 
@@ -252,14 +252,6 @@ export function ProfileDetails() {
 
           {error && <p className="text-body-sm text-red-600">{error}</p>}
 
-          <button
-            onClick={handleSave}
-            disabled={saving || !isDirty}
-            className="rounded-full bg-secondary-container px-6 py-3 text-headline-sm font-semibold text-on-primary transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            {saving ? "Saving..." : saved ? "Saved!" : "Save"}
-          </button>
-
           <div className="rounded border border-outline-variant p-3">
             <button
               onClick={() => setDangerZoneOpen((o) => !o)}
@@ -330,6 +322,22 @@ export function ProfileDetails() {
         </div>
       </div>
       </div>
+      {(isDirty || saved) && (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-outline-variant bg-surface/95 px-4 py-3 backdrop-blur-md">
+          <div className="mx-auto flex max-w-2xl items-center justify-between gap-4">
+            <span className="text-body-sm text-on-surface-variant">
+              {saved ? "Your changes have been saved." : "You have unsaved changes."}
+            </span>
+            <button
+              onClick={handleSave}
+              disabled={saving || !isDirty}
+              className="whitespace-nowrap rounded-full bg-secondary-container px-6 py-2 text-body-sm font-semibold text-on-primary transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {saving ? "Saving..." : saved ? "Saved!" : "Save"}
+            </button>
+          </div>
+        </div>
+      )}
     </>
   )
 }
