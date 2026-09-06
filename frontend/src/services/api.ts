@@ -162,6 +162,15 @@ export async function deleteUserAsAdmin(idToken: string, uid: string): Promise<v
   if (!res.ok) throw new Error(`Failed to delete user: ${res.status}`)
 }
 
+export async function resetUserUsage(idToken: string, uid: string): Promise<ProfileSettings> {
+  const res = await fetch(`${BACKEND_URL}/admin/users/${uid}/reset-usage`, {
+    method: "POST",
+    headers: adminHeaders(idToken),
+  })
+  if (!res.ok) throw new Error(`Failed to reset usage: ${res.status}`)
+  return res.json()
+}
+
 export async function getUserProfileAsAdmin(
   idToken: string,
   uid: string

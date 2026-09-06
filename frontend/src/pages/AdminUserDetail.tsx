@@ -7,6 +7,7 @@ import { useIsAdmin } from "../hooks/useIsAdmin"
 import {
   getAdminUsers,
   getUserProfileAsAdmin,
+  resetUserUsage,
   saveUserProfileAsAdmin,
   type ProfileSettings,
 } from "../services/api"
@@ -24,6 +25,8 @@ export function AdminUserDetail() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [resettingUsage, setResettingUsage] = useState(false)
+  const [usageResetDone, setUsageResetDone] = useState(false)
 
   useEffect(() => {
     if (user) user.getIdToken().then(setToken)
@@ -111,6 +114,23 @@ export function AdminUserDetail() {
     }
   }
 
+  async function handleResetUsage() {
+    if (!token || !uid) return
+    setResettingUsage(true)
+    setError(null)
+    try {
+      const updated = await resetUserUsage(token, uid)
+      setSettings(updated)
+      setSavedSettings(updated)
+      setUsageResetDone(true)
+      setTimeout(() => setUsageResetDone(false), 2000)
+    } catch {
+      setError("Couldn't reset this user's usage.")
+    } finally {
+      setResettingUsage(false)
+    }
+  }
+
   const isDirty = JSON.stringify(settings) !== JSON.stringify(savedSettings)
 
   return (
@@ -132,6 +152,25 @@ export function AdminUserDetail() {
             </p>
           ) : (
             <div className="flex flex-col gap-6">
+              {settings.plan === "free" && (
+                <div className="flex items-center justify-between gap-4 rounded bg-surface-container-lowest p-6 shadow-sm">
+                  <div className="flex flex-col gap-1">
+                    <h2 className="text-headline-sm text-on-surface">Monthly usage</h2>
+                    <span className="text-body-sm text-on-surface-variant">
+                      {settings.tracks_processed_this_period} / 25 tracks used
+                      {settings.usage_period_start ? ` (${settings.usage_period_start})` : ""}
+                    </span>
+                  </div>
+                  <button
+                    onClick={handleResetUsage}
+                    disabled={resettingUsage || settings.tracks_processed_this_period === 0}
+                    className="whitespace-nowrap rounded-full border border-outline-variant px-4 py-2 text-body-sm font-semibold text-on-surface transition-colors hover:bg-surface-container-low disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {resettingUsage ? "Resetting..." : usageResetDone ? "Reset!" : "Reset usage"}
+                  </button>
+                </div>
+              )}
+
               <ProfileFieldsForm settings={settings} onChange={update} email={email} />
 
               {error && <p className="text-body-sm text-red-600">{error}</p>}

@@ -53,6 +53,29 @@ def test_admin_allowed_for_admin(client, monkeypatch):
     assert res.json() == [{"uid": "u1"}]
 
 
+def test_admin_reset_usage_requires_auth(client):
+    assert client.post("/admin/users/uid-1/reset-usage").status_code == 401
+
+
+def test_admin_reset_usage_forbidden_for_non_admin(client, monkeypatch):
+    monkeypatch.setattr(main, "get_current_user", lambda request: "uid-1")
+    monkeypatch.setattr(main, "get_settings", lambda uid: {"is_admin": False})
+    assert client.post("/admin/users/uid-1/reset-usage").status_code == 403
+
+
+def test_admin_reset_usage_allowed_for_admin(client, monkeypatch):
+    monkeypatch.setattr(main, "get_current_user", lambda request: "admin-uid")
+    monkeypatch.setattr(main, "get_settings", lambda uid: {"is_admin": True})
+    monkeypatch.setattr(
+        main,
+        "reset_usage",
+        lambda uid: {"tracks_processed_this_period": 0, "usage_period_start": None},
+    )
+    res = client.post("/admin/users/target-uid/reset-usage")
+    assert res.status_code == 200
+    assert res.json()["tracks_processed_this_period"] == 0
+
+
 def test_process_requires_files_field(client):
     res = client.post("/process")
     assert res.status_code == 422

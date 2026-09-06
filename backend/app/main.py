@@ -13,6 +13,7 @@ from .admin_store import (
     get_stats,
     list_discount_codes,
     list_users,
+    reset_usage,
     set_admin_flag,
     set_discount_code_active,
     set_user_plan,
@@ -125,6 +126,12 @@ def admin_delete_user(uid: str, request: Request):
     _require_admin(request)
     delete_user_account(uid)
     return {"status": "deleted"}
+
+
+@app.post("/admin/users/{uid}/reset-usage")
+def admin_reset_usage(uid: str, request: Request):
+    _require_admin(request)
+    return reset_usage(uid)
 
 
 @app.get("/admin/users/{uid}/profile")

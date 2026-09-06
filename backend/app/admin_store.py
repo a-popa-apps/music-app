@@ -48,6 +48,13 @@ def set_admin_flag(uid: str, is_admin: bool) -> dict:
     return get_settings(uid)
 
 
+def reset_usage(uid: str) -> dict:
+    _users_collection().document(uid).set(
+        {"tracks_processed_this_period": 0, "usage_period_start": None}, merge=True
+    )
+    return get_settings(uid)
+
+
 def delete_user_account(uid: str) -> None:
     delete_settings(uid)
     app = get_app()

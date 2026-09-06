@@ -36,6 +36,19 @@ def test_set_admin_flag_promotes_and_demotes(fake_users):
     assert updated["is_admin"] is False
 
 
+def test_reset_usage_clears_counter_and_period(fake_users):
+    profile_store.check_and_reserve_usage("uid-1", 20, "free")
+    assert profile_store.get_settings("uid-1")["tracks_processed_this_period"] == 20
+
+    updated = admin_store.reset_usage("uid-1")
+    assert updated["tracks_processed_this_period"] == 0
+    assert updated["usage_period_start"] is None
+
+    # a subsequent batch starts counting from zero again, not from the old period
+    profile_store.check_and_reserve_usage("uid-1", 25, "free")
+    assert profile_store.get_settings("uid-1")["tracks_processed_this_period"] == 25
+
+
 def test_create_discount_code_valid_percent(fake_discount_codes):
     doc = admin_store.create_discount_code(25, "admin-uid")
     assert doc["percent_off"] == 25
