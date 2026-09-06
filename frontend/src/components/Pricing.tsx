@@ -5,7 +5,7 @@ import { useAuth } from "../hooks/useAuth"
 import { createCheckoutSession } from "../services/api"
 
 const FREE_INCLUDED = [
-  "Up to 25 tracks per batch",
+  "25 tracks per month",
   "Standard BPM & key detection",
   "Rekordbox-ready .m3u8 playlist export",
 ]
@@ -58,40 +58,14 @@ export function Pricing() {
         <h2 className="mb-4 text-headline-xl tracking-tight text-white">
           Start free. Go Pro when you're ready.
         </h2>
-        <p className="mb-8 max-w-xl text-body-lg text-white/70">
+        <p className="mb-12 max-w-xl text-body-lg text-white/70">
           No complicated tiers. Start free to prep this weekend's gig,
           upgrade when your download folders get wild.
         </p>
 
-        <div className="mb-12 flex items-center gap-2 rounded-full border border-white/10 bg-white/10 p-1 backdrop-blur-md">
-          <button
-            onClick={() => setBilling("monthly")}
-            className={`rounded-full px-6 py-1 text-body-sm font-semibold transition-all ${
-              billing === "monthly"
-                ? "bg-white/20 text-white"
-                : "text-white/60"
-            }`}
-          >
-            Monthly
-          </button>
-          <button
-            onClick={() => setBilling("annual")}
-            className={`flex items-center gap-1 rounded-full px-6 py-1 text-body-sm font-semibold transition-all ${
-              billing === "annual"
-                ? "bg-white/20 text-white"
-                : "text-white/60"
-            }`}
-          >
-            Annual
-            <span className="rounded-full bg-secondary-container px-1 py-px text-[10px] font-bold uppercase text-on-primary">
-              Save 38%
-            </span>
-          </button>
-        </div>
-
-        <div className="grid w-full grid-cols-1 items-start gap-6 text-left md:grid-cols-2">
+        <div className="grid w-full grid-cols-1 items-stretch gap-6 text-left md:grid-cols-2">
           {/* Free plan */}
-          <div className="flex flex-col rounded-2xl border border-white/10 bg-white/5 p-10 backdrop-blur-md">
+          <div className="flex h-full flex-col rounded-2xl border border-white/10 bg-white/5 p-10 backdrop-blur-md">
             <h3 className="text-headline-lg font-bold text-white">Free</h3>
             <span className="text-body-sm text-white/70">
               Perfect for one-off gig prep
@@ -102,7 +76,7 @@ export function Pricing() {
               <span className="text-body-md text-white/70">/ forever</span>
             </div>
 
-            <div className="mb-8 flex flex-col gap-2">
+            <div className="flex flex-col gap-2">
               {FREE_INCLUDED.map((item) => (
                 <div key={item} className="flex items-center gap-2">
                   <span className="material-symbols-outlined text-[20px] text-secondary-container">
@@ -133,7 +107,7 @@ export function Pricing() {
           </div>
 
           {/* Pro plan */}
-          <div className="rounded-[calc(1rem+4px)] bg-gradient-to-r from-secondary-container to-[#ff3d78] p-[2px] shadow-[0_0_70px_rgba(255,107,53,0.3)]">
+          <div className="h-full rounded-[calc(1rem+4px)] bg-gradient-to-r from-secondary-container to-[#ff3d78] p-[2px] shadow-[0_0_70px_rgba(255,107,53,0.3)]">
             <div className="flex h-full w-full flex-col rounded-2xl bg-[#12122a]/90 p-10 backdrop-blur-md">
               <div className="flex items-center justify-between gap-4">
                 <div>
@@ -149,14 +123,36 @@ export function Pricing() {
                 )}
               </div>
 
-              <div className="flex items-baseline gap-1 py-6">
+              <div className="flex items-baseline gap-1 pt-6">
                 <span className="text-display-hero tracking-tight text-white">
                   ${price}
                 </span>
                 <span className="text-body-md text-white/70">{cadence}</span>
               </div>
 
-              <div className="mb-8 flex flex-col gap-2">
+              <div className="my-6 flex items-center gap-2 self-start rounded-full border border-white/10 bg-white/10 p-1">
+                <button
+                  onClick={() => setBilling("monthly")}
+                  className={`rounded-full px-6 py-1 text-body-sm font-semibold transition-all ${
+                    billing === "monthly" ? "bg-white/20 text-white" : "text-white/60"
+                  }`}
+                >
+                  Monthly
+                </button>
+                <button
+                  onClick={() => setBilling("annual")}
+                  className={`flex items-center gap-1 rounded-full px-6 py-1 text-body-sm font-semibold transition-all ${
+                    billing === "annual" ? "bg-white/20 text-white" : "text-white/60"
+                  }`}
+                >
+                  Annual
+                  <span className="rounded-full bg-secondary-container px-1 py-px text-[10px] font-bold uppercase text-on-primary">
+                    Save 38%
+                  </span>
+                </button>
+              </div>
+
+              <div className="flex flex-col gap-2">
                 {PRO_CHECKLIST.map((item, i) =>
                   i === 0 ? (
                     <span key={item} className="text-body-sm font-semibold text-white/70">
