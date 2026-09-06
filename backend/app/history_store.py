@@ -35,6 +35,7 @@ def add_history_entries(uid: str, manifest: dict) -> None:
                 "key": entry.get("key"),
                 "camelot": entry.get("camelot"),
                 "genre": entry.get("genre"),
+                "energy": entry.get("energy"),
                 "duration_seconds": entry.get("duration_seconds"),
                 "failed": bool(entry.get("error")),
                 "processed_at": processed_at,

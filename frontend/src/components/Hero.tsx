@@ -1,15 +1,17 @@
-import { unzipSync } from "fflate"
-import { useCallback, useState } from "react"
+import { unzipSync, zipSync, type Unzipped } from "fflate"
+import { useCallback, useRef, useState } from "react"
 import { useDropzone } from "react-dropzone"
 import { useNavigate } from "react-router-dom"
 import heroBg from "../assets/hero-bg.jpg"
 import { useAuth } from "../hooks/useAuth"
 import { ApiError, uploadAndProcess } from "../services/api"
+import { buildPlaylist } from "../utils/buildPlaylist"
 
 interface ManifestEntry {
   bpm?: number | null
   camelot?: string | null
   genre?: string | null
+  energy?: number | null
   duration_seconds?: number | null
   original_filename?: string
   error?: string
@@ -21,14 +23,14 @@ interface ProcessedTrack {
   bpm: number | null
   key: string | null
   genre: string | null
+  energy: number | null
+  duration: number | null
   failed: boolean
 }
 
 type Phase = "idle" | "auth-required" | "processing" | "done" | "error"
 
-async function parseManifest(blob: Blob): Promise<ProcessedTrack[]> {
-  const bytes = new Uint8Array(await blob.arrayBuffer())
-  const files = unzipSync(bytes)
+function parseManifest(files: Unzipped): ProcessedTrack[] {
   const manifestBytes = files["crateprep-manifest.json"]
   if (!manifestBytes) return []
 
@@ -42,6 +44,8 @@ async function parseManifest(blob: Blob): Promise<ProcessedTrack[]> {
     bpm: entry.bpm ?? null,
     key: entry.camelot ?? null,
     genre: entry.genre ?? null,
+    energy: entry.energy ?? null,
+    duration: entry.duration_seconds ?? null,
     failed: Boolean(entry.error),
   }))
 }
@@ -52,8 +56,10 @@ export function Hero() {
   const [phase, setPhase] = useState<Phase>("idle")
   const [fileCount, setFileCount] = useState(0)
   const [results, setResults] = useState<ProcessedTrack[]>([])
-  const [zipBlob, setZipBlob] = useState<Blob | null>(null)
+  const [zipFiles, setZipFiles] = useState<Unzipped | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const dragIndex = useRef<number | null>(null)
+  const [draggingIndex, setDraggingIndex] = useState<number | null>(null)
 
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
@@ -83,8 +89,10 @@ export function Hero() {
     try {
       const idToken = await user!.getIdToken()
       const blob = await uploadAndProcess(files, idToken)
-      const parsed = await parseManifest(blob)
-      setZipBlob(blob)
+      const bytes = new Uint8Array(await blob.arrayBuffer())
+      const unzipped = unzipSync(bytes)
+      const parsed = parseManifest(unzipped)
+      setZipFiles(unzipped)
       setResults(parsed)
       setPhase("done")
     } catch (err) {
@@ -98,8 +106,17 @@ export function Hero() {
   }
 
   function handleDownload() {
-    if (!zipBlob) return
-    const url = URL.createObjectURL(zipBlob)
+    if (!zipFiles) return
+    const playlist = buildPlaylist(
+      results.map((track) => ({ name: track.name, duration: track.duration }))
+    )
+    const rebuilt: Unzipped = {
+      ...zipFiles,
+      "crateprep-playlist.m3u8": new TextEncoder().encode(playlist),
+    }
+    const zipped = zipSync(rebuilt, { level: 0 })
+    const blob = new Blob([zipped], { type: "application/zip" })
+    const url = URL.createObjectURL(blob)
     const link = document.createElement("a")
     link.href = url
     link.download = "crateprep-export.zip"
@@ -111,8 +128,31 @@ export function Hero() {
     setPhase("idle")
     setFileCount(0)
     setResults([])
-    setZipBlob(null)
+    setZipFiles(null)
     setErrorMessage(null)
+  }
+
+  function handleRowDragStart(index: number) {
+    dragIndex.current = index
+    setDraggingIndex(index)
+  }
+
+  function handleRowDragOver(e: React.DragEvent, index: number) {
+    e.preventDefault()
+    if (dragIndex.current === null || dragIndex.current === index) return
+    const from = dragIndex.current
+    setResults((prev) => {
+      const next = [...prev]
+      const [moved] = next.splice(from, 1)
+      next.splice(index, 0, moved)
+      return next
+    })
+    dragIndex.current = index
+  }
+
+  function handleRowDragEnd() {
+    dragIndex.current = null
+    setDraggingIndex(null)
   }
 
   return (
@@ -250,22 +290,32 @@ export function Hero() {
             <div className="w-full overflow-hidden rounded border border-white/20 bg-white/10 backdrop-blur-md">
               <div className="grid grid-cols-12 items-center bg-white/5 px-6 py-2 font-mono text-meta-badge uppercase tracking-wider text-white/70">
                 <div className="col-span-1 text-center">#</div>
-                <div className="col-span-4">Track Title &amp; Artist</div>
-                <div className="col-span-2 text-center">BPM</div>
+                <div className="col-span-3">Track Title &amp; Artist</div>
+                <div className="col-span-1 text-center">BPM</div>
                 <div className="col-span-2 text-center">Key</div>
+                <div className="col-span-1 text-center">Energy</div>
                 <div className="col-span-2 hidden lg:block">Genre Tag</div>
-                <div className="col-span-3 text-right lg:col-span-1">Status</div>
+                <div className="col-span-3 text-right lg:col-span-2">Status</div>
               </div>
 
               {results.map((track, i) => (
                 <div
                   key={track.name + i}
-                  className="grid grid-cols-12 items-center border-t border-white/10 px-6 py-4 transition-colors hover:bg-white/5"
+                  draggable
+                  onDragStart={() => handleRowDragStart(i)}
+                  onDragOver={(e) => handleRowDragOver(e, i)}
+                  onDragEnd={handleRowDragEnd}
+                  className={`grid grid-cols-12 items-center border-t border-white/10 px-6 py-4 transition-colors hover:bg-white/5 ${
+                    draggingIndex === i ? "opacity-40" : ""
+                  }`}
                 >
-                  <div className="col-span-1 text-center font-mono text-meta-numeric text-white/60">
+                  <div className="col-span-1 flex items-center justify-center gap-1 text-center font-mono text-meta-numeric text-white/60">
+                    <span className="material-symbols-outlined cursor-grab text-[16px] text-white/40">
+                      drag_indicator
+                    </span>
                     {String(i + 1).padStart(2, "0")}
                   </div>
-                  <div className="col-span-4 flex min-w-0 flex-col pr-2">
+                  <div className="col-span-3 flex min-w-0 flex-col pr-2">
                     <span className="truncate text-body-md font-bold text-white">
                       {track.name}
                     </span>
@@ -275,7 +325,7 @@ export function Hero() {
                       </span>
                     )}
                   </div>
-                  <div className="col-span-2 text-center font-mono text-meta-numeric font-bold text-secondary-container">
+                  <div className="col-span-1 text-center font-mono text-meta-numeric font-bold text-secondary-container">
                     {track.bpm !== null ? Math.round(track.bpm) : "—"}
                   </div>
                   <div className="col-span-2 text-center">
@@ -287,6 +337,9 @@ export function Hero() {
                       <span className="font-mono text-meta-numeric text-white/50">—</span>
                     )}
                   </div>
+                  <div className="col-span-1 text-center font-mono text-meta-numeric font-bold text-secondary-container">
+                    {track.energy !== null ? track.energy : "—"}
+                  </div>
                   <div className="col-span-2 hidden items-center lg:flex">
                     {track.genre && (
                       <span className="rounded-full bg-white/15 px-2 py-px text-body-sm text-white">
@@ -294,7 +347,7 @@ export function Hero() {
                       </span>
                     )}
                   </div>
-                  <div className="col-span-3 text-right lg:col-span-1">
+                  <div className="col-span-3 text-right lg:col-span-2">
                     <span
                       className={`inline-flex items-center gap-1 font-mono text-meta-badge font-bold uppercase ${
                         track.failed ? "text-red-300" : "text-secondary-container"

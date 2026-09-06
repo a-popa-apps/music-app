@@ -13,6 +13,7 @@ from fastapi.concurrency import run_in_threadpool
 from .audio_io import SAMPLE_RATE, load_audio
 from .clean_filename import compose_name, guess_split, local_dash_split, prepare_stem
 from .detect_bpm import detect_bpm
+from .detect_energy import detect_energy
 from .detect_genre import detect_genre, lookup_track
 from .detect_key import detect_key
 from .playlist import build_playlist
@@ -157,6 +158,12 @@ def _analyze_and_tag(
     except Exception as e:
         entry["key"] = None
         entry["key_error"] = f"{type(e).__name__}: {e}"
+
+    try:
+        entry["energy"] = detect_energy(audio)
+    except Exception as e:
+        entry["energy"] = None
+        entry["energy_error"] = f"{type(e).__name__}: {e}"
 
     del audio
     entry["genre"] = genre

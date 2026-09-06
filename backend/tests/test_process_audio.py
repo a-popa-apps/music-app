@@ -41,6 +41,8 @@ def test_build_zip_processes_multiple_files_in_order():
     assert len(manifest) == 3
     original_filenames = {entry.get("original_filename") for entry in manifest.values()}
     assert original_filenames == {"Artist0 - Title0.wav", "Artist1 - Title1.wav", "Artist2 - Title2.wav"}
+    for entry in manifest.values():
+        assert 1 <= entry["energy"] <= 10
 
     with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
         names = zf.namelist()
