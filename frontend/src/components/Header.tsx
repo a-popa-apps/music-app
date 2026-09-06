@@ -2,7 +2,7 @@ import { useEffect, useState } from "react"
 import { Link, useLocation } from "react-router-dom"
 import { AccountMenu } from "./AccountMenu"
 import { useAuth } from "../hooks/useAuth"
-import { useIsAdmin } from "../hooks/useIsAdmin"
+import { useProfile } from "../hooks/useProfile"
 
 const NAV_LINKS = [
   { label: "How it works", href: "/#how-it-works" },
@@ -15,7 +15,8 @@ export function Header() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const { user, isVerified, logOut, loading } = useAuth()
-  const { isAdmin } = useIsAdmin()
+  const { profile } = useProfile()
+  const isAdmin = profile?.is_admin ?? false
   const loggedIn = user && isVerified
   const location = useLocation()
   const overHero = location.pathname === "/" && !scrolled
@@ -71,7 +72,7 @@ export function Header() {
             />
           ) : loggedIn ? (
             <div className="hidden md:block">
-              <AccountMenu />
+              <AccountMenu profile={profile} />
             </div>
           ) : (
             <Link
@@ -122,6 +123,20 @@ export function Header() {
           ))}
           {loading ? null : loggedIn ? (
             <div className="flex flex-col gap-1 px-2 py-3">
+              {profile?.name?.trim() && (
+                <span
+                  className={`flex items-center gap-1 text-body-md font-semibold ${
+                    overHero ? "text-white" : "text-on-surface"
+                  }`}
+                >
+                  {profile.name}
+                  {profile.plan === "pro" && (
+                    <span className="material-symbols-outlined text-[16px] text-blue-500">
+                      verified
+                    </span>
+                  )}
+                </span>
+              )}
               <span className={`text-body-sm ${overHero ? "text-white/70" : "text-on-surface-variant"}`}>
                 {user.email}
               </span>

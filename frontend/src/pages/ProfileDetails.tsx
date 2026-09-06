@@ -135,8 +135,16 @@ export function ProfileDetails() {
           <Section title="Billing">
             <div className="flex items-center justify-between gap-4">
               <div className="flex flex-col gap-1">
-                <span className="text-body-md text-on-surface">
-                  Current plan: <strong>{settings.plan === "pro" ? "Pro" : "Free"}</strong>
+                <span className="flex items-center gap-1 text-body-md text-on-surface">
+                  Current plan:{" "}
+                  <strong className="inline-flex items-center gap-1">
+                    {settings.plan === "pro" ? "Pro" : "Free"}
+                    {settings.plan === "pro" && (
+                      <span className="material-symbols-outlined text-[16px] text-blue-500">
+                        verified
+                      </span>
+                    )}
+                  </strong>
                 </span>
                 <span className="text-body-sm text-on-surface-variant">
                   No payment method on file. Billing isn't live yet — check back soon.

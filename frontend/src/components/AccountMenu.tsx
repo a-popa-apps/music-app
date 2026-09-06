@@ -1,15 +1,17 @@
 import { useState } from "react"
 import { Link } from "react-router-dom"
 import { useAuth } from "../hooks/useAuth"
-import { useIsAdmin } from "../hooks/useIsAdmin"
+import type { ProfileSettings } from "../services/api"
 
-export function AccountMenu() {
+export function AccountMenu({ profile }: { profile: ProfileSettings | null }) {
   const { user, logOut, resetPassword } = useAuth()
-  const { isAdmin } = useIsAdmin()
   const [open, setOpen] = useState(false)
   const [resetSent, setResetSent] = useState(false)
 
   if (!user) return null
+
+  const isAdmin = profile?.is_admin ?? false
+  const displayName = profile?.name?.trim()
 
   async function handleChangePassword() {
     if (!user!.email) return
@@ -35,8 +37,18 @@ export function AccountMenu() {
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
           <div className="absolute right-0 z-50 mt-2 w-64 rounded bg-inverse-surface p-2 shadow-md">
-            <div className="border-b border-outline px-3 py-2 text-body-sm text-inverse-on-surface/70">
-              {user.email}
+            <div className="border-b border-outline px-3 py-2">
+              {displayName && (
+                <div className="flex items-center gap-1 text-body-md font-semibold text-inverse-on-surface">
+                  <span>{displayName}</span>
+                  {profile?.plan === "pro" && (
+                    <span className="material-symbols-outlined text-[16px] text-blue-500">
+                      verified
+                    </span>
+                  )}
+                </div>
+              )}
+              <div className="text-body-sm text-inverse-on-surface/70">{user.email}</div>
             </div>
             {isAdmin && (
               <Link
