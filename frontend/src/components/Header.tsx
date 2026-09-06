@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Link, useLocation } from "react-router-dom"
 import { AccountMenu } from "./AccountMenu"
 import { useAuth } from "../hooks/useAuth"
@@ -20,6 +20,7 @@ export function Header() {
   const loggedIn = user && isVerified
   const location = useLocation()
   const overHero = location.pathname === "/" && !scrolled
+  const headerRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
     function handleScroll() {
@@ -30,8 +31,32 @@ export function Header() {
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
+  // Close the mobile menu on an outside tap/click or on scroll, matching
+  // the usual dropdown-menu convention (nothing else on this page does
+  // this yet, so it's scoped to just this menu's own open state).
+  useEffect(() => {
+    if (!menuOpen) return
+
+    function handlePointerDown(e: PointerEvent) {
+      if (headerRef.current && !headerRef.current.contains(e.target as Node)) {
+        setMenuOpen(false)
+      }
+    }
+    function handleScrollClose() {
+      setMenuOpen(false)
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown)
+    window.addEventListener("scroll", handleScrollClose, { passive: true })
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown)
+      window.removeEventListener("scroll", handleScrollClose)
+    }
+  }, [menuOpen])
+
   return (
     <header
+      ref={headerRef}
       className={`fixed top-0 z-50 w-full border-b transition-colors duration-300 ${
         overHero
           ? "border-white/10 bg-black/20 backdrop-blur-md"
