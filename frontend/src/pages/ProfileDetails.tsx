@@ -31,6 +31,8 @@ export function ProfileDetails() {
   const [saved, setSaved] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [dangerZoneOpen, setDangerZoneOpen] = useState(false)
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
+  const [deleteConfirmText, setDeleteConfirmText] = useState("")
   const [billingLoading, setBillingLoading] = useState(false)
   const checkoutResult = searchParams.get("checkout")
 
@@ -149,11 +151,6 @@ export function ProfileDetails() {
 
   async function handleDeleteAccount() {
     if (!user) return
-    const confirmed = window.confirm(
-      "Delete your account? This permanently removes your profile and saved settings, and cannot be undone."
-    )
-    if (!confirmed) return
-
     setDeleting(true)
     setError(null)
     try {
@@ -254,14 +251,16 @@ export function ProfileDetails() {
             {saving ? "Saving..." : saved ? "Saved!" : "Save"}
           </button>
 
-          <div className="rounded border border-red-200 bg-red-50 p-6">
+          <div className="rounded border border-outline-variant p-3">
             <button
               onClick={() => setDangerZoneOpen((o) => !o)}
               className="flex w-full items-center justify-between text-left"
             >
-              <h2 className="text-headline-sm text-red-700">Danger Zone</h2>
+              <span className="text-body-sm font-semibold text-on-surface-variant">
+                Danger Zone
+              </span>
               <span
-                className={`material-symbols-outlined text-red-700 transition-transform ${
+                className={`material-symbols-outlined text-[18px] text-on-surface-variant transition-transform ${
                   dangerZoneOpen ? "rotate-180" : ""
                 }`}
               >
@@ -270,17 +269,52 @@ export function ProfileDetails() {
             </button>
             {dangerZoneOpen && (
               <div className="mt-3 flex flex-col gap-3">
-                <p className="text-body-sm text-red-700/80">
+                <p className="text-body-sm text-on-surface-variant">
                   Permanently delete your account and all saved settings. This cannot be
                   undone.
                 </p>
-                <button
-                  onClick={handleDeleteAccount}
-                  disabled={deleting}
-                  className="self-start rounded-full border border-red-600 px-6 py-2 text-body-sm font-semibold text-red-700 transition-colors hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {deleting ? "Deleting..." : "Delete Account"}
-                </button>
+                {!confirmingDelete ? (
+                  <button
+                    onClick={() => setConfirmingDelete(true)}
+                    className="self-start rounded-full border border-red-600 px-6 py-2 text-body-sm font-semibold text-red-700 transition-colors hover:bg-red-100"
+                  >
+                    Delete Account
+                  </button>
+                ) : (
+                  <div className="flex flex-col gap-2 rounded border border-red-200 bg-red-50 p-4">
+                    <label className="flex flex-col gap-1">
+                      <span className="text-body-sm text-red-700">
+                        Type <strong>Delete</strong> to confirm.
+                      </span>
+                      <input
+                        type="text"
+                        value={deleteConfirmText}
+                        onChange={(e) => setDeleteConfirmText(e.target.value)}
+                        autoFocus
+                        className="rounded border border-red-300 bg-surface-container-lowest px-3 py-2 text-body-md text-on-surface outline-none focus:border-red-600"
+                      />
+                    </label>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleDeleteAccount}
+                        disabled={deleting || deleteConfirmText.trim().toLowerCase() !== "delete"}
+                        className="rounded-full bg-red-600 px-6 py-2 text-body-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        {deleting ? "Deleting..." : "Confirm Delete"}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setConfirmingDelete(false)
+                          setDeleteConfirmText("")
+                        }}
+                        disabled={deleting}
+                        className="rounded-full border border-outline-variant px-6 py-2 text-body-sm font-semibold text-on-surface-variant hover:bg-surface-container-low"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
