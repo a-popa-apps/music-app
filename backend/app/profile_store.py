@@ -24,12 +24,23 @@ DEFAULT_SETTINGS = {
     "discogs_deep_search": False,
     "plan": "free",
     "is_admin": False,
+    "stripe_customer_id": None,
+    "stripe_subscription_id": None,
+    "subscription_status": None,
 }
 
-# Not user-editable via the regular PUT /profile endpoint -- "plan" has no
-# billing flow yet, and "is_admin" is only ever set via the admin-only
-# endpoints in main.py so a user can never self-promote.
-READ_ONLY_FIELDS = {"plan", "is_admin"}
+# Not user-editable via the regular PUT /profile endpoint -- "plan" and the
+# stripe_*/subscription_status fields are only ever written by the billing
+# webhook (billing.py) or admin endpoints, and "is_admin" only by the
+# admin-only endpoints in main.py, so a user can never self-promote or
+# forge their own subscription state.
+READ_ONLY_FIELDS = {
+    "plan",
+    "is_admin",
+    "stripe_customer_id",
+    "stripe_subscription_id",
+    "subscription_status",
+}
 
 
 def _users_collection():

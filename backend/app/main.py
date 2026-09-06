@@ -18,6 +18,7 @@ from .admin_store import (
     set_user_plan,
 )
 from .auth import delete_user, get_app, get_current_user
+from .billing import create_billing_portal_session, create_checkout_session, handle_webhook_event
 from .detect_bpm import warm_up
 from .process_audio import build_zip, validate_files
 from .profile_store import delete_settings, get_settings, save_settings
@@ -170,6 +171,59 @@ def admin_set_discount_code_active(code: str, body: DiscountCodeActiveUpdate, re
         return set_discount_code_active(code, body.active)
     except ValueError as e:
         raise HTTPException(400, str(e))
+
+
+def _frontend_base_url(request: Request) -> str:
+    origin = request.headers.get("origin")
+    if origin in ALLOWED_ORIGINS:
+        return origin
+    return ALLOWED_ORIGINS[0]
+
+
+class CheckoutRequest(BaseModel):
+    billing_cycle: str
+
+
+@app.post("/billing/checkout")
+def billing_checkout(body: CheckoutRequest, request: Request):
+    uid = _require_user(request)
+    base = _frontend_base_url(request)
+    try:
+        url = create_checkout_session(
+            uid,
+            body.billing_cycle,
+            success_url=f"{base}/profile?checkout=success",
+            cancel_url=f"{base}/profile?checkout=cancelled",
+        )
+        return {"url": url}
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    except RuntimeError as e:
+        raise HTTPException(503, str(e))
+
+
+@app.post("/billing/portal")
+def billing_portal(request: Request):
+    uid = _require_user(request)
+    base = _frontend_base_url(request)
+    try:
+        url = create_billing_portal_session(uid, return_url=f"{base}/profile")
+        return {"url": url}
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    except RuntimeError as e:
+        raise HTTPException(503, str(e))
+
+
+@app.post("/billing/webhook")
+async def billing_webhook(request: Request):
+    payload = await request.body()
+    sig_header = request.headers.get("stripe-signature", "")
+    try:
+        handle_webhook_event(payload, sig_header)
+    except Exception as e:
+        raise HTTPException(400, f"Webhook error: {e}")
+    return {"status": "ok"}
 
 
 @app.get("/profile")
