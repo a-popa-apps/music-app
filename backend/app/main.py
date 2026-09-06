@@ -23,7 +23,7 @@ from .billing import create_billing_portal_session, create_checkout_session, han
 from .detect_bpm import warm_up
 from .process_audio import MAX_FILES_FREE, MAX_FILES_PRO, build_zip, validate_files
 from .profile_store import check_and_reserve_usage, delete_settings, get_settings, save_settings
-from .rate_limit import enforce_rate_limit
+from .rate_limit import MAX_REQUESTS_FREE, MAX_REQUESTS_PRO, enforce_rate_limit
 
 app = FastAPI(title="CratePrep Backend")
 
@@ -259,7 +259,6 @@ def delete_account(request: Request):
 
 @app.post("/process")
 async def process(request: Request, files: list[UploadFile] = File(...)):
-    enforce_rate_limit(request)
     uid = _require_user(request)
 
     filename_template = None
@@ -275,6 +274,9 @@ async def process(request: Request, files: list[UploadFile] = File(...)):
         filename_template = None  # don't let a profile lookup failure block processing
         deep_search = False
         plan = "free"
+
+    max_requests = MAX_REQUESTS_PRO if plan == "pro" else MAX_REQUESTS_FREE
+    enforce_rate_limit(request, key=uid, max_requests=max_requests)
 
     max_files = MAX_FILES_PRO if plan == "pro" else MAX_FILES_FREE
     validate_files(files, max_files=max_files)
