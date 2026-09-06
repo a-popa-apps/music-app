@@ -12,10 +12,11 @@ import {
 import { useEffect, useState } from "react"
 import { auth } from "../firebase"
 
-// Firebase's default verification link lands on a generic Firebase-hosted
-// page with no way back to the app. Pointing it at our own /auth/action
-// route instead lets us show a branded confirmation and redirect back here.
-const verificationActionSettings = {
+// Firebase's default verification/reset links land on a generic
+// Firebase-hosted page with no way back to the app. Pointing them at our
+// own /auth/action route instead lets us show a branded confirmation (or
+// a proper "set new password" form) and redirect back here.
+const authActionSettings = {
   url: `${window.location.origin}/auth/action`,
 }
 
@@ -37,7 +38,7 @@ export function useAuth() {
 
     async signUp(email: string, password: string) {
       const credential = await createUserWithEmailAndPassword(auth, email, password)
-      await sendEmailVerification(credential.user, verificationActionSettings)
+      await sendEmailVerification(credential.user, authActionSettings)
       return credential.user
     },
 
@@ -53,12 +54,12 @@ export function useAuth() {
 
     async resendVerification() {
       if (auth.currentUser) {
-        await sendEmailVerification(auth.currentUser, verificationActionSettings)
+        await sendEmailVerification(auth.currentUser, authActionSettings)
       }
     },
 
     async resetPassword(email: string) {
-      await sendPasswordResetEmail(auth, email)
+      await sendPasswordResetEmail(auth, email, authActionSettings)
     },
 
     async logOut() {
