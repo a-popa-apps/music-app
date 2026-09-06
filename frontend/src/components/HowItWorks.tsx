@@ -1,5 +1,3 @@
-import { GrainOverlay } from "./GrainOverlay"
-
 const STEPS = [
   {
     number: "01",
@@ -29,11 +27,7 @@ const STEPS = [
 
 export function HowItWorks() {
   return (
-    <section
-      id="how-it-works"
-      className="relative w-full overflow-hidden bg-gradient-to-br from-[#251a42] to-[#0d0916] px-4 py-16 lg:px-12"
-    >
-      <GrainOverlay />
+    <section id="how-it-works" className="relative w-full overflow-hidden px-4 py-16 lg:px-12">
       <div className="relative z-10 mx-auto flex max-w-7xl flex-col gap-12">
         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
           <div>

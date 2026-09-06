@@ -1,6 +1,5 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { GrainOverlay } from "./GrainOverlay"
 import { useAuth } from "../hooks/useAuth"
 import { useProfile } from "../hooks/useProfile"
 import { createBillingPortalSession, createCheckoutSession } from "../services/api"
@@ -51,11 +50,7 @@ export function Pricing() {
   }
 
   return (
-    <section
-      id="pricing"
-      className="relative w-full overflow-hidden bg-gradient-to-br from-[#141a44] to-[#07081a] px-4 py-16 lg:px-12"
-    >
-      <GrainOverlay />
+    <section id="pricing" className="relative w-full overflow-hidden px-4 py-16 lg:px-12">
       <div className="relative z-10 mx-auto flex max-w-5xl flex-col items-center text-center">
         <span className="mb-1 font-mono text-meta-badge font-bold uppercase tracking-wider text-secondary-container">
           Fair Selector Pricing
