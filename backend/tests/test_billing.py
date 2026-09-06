@@ -8,6 +8,17 @@ from app import billing, profile_store
 from tests.fake_firestore import FakeCollection
 
 
+def _stripe_obj(data: dict) -> MagicMock:
+    """Mimics a real Stripe object: dict-style [] access plus .to_dict(),
+    matching how billing.py actually reads webhook payloads (stripe-python
+    15.x's StripeObject doesn't support .get() directly -- see the bug this
+    guards against, caught by a real live webhook test)."""
+    obj = MagicMock()
+    obj.__getitem__.side_effect = data.__getitem__
+    obj.to_dict.return_value = data
+    return obj
+
+
 @pytest.fixture
 def fake_users(monkeypatch):
     collection = FakeCollection()
@@ -71,11 +82,13 @@ def test_webhook_checkout_completed_activates_plan(fake_users, fake_stripe):
     fake_stripe.Webhook.construct_event.return_value = {
         "type": "checkout.session.completed",
         "data": {
-            "object": {
-                "metadata": {"uid": "uid-1"},
-                "customer": "cus_123",
-                "subscription": "sub_123",
-            }
+            "object": _stripe_obj(
+                {
+                    "metadata": {"uid": "uid-1"},
+                    "customer": "cus_123",
+                    "subscription": "sub_123",
+                }
+            )
         },
     }
 
@@ -92,7 +105,7 @@ def test_webhook_subscription_deleted_reverts_to_free(fake_users, fake_stripe):
     fake_users.document("uid-1").set({"plan": "pro", "subscription_status": "active"}, merge=True)
     fake_stripe.Webhook.construct_event.return_value = {
         "type": "customer.subscription.deleted",
-        "data": {"object": {"metadata": {"uid": "uid-1"}, "customer": "cus_123"}},
+        "data": {"object": _stripe_obj({"metadata": {"uid": "uid-1"}, "customer": "cus_123"})},
     }
 
     billing.handle_webhook_event(b"payload", "sig")
@@ -103,10 +116,12 @@ def test_webhook_subscription_deleted_reverts_to_free(fake_users, fake_stripe):
 
 
 def test_webhook_falls_back_to_customer_lookup_for_uid(fake_users, fake_stripe):
-    fake_stripe.Customer.retrieve.return_value = {"metadata": {"uid": "uid-2"}}
+    fake_stripe.Customer.retrieve.return_value = _stripe_obj({"metadata": {"uid": "uid-2"}})
     fake_stripe.Webhook.construct_event.return_value = {
         "type": "customer.subscription.updated",
-        "data": {"object": {"metadata": {}, "customer": "cus_456", "status": "past_due"}},
+        "data": {
+            "object": _stripe_obj({"metadata": {}, "customer": "cus_456", "status": "past_due"})
+        },
     }
 
     billing.handle_webhook_event(b"payload", "sig")

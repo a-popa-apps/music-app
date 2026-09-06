@@ -98,7 +98,7 @@ def _uid_from_customer(client, customer_id: str | None) -> str | None:
         return None
     try:
         customer = client.Customer.retrieve(customer_id)
-        return customer.get("metadata", {}).get("uid")
+        return customer.to_dict().get("metadata", {}).get("uid")
     except Exception:
         return None
 
@@ -112,7 +112,7 @@ def handle_webhook_event(payload: bytes, sig_header: str) -> None:
     event = client.Webhook.construct_event(payload, sig_header, webhook_secret)
 
     event_type = event["type"]
-    data = event["data"]["object"]
+    data = event["data"]["object"].to_dict()
 
     if event_type == "checkout.session.completed":
         uid = data.get("metadata", {}).get("uid")
