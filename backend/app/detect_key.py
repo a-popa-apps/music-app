@@ -31,10 +31,18 @@ def to_camelot(key: str, scale: str) -> str:
     return f"{MAJOR_CAMELOT_NUMBER[relative_major_semitone]}A"
 
 
+def to_rekordbox_tonality(key: str, scale: str) -> str:
+    """Pioneer's Tonality field: bare note for major ("C", "F#"), note + "m"
+    for minor ("Am", "F#m") -- reuses whatever sharp/flat spelling essentia
+    returned rather than renormalizing, since Rekordbox accepts either."""
+    return key if scale == "major" else f"{key}m"
+
+
 def detect_key(audio: np.ndarray) -> dict:
     key, scale, strength = es.KeyExtractor()(audio)
     return {
         "key": f"{key} {scale}",
         "camelot": to_camelot(key, scale),
+        "tonality": to_rekordbox_tonality(key, scale),
         "strength": round(float(strength), 2),
     }

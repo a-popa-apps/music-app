@@ -134,13 +134,20 @@ def _analyze_and_tag(
             "bpm": None,
             "key": None,
             "genre": genre,
+            "artist": artist,
+            "title": title,
             "load_error": f"{type(e).__name__}: {e}",
             **name_debug,
         }
         final_name = compose_name(artist, title, stem, version_tag, ext)
         return content, entry, final_name
 
-    entry: dict = {"duration_seconds": round(len(audio) / SAMPLE_RATE, 2), **name_debug}
+    entry: dict = {
+        "duration_seconds": round(len(audio) / SAMPLE_RATE, 2),
+        "artist": artist,
+        "title": title,
+        **name_debug,
+    }
     bpm = None
     camelot = None
 
