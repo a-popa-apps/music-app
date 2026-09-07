@@ -2,14 +2,28 @@ import { useState } from "react"
 
 const FAQS = [
   {
-    question: "Does CratePrep overwrite my original audio files?",
+    question: "What is CratePrep?",
     answer:
-      "Never. CratePrep creates a clean replica and exports your tracks with corrected metadata, leaving your original download folder completely untouched.",
+      "CratePrep is a web tool for DJs that cleans up messy downloaded tracks in your browser: it strips junk from filenames, detects BPM and musical key, tags genre and energy, and hands you back a ready-to-gig playlist — no software to install.",
   },
   {
     question: "Which DJ software does CratePrep support?",
+    answer: "We support Rekordbox, Serato & Traktor XML export.",
+  },
+  {
+    question: "What audio formats do you support?",
     answer:
-      "CratePrep generates Rekordbox-compatible playlists and formatted folder hierarchies ready for direct Pioneer CDJ USB stick mounting. Serato and Traktor export are on the roadmap.",
+      "MP3, WAV, AIFF, and FLAC — the formats DJs use the most.",
+  },
+  {
+    question: "Does it run on my phone or tablet?",
+    answer:
+      "Yes, although we don't recommend it — dragging in a whole download folder and reviewing results is a much better experience on a laptop or desktop.",
+  },
+  {
+    question: "Does CratePrep overwrite my original audio files?",
+    answer:
+      "Never. CratePrep creates a clean replica and exports your tracks with corrected metadata, leaving your original download folder completely untouched.",
   },
   {
     question: "Do my tracks get stored on your servers?",
