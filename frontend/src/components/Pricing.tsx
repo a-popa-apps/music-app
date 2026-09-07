@@ -122,7 +122,7 @@ export function Pricing() {
               <div>
                 <h3 className="text-headline-lg font-bold text-white">CratePrep Pro</h3>
                 <span className="text-body-sm text-white/70">
-                  Complete autonomy for working selectors
+                  Unlimited tracks, bigger batches, and saved templates for ${price}/mo
                 </span>
               </div>
 
