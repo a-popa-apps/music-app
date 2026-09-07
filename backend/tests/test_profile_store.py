@@ -99,3 +99,9 @@ def test_check_and_reserve_usage_resets_on_period_rollover(fake_collection):
     settings = profile_store.get_settings("uid-1")
     assert settings["tracks_processed_this_period"] == 5
     assert settings["usage_period_start"] == profile_store._current_period_key()
+
+
+def test_enhanced_detection_defaults_false_and_roundtrips(fake_collection):
+    assert profile_store.get_settings("new-uid")["enhanced_detection"] is False
+    profile_store.save_settings("uid-1", {"enhanced_detection": True})
+    assert profile_store.get_settings("uid-1")["enhanced_detection"] is True

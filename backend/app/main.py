@@ -397,6 +397,7 @@ async def process(request: Request, files: list[UploadFile] = File(...)):
 
     filename_template = None
     deep_search = False
+    enhanced_detection = False
     plan = "free"
     settings = None
     try:
@@ -405,9 +406,13 @@ async def process(request: Request, files: list[UploadFile] = File(...)):
         deep_search = bool(settings.get("discogs_deep_search"))
         if plan == "pro":
             filename_template = settings.get("filename_template")
+            # Double-gated: only ever honored for Pro, regardless of what's
+            # stored, the same trust model filename_template already uses.
+            enhanced_detection = bool(settings.get("enhanced_detection"))
     except Exception:
         filename_template = None  # don't let a profile lookup failure block processing
         deep_search = False
+        enhanced_detection = False
         plan = "free"
         settings = None
 
@@ -425,7 +430,10 @@ async def process(request: Request, files: list[UploadFile] = File(...)):
         raise HTTPException(402, str(e))
 
     zip_bytes, manifest = await build_zip(
-        files, filename_template=filename_template, deep_search=deep_search
+        files,
+        filename_template=filename_template,
+        deep_search=deep_search,
+        enhanced_detection=enhanced_detection,
     )
     try:
         add_history_entries(uid, manifest)

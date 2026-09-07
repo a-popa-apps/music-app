@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import { Navigate, useNavigate, useSearchParams } from "react-router-dom"
 import { Header } from "../components/Header"
 import { ProfileFieldsForm, Section } from "../components/ProfileFieldsForm"
+import { UpgradeModal } from "../components/UpgradeModal"
 import { useAuth } from "../hooks/useAuth"
 import {
   createBillingPortalSession,
@@ -43,6 +44,7 @@ export function ProfileDetails() {
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [deleteConfirmText, setDeleteConfirmText] = useState("")
   const [billingLoading, setBillingLoading] = useState(false)
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const checkoutResult = searchParams.get("checkout")
 
   useEffect(() => {
@@ -130,6 +132,7 @@ export function ProfileDetails() {
         primary_genres: settings.primary_genres,
         filename_template: settings.filename_template,
         discogs_deep_search: settings.discogs_deep_search,
+        enhanced_detection: settings.enhanced_detection,
       })
       setSettings(updated)
       setSavedSettings(updated)
@@ -241,7 +244,12 @@ export function ProfileDetails() {
             </div>
           )}
 
-          <ProfileFieldsForm settings={settings} onChange={update} email={user?.email ?? ""} />
+          <ProfileFieldsForm
+            settings={settings}
+            onChange={update}
+            email={user?.email ?? ""}
+            onRequestUpgrade={() => setShowUpgradeModal(true)}
+          />
 
           <Section title="Billing">
             <div className="flex items-center justify-between gap-4">
@@ -392,6 +400,16 @@ export function ProfileDetails() {
             </div>
           </div>
         </div>
+      )}
+
+      {showUpgradeModal && (
+        <UpgradeModal
+          title="Unlock Enhanced BPM & Key Detection"
+          description="Full-track BPM analysis and higher-confidence key detection -- upgrade to Pro to turn it on."
+          loading={billingLoading}
+          onUpgrade={handleUpgrade}
+          onClose={() => setShowUpgradeModal(false)}
+        />
       )}
     </>
   )

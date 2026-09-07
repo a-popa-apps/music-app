@@ -45,10 +45,12 @@ export function ProfileFieldsForm({
   settings,
   onChange,
   email,
+  onRequestUpgrade,
 }: {
   settings: ProfileSettings
   onChange: <K extends keyof ProfileSettings>(key: K, value: ProfileSettings[K]) => void
   email?: string
+  onRequestUpgrade?: () => void
 }) {
   const isPro = settings.plan === "pro"
   const [showDiscogsHelp, setShowDiscogsHelp] = useState(false)
@@ -325,6 +327,39 @@ export function ProfileFieldsForm({
             <span
               className={`block h-5 w-5 rounded-full bg-white transition-transform ${
                 settings.discogs_deep_search ? "translate-x-5" : "translate-x-0.5"
+              }`}
+            />
+          </button>
+        </div>
+
+        <div className="flex items-center justify-between rounded border border-white/10 px-4 py-3">
+          <span className="flex items-center gap-1.5 text-body-md text-white">
+            Enhanced BPM &amp; key detection
+            {!isPro && (
+              <span className="rounded-full bg-secondary-container/15 px-2 py-px font-mono text-[10px] font-bold uppercase tracking-wider text-secondary-container">
+                Pro
+              </span>
+            )}
+          </span>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={settings.enhanced_detection}
+            disabled={!isPro && !onRequestUpgrade}
+            onClick={() => {
+              if (isPro) {
+                onChange("enhanced_detection", !settings.enhanced_detection)
+              } else if (onRequestUpgrade) {
+                onRequestUpgrade()
+              }
+            }}
+            className={`h-6 w-11 rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+              settings.enhanced_detection ? "bg-secondary-container" : "bg-white/20"
+            }`}
+          >
+            <span
+              className={`block h-5 w-5 rounded-full bg-white transition-transform ${
+                settings.enhanced_detection ? "translate-x-5" : "translate-x-0.5"
               }`}
             />
           </button>

@@ -26,6 +26,7 @@ DEFAULT_SETTINGS = {
     "primary_genres": [],
     "filename_template": None,
     "discogs_deep_search": False,
+    "enhanced_detection": False,
     "plan": "free",
     "is_admin": False,
     "stripe_customer_id": None,

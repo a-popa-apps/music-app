@@ -120,6 +120,7 @@ def _analyze_and_tag(
     version_tag: str | None,
     filename_template: str | None = None,
     deep_search: bool = False,
+    enhanced_detection: bool = False,
 ) -> tuple[bytes, dict, str]:
     embedded_tags = read_embedded_tags(content, ext)
     artist, title, genre, name_debug = _resolve_artist_title_genre(
@@ -154,14 +155,14 @@ def _analyze_and_tag(
     tonality = None
 
     try:
-        bpm = detect_bpm(audio)
+        bpm = detect_bpm(audio, full_track=enhanced_detection)
         entry["bpm"] = bpm
     except Exception as e:
         entry["bpm"] = None
         entry["bpm_error"] = f"{type(e).__name__}: {e}"
 
     try:
-        key_result = detect_key(audio)
+        key_result = detect_key(audio, enhanced=enhanced_detection)
         entry.update(key_result)
         camelot = key_result["camelot"]
         tonality = key_result["tonality"]
@@ -223,11 +224,19 @@ async def _analyze_one(
     original_name: str,
     filename_template: str | None,
     deep_search: bool,
+    enhanced_detection: bool,
 ) -> tuple[bytes, dict, str]:
     async with semaphore:
         try:
             return await run_in_threadpool(
-                _analyze_and_tag, content, ext, stem, version_tag, filename_template, deep_search
+                _analyze_and_tag,
+                content,
+                ext,
+                stem,
+                version_tag,
+                filename_template,
+                deep_search,
+                enhanced_detection,
             )
         except Exception as e:
             # One file misbehaving shouldn't lose the rest of the batch --
@@ -241,6 +250,7 @@ async def build_zip(
     files: list[UploadFile],
     filename_template: str | None = None,
     deep_search: bool = False,
+    enhanced_detection: bool = False,
 ) -> tuple[bytes, dict]:
     buffer = io.BytesIO()
     manifest = {}
@@ -276,6 +286,7 @@ async def build_zip(
                 original_name,
                 filename_template,
                 deep_search,
+                enhanced_detection,
             )
             for original_name, data in reads
             if "error" not in data

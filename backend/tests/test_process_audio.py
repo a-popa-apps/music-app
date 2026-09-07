@@ -54,6 +54,14 @@ def test_build_zip_processes_multiple_files_in_order():
         names = zf.namelist()
     # 3 processed tracks + the manifest + the playlist
     assert len(names) == 5
+
+
+def test_build_zip_enhanced_detection_threads_through_without_error():
+    files = [_upload("Artist - Title.wav", _make_wav(200))]
+    zip_bytes, manifest = asyncio.run(process_audio.build_zip(files, enhanced_detection=True))
+    entry = next(iter(manifest.values()))
+    assert entry["bpm"] is not None
+    assert entry["key"] is not None
     assert "crateprep-manifest.json" in names
     assert "crateprep-playlist.m3u8" in names
 

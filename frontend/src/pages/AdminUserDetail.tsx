@@ -107,6 +107,7 @@ export function AdminUserDetail() {
         primary_genres: settings.primary_genres,
         filename_template: settings.filename_template,
         discogs_deep_search: settings.discogs_deep_search,
+        enhanced_detection: settings.enhanced_detection,
       })
       setSettings(updated)
       setSavedSettings(updated)

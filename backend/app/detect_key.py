@@ -38,8 +38,30 @@ def to_rekordbox_tonality(key: str, scale: str) -> str:
     return key if scale == "major" else f"{key}m"
 
 
-def detect_key(audio: np.ndarray) -> dict:
+# Below this confidence, KeyExtractor's own single-pass result is
+# considered unreliable enough to be worth a second opinion in "enhanced"
+# mode. First guess, not measured against real tracks yet -- same class of
+# unverified starting constant as Energy's MIN_DB/MAX_DB was.
+ENHANCED_CONFIDENCE_THRESHOLD = 0.7
+
+
+def detect_key(audio: np.ndarray, enhanced: bool = False) -> dict:
+    """KeyExtractor already analyzes the entire track by default, so
+    "enhanced" mode can't get a second opinion by just re-running on the
+    same audio. Instead, when the first pass's confidence is below
+    ENHANCED_CONFIDENCE_THRESHOLD, it re-runs on just the middle ~50% of
+    the track (skipping likely intro/outro ambiguity) and keeps whichever
+    pass scored higher -- a genuinely different analysis, not a repeat."""
     key, scale, strength = es.KeyExtractor()(audio)
+
+    if enhanced and strength < ENHANCED_CONFIDENCE_THRESHOLD:
+        quarter = len(audio) // 4
+        middle = audio[quarter : len(audio) - quarter]
+        if len(middle) > 0:
+            alt_key, alt_scale, alt_strength = es.KeyExtractor()(middle)
+            if alt_strength > strength:
+                key, scale, strength = alt_key, alt_scale, alt_strength
+
     return {
         "key": f"{key} {scale}",
         "camelot": to_camelot(key, scale),
