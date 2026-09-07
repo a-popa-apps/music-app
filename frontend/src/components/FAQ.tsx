@@ -7,6 +7,11 @@ const FAQS = [
       "CratePrep is a web tool for DJs that cleans up messy downloaded tracks in your browser: it strips junk from filenames, detects BPM and musical key, tags genre and energy, and hands you back a ready-to-gig playlist — no software to install.",
   },
   {
+    question: "Do I need an account to use CratePrep?",
+    answer:
+      "No — you can process up to 5 tracks free with no signup at all, as a one-time trial. Sign up free afterward for 25 tracks a month, saved history, and drag-to-reorder.",
+  },
+  {
     question: "Which DJ software does CratePrep support?",
     answer:
       "Every track is tagged with the correct BPM, key, and genre before you download, so Rekordbox, Serato, and Traktor all recognize it right away when you add it to your library — no export file or software-specific step needed.",

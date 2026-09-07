@@ -20,6 +20,7 @@ from .admin_store import (
     set_discount_code_active,
     set_user_plan,
 )
+from .anon_trial_store import ANON_TRIAL_LIMIT, check_and_reserve_trial
 from .auth import delete_user, get_app, get_current_user
 from .billing import (
     create_billing_portal_session,
@@ -32,7 +33,7 @@ from .feedback_store import create_feedback, list_feedback, mark_feedback_read
 from .history_store import add_history_entries, clear_history, list_history
 from .process_audio import MAX_FILES_FREE, MAX_FILES_PRO, build_zip, validate_files
 from .profile_store import check_and_reserve_usage, delete_settings, get_settings, save_settings
-from .rate_limit import MAX_REQUESTS_FREE, MAX_REQUESTS_PRO, enforce_rate_limit
+from .rate_limit import MAX_REQUESTS_FREE, MAX_REQUESTS_PRO, _client_ip, enforce_rate_limit
 
 app = FastAPI(title="CratePrep Backend")
 
@@ -374,7 +375,25 @@ def delete_history(request: Request):
 
 @app.post("/process")
 async def process(request: Request, files: list[UploadFile] = File(...)):
-    uid = _require_user(request)
+    uid = get_current_user(request)
+
+    if uid is None:
+        # No-signup trial: up to ANON_TRIAL_LIMIT tracks, once, ever -- lets
+        # a visitor see real value before hitting a signup wall, without
+        # giving away the actual Free plan (25/month, requires an account).
+        enforce_rate_limit(request)
+        validate_files(files, max_files=ANON_TRIAL_LIMIT)
+        try:
+            check_and_reserve_trial(_client_ip(request), len(files))
+        except ValueError as e:
+            raise HTTPException(402, str(e))
+
+        zip_bytes, _manifest = await build_zip(files)
+        return Response(
+            content=zip_bytes,
+            media_type="application/zip",
+            headers={"Content-Disposition": "attachment; filename=crateprep-export.zip"},
+        )
 
     filename_template = None
     deep_search = False

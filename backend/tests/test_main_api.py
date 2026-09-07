@@ -259,12 +259,41 @@ def test_process_requires_files_field(client):
     assert res.status_code == 422
 
 
-def test_process_requires_auth(client):
+async def _fake_build_zip(files, **kwargs):
+    return b"zip bytes", {}
+
+
+def test_process_allows_anonymous_trial_within_limit(client, monkeypatch):
+    monkeypatch.setattr(main, "get_current_user", lambda request: None)
+    monkeypatch.setattr(main, "check_and_reserve_trial", lambda ip, count: None)
+    monkeypatch.setattr(main, "build_zip", _fake_build_zip)
     res = client.post(
         "/process",
         files=[("files", ("track.mp3", b"fake audio", "audio/mpeg"))],
     )
-    assert res.status_code == 401
+    assert res.status_code == 200
+    assert res.content == b"zip bytes"
+
+
+def test_process_anonymous_batch_over_trial_limit_rejected(client, monkeypatch):
+    monkeypatch.setattr(main, "get_current_user", lambda request: None)
+    files = [("files", (f"track{i}.mp3", b"fake audio", "audio/mpeg")) for i in range(6)]
+    res = client.post("/process", files=files)
+    assert res.status_code == 400
+
+
+def test_process_anonymous_trial_exhausted_returns_402(client, monkeypatch):
+    monkeypatch.setattr(main, "get_current_user", lambda request: None)
+
+    def _raise(ip, count):
+        raise ValueError("Free trial used up (5/5 tracks, 0 remaining). Sign up free for 25 tracks/month.")
+
+    monkeypatch.setattr(main, "check_and_reserve_trial", _raise)
+    res = client.post(
+        "/process",
+        files=[("files", ("track.mp3", b"fake audio", "audio/mpeg"))],
+    )
+    assert res.status_code == 402
 
 
 def test_process_rejects_unsupported_extension(client, monkeypatch):

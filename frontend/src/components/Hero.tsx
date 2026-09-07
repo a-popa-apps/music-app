@@ -36,6 +36,10 @@ interface ProcessedTrack {
 
 type Phase = "idle" | "auth-required" | "processing" | "done" | "error"
 
+// No-signup trial: up to this many tracks can be processed anonymously,
+// once, ever -- matches backend/app/anon_trial_store.py's ANON_TRIAL_LIMIT.
+const ANON_TRIAL_LIMIT = 5
+
 function parseManifest(files: Unzipped): ProcessedTrack[] {
   const manifestBytes = files["crateprep-manifest.json"]
   if (!manifestBytes) return []
@@ -73,11 +77,14 @@ export function Hero() {
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
       if (acceptedFiles.length === 0) return
-      if (!user || !isVerified) {
+      const loggedIn = user && isVerified
+      if (!loggedIn && acceptedFiles.length > ANON_TRIAL_LIMIT) {
         setFileCount(acceptedFiles.length)
         setPhase("auth-required")
         return
       }
+      // Anonymous drops within the trial limit go straight to processing --
+      // no signup wall for the free trial itself, only for exceeding it.
       void processFiles(acceptedFiles)
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -96,7 +103,7 @@ export function Hero() {
     setFileCount(files.length)
     setPhase("processing")
     try {
-      const idToken = await user!.getIdToken()
+      const idToken = user ? await user.getIdToken() : undefined
       const blob = await uploadAndProcess(files, idToken)
       const bytes = new Uint8Array(await blob.arrayBuffer())
       const unzipped = unzipSync(bytes)
@@ -210,9 +217,14 @@ export function Hero() {
               <p className="mb-4 text-body-md text-white/70">
                 Drop .WAV, .MP3, .AIFF, or .FLAC directly from Finder or Explorer
               </p>
-              <span className="rounded-full bg-secondary-container px-4 py-1 font-mono text-meta-badge uppercase tracking-wider text-on-secondary">
-                Lossless Supported
-              </span>
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <span className="rounded-full bg-secondary-container px-4 py-1 font-mono text-meta-badge uppercase tracking-wider text-on-secondary">
+                  Lossless Supported
+                </span>
+                <span className="rounded-full bg-white/10 px-4 py-1 font-mono text-meta-badge uppercase tracking-wider text-white/70">
+                  Try {ANON_TRIAL_LIMIT} Tracks Free, No Signup
+                </span>
+              </div>
             </div>
           )}
 
@@ -239,11 +251,11 @@ export function Hero() {
                 lock
               </span>
               <h3 className="text-headline-sm text-white">
-                Sign in to process {fileCount} file{fileCount === 1 ? "" : "s"}
+                That's {fileCount} files — more than the {ANON_TRIAL_LIMIT}-track free trial
               </h3>
               <p className="text-body-md text-white/70">
-                Creating a free account takes a few seconds and unlocks 25 tracks
-                a month, no credit card required.
+                Drop {ANON_TRIAL_LIMIT} or fewer to try it with no account, or sign up free
+                for 25 tracks a month, no credit card required.
               </p>
               <div className="flex items-center gap-3">
                 <button
@@ -266,7 +278,11 @@ export function Hero() {
             <div className="flex w-full flex-col items-center gap-4 rounded border-2 border-red-400/30 bg-red-500/10 p-12 text-center backdrop-blur-md">
               <span className="material-symbols-outlined text-[36px] text-red-300">error</span>
               <h3 className="text-headline-sm text-white">
-                {errorMessage ? "Monthly limit reached" : "Processing failed"}
+                {errorMessage
+                  ? user
+                    ? "Monthly limit reached"
+                    : "Free trial used up"
+                  : "Processing failed"}
               </h3>
               <p className="text-body-md text-white/70">
                 {errorMessage ??
@@ -275,10 +291,10 @@ export function Hero() {
               <div className="flex items-center gap-3">
                 {errorMessage && (
                   <button
-                    onClick={() => navigate("/#pricing")}
+                    onClick={() => navigate(user ? "/#pricing" : "/auth")}
                     className="rounded-full bg-secondary-container px-6 py-2 text-body-sm font-semibold text-on-primary transition-opacity hover:opacity-90"
                   >
-                    Upgrade to Pro
+                    {user ? "Upgrade to Pro" : "Sign up free"}
                   </button>
                 )}
                 <button
@@ -297,6 +313,24 @@ export function Hero() {
 
           {phase === "done" && (
             <div className="w-full overflow-hidden rounded border border-white/20 bg-white/10 backdrop-blur-md">
+              {!user && (
+                <div className="flex flex-col items-center justify-between gap-3 border-b border-white/10 bg-secondary-container/15 px-6 py-4 text-center sm:flex-row sm:text-left">
+                  <div className="flex flex-col">
+                    <span className="text-body-md font-semibold text-white">
+                      Like what you see? That was your free trial.
+                    </span>
+                    <span className="text-body-sm text-white/70">
+                      Sign up free for 25 tracks a month, saved history, and drag-to-reorder.
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => navigate("/auth")}
+                    className="whitespace-nowrap rounded-full bg-secondary-container px-5 py-2 text-body-sm font-semibold text-on-primary transition-opacity hover:opacity-90"
+                  >
+                    Sign up free
+                  </button>
+                </div>
+              )}
               <div className="grid grid-cols-12 items-center bg-white/5 px-6 py-2 font-mono text-meta-badge uppercase tracking-wider text-white/70">
                 <div className="col-span-1 text-center">#</div>
                 <div className="col-span-3">Track Title &amp; Artist</div>

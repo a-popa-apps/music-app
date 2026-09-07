@@ -7,7 +7,7 @@ export function PrivacyPage() {
       sections={[
         {
           heading: "1. Information We Collect",
-          body: "Your email address (for account creation), and any profile details you choose to provide (name, artist name, country, role, genre preferences, filename template). Audio files you upload are processed in memory for the duration of a single request and are not retained afterward. If you're signed in, we also keep a history of the tracks you've processed — filename, detected BPM/key/genre, and duration — so you can review it later; this history never includes the audio itself.",
+          body: "Your email address (for account creation), and any profile details you choose to provide (name, artist name, country, role, genre preferences, filename template). Audio files you upload are processed in memory for the duration of a single request and are not retained afterward. If you're signed in, we also keep a history of the tracks you've processed — filename, detected BPM/key/genre, and duration — so you can review it later; this history never includes the audio itself. If you use the free trial without an account, we store a one-way hash of your IP address (not the address itself) only to enforce the trial's track limit.",
         },
         {
           heading: "2. How We Use Your Information",
