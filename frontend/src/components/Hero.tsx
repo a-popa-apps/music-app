@@ -185,9 +185,9 @@ export function Hero() {
         </h1>
 
         <p className="mb-10 max-w-2xl text-body-lg text-white/80">
-          Drop your messy downloads. Get back clean filenames, verified BPM
-          and keys, and ready-to-gig Rekordbox, Serato &amp; Traktor
-          playlists.
+          Drop your messy downloads. Get back clean filenames and tracks
+          tagged with verified BPM and keys, ready to drop straight into
+          Rekordbox, Serato, or Traktor.
         </p>
 
         <div className="w-full text-left">

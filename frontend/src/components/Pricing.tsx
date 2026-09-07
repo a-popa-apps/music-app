@@ -16,7 +16,6 @@ const FREE_EXCLUDED = ["Custom filename syntax templating", "Priority processing
 const PRO_CHECKLIST = [
   "Everything in Free, plus:",
   "Unlimited tracks per month",
-  "Rekordbox, Serato & Traktor XML export",
   "Custom filename syntax templating",
   "Priority harmonic key analyzer",
   "Enhanced BPM detection",

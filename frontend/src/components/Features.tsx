@@ -65,18 +65,18 @@ export function Features() {
               </span>
             </div>
             <h3 className="mb-2 text-headline-sm text-white">
-              Rekordbox, Serato & Traktor Native
+              Rekordbox, Serato & Traktor Ready
             </h3>
             <p className="mb-4 text-body-md text-white/70">
-              Exports playlist files ready to drag directly into your current
-              library without recalculating waveforms or corrupting cues.
+              Every track is tagged with the correct BPM, key, and genre
+              before you download, so it shows up right the moment you drag
+              it into your library — no manual fixes, no re-tagging.
             </p>
             <div className="mt-auto flex flex-wrap gap-1">
               {[
-                "Rekordbox 6 & 7 XML",
-                "Serato DJ Pro .crate",
-                "Traktor Pro 3/4 NML",
-                "Standard CDJ FAT32",
+                "Standard BPM & Key Tags",
+                "Works With Any DJ Software",
+                "No Manual Re-Tagging",
               ].map((tag) => (
                 <span
                   key={tag}

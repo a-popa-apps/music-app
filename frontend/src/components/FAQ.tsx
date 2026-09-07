@@ -8,7 +8,8 @@ const FAQS = [
   },
   {
     question: "Which DJ software does CratePrep support?",
-    answer: "We support Rekordbox, Serato & Traktor XML export.",
+    answer:
+      "Every track is tagged with the correct BPM, key, and genre before you download, so Rekordbox, Serato, and Traktor all recognize it right away when you add it to your library — no export file or software-specific step needed.",
   },
   {
     question: "What audio formats do you support?",
