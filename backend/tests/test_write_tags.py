@@ -16,7 +16,7 @@ def _make_wav_bytes() -> bytes:
 
 def test_write_and_read_back_wav_tags():
     content = _make_wav_bytes()
-    tagged = write_tags(content, ".wav", bpm=128.4, camelot="8A", genre="House")
+    tagged = write_tags(content, ".wav", bpm=128.4, key_tag="Am", genre="House")
 
     from mutagen.wave import WAVE
     import tempfile
@@ -26,13 +26,13 @@ def test_write_and_read_back_wav_tags():
         tmp.flush()
         audio = WAVE(tmp.name)
         assert str(audio.tags["TBPM"]) == "128"
-        assert str(audio.tags["TKEY"]) == "8A"
+        assert str(audio.tags["TKEY"]) == "Am"
         assert str(audio.tags["TCON"]) == "House"
 
 
 def test_unsupported_extension_returns_unchanged():
     content = b"not really audio"
-    assert write_tags(content, ".aac", bpm=128, camelot="8A", genre="House") == content
+    assert write_tags(content, ".aac", bpm=128, key_tag="Am", genre="House") == content
 
 
 def test_no_values_leaves_no_tags_but_still_returns_valid_file():

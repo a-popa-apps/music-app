@@ -26,9 +26,16 @@ def write_tags(
     content: bytes,
     suffix: str,
     bpm: float | None = None,
-    camelot: str | None = None,
+    key_tag: str | None = None,
     genre: str | None = None,
 ) -> bytes:
+    """`key_tag` should be standard musical key notation ("Am", "F#"), not
+    a Camelot code ("8A") -- TKEY/INITIALKEY's own convention, and what
+    Rekordbox/Serato/Traktor actually expect there so a track's key shows
+    up correctly without the DJ software re-analyzing it. Camelot is a
+    DJ-friendly *display* convention on top of that; each of those apps
+    already offers a "show keys as Camelot" preference of its own for
+    users who want that view."""
     suffix = suffix.lower()
     if suffix not in ID3_FORMATS and suffix not in VORBIS_FORMATS:
         # No reliable embedded-tag standard for this format (e.g. bare .aac)
@@ -46,8 +53,8 @@ def write_tags(
             tags = audio.tags
             if bpm is not None:
                 tags.setall("TBPM", [TBPM(encoding=3, text=str(round(bpm)))])
-            if camelot:
-                tags.setall("TKEY", [TKEY(encoding=3, text=camelot)])
+            if key_tag:
+                tags.setall("TKEY", [TKEY(encoding=3, text=key_tag)])
             if genre:
                 tags.setall("TCON", [TCON(encoding=3, text=genre)])
             audio.save(tmp_path)
@@ -55,8 +62,8 @@ def write_tags(
             audio = VORBIS_FORMATS[suffix](tmp_path)
             if bpm is not None:
                 audio["BPM"] = str(round(bpm))
-            if camelot:
-                audio["INITIALKEY"] = camelot
+            if key_tag:
+                audio["INITIALKEY"] = key_tag
             if genre:
                 audio["GENRE"] = genre
             audio.save()

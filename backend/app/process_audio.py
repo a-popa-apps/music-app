@@ -150,6 +150,7 @@ def _analyze_and_tag(
     }
     bpm = None
     camelot = None
+    tonality = None
 
     try:
         bpm = detect_bpm(audio)
@@ -162,6 +163,7 @@ def _analyze_and_tag(
         key_result = detect_key(audio)
         entry.update(key_result)
         camelot = key_result["camelot"]
+        tonality = key_result["tonality"]
     except Exception as e:
         entry["key"] = None
         entry["key_error"] = f"{type(e).__name__}: {e}"
@@ -189,7 +191,7 @@ def _analyze_and_tag(
     )
 
     try:
-        tagged_content = write_tags(content, ext, bpm=bpm, camelot=camelot, genre=genre)
+        tagged_content = write_tags(content, ext, bpm=bpm, key_tag=tonality, genre=genre)
     except Exception as e:
         tagged_content = content
         entry["tag_error"] = f"{type(e).__name__}: {e}"
