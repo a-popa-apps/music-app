@@ -1,5 +1,5 @@
 import { unzipSync, zipSync, type Unzipped } from "fflate"
-import { useCallback, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { useDropzone } from "react-dropzone"
 import { useNavigate } from "react-router-dom"
 import heroBg from "../assets/hero-bg.jpg"
@@ -40,6 +40,19 @@ type Phase = "idle" | "auth-required" | "processing" | "done" | "error"
 // once, ever -- matches backend/app/anon_trial_store.py's ANON_TRIAL_LIMIT.
 const ANON_TRIAL_LIMIT = 5
 
+// Rotates during the "processing" phase so the wait shows what's actually
+// happening under the hood (real pipeline steps, in roughly the order
+// _analyze_and_tag runs them) instead of one static line.
+const PROCESSING_STATUSES = [
+  "Stripping junk from filenames...",
+  "Reading the beat grid for BPM...",
+  "Detecting musical key...",
+  "Matching against Spotify & Discogs for genre...",
+  "Scoring loudness for the Energy rating...",
+  "Tagging files for Rekordbox, Serato & Traktor...",
+]
+const PROCESSING_STATUS_INTERVAL_MS = 2000
+
 function parseManifest(files: Unzipped): ProcessedTrack[] {
   const manifestBytes = files["crateprep-manifest.json"]
   if (!manifestBytes) return []
@@ -71,6 +84,16 @@ export function Hero() {
   const [results, setResults] = useState<ProcessedTrack[]>([])
   const [zipFiles, setZipFiles] = useState<Unzipped | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [statusIndex, setStatusIndex] = useState(0)
+
+  useEffect(() => {
+    if (phase !== "processing") return
+    setStatusIndex(0)
+    const id = setInterval(() => {
+      setStatusIndex((i) => (i + 1) % PROCESSING_STATUSES.length)
+    }, PROCESSING_STATUS_INTERVAL_MS)
+    return () => clearInterval(id)
+  }, [phase])
   const dragIndex = useRef<number | null>(null)
   const [draggingIndex, setDraggingIndex] = useState<number | null>(null)
 
@@ -237,7 +260,7 @@ export function Hero() {
                 Processing {fileCount} file{fileCount === 1 ? "" : "s"}...
               </h3>
               <p className="text-body-md text-white/70">
-                Detecting BPM, key, and genre for each track.
+                {PROCESSING_STATUSES[statusIndex]}
               </p>
               <div className="h-2 w-full max-w-md overflow-hidden rounded-full bg-white/20">
                 <div className="h-full w-1/3 animate-indeterminate rounded-full bg-secondary-container" />
