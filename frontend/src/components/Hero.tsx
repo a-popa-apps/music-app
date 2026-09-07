@@ -85,7 +85,7 @@ const PROCESSING_STATUSES = [
   "Detecting musical key...",
   "Matching against Spotify & Discogs for genre...",
   "Scoring loudness for the Energy rating...",
-  "Tagging files for Rekordbox, Serato & Traktor...",
+  "Tagging files for your DJ software...",
 ]
 const PROCESSING_STATUS_INTERVAL_MS = 2000
 
@@ -273,7 +273,7 @@ export function Hero() {
         <p className="mb-10 max-w-2xl text-body-lg text-white/80">
           Drop your messy downloads. Get back clean filenames and tracks
           tagged with verified BPM and keys, ready to drop straight into
-          Rekordbox, Serato, or Traktor.
+          whatever DJ software you use.
         </p>
 
         <div className="w-full text-left">

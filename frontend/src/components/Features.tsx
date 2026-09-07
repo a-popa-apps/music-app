@@ -65,7 +65,7 @@ export function Features() {
               </span>
             </div>
             <h3 className="mb-2 text-headline-sm text-white">
-              Rekordbox, Serato & Traktor Ready
+              Ready For Any DJ Software
             </h3>
             <p className="mb-4 text-body-md text-white/70">
               Every track is tagged with the correct BPM, key, and genre

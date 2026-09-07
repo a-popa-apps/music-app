@@ -14,7 +14,7 @@ const FAQS = [
   {
     question: "Which DJ software does CratePrep support?",
     answer:
-      "Every track is tagged with the correct BPM, key, and genre before you download, so Rekordbox, Serato, and Traktor all recognize it right away when you add it to your library — no export file or software-specific step needed.",
+      "Every track is tagged with the correct BPM, key, and genre using standard audio metadata before you download — the same format virtually any DJ software reads, so it shows up correctly the moment you add it to your library. No export file or software-specific step needed.",
   },
   {
     question: "What audio formats do you support?",
