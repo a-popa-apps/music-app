@@ -11,14 +11,13 @@ const FREE_INCLUDED = [
   "Rekordbox-ready .m3u8 playlist export",
 ]
 
-const FREE_EXCLUDED = ["Custom filename syntax templating", "Priority processing"]
+const FREE_EXCLUDED = ["Custom filename syntax templating"]
 
 const PRO_CHECKLIST = [
   "Everything in Free, plus:",
   "Unlimited tracks per month",
+  "Up to 50 tracks per batch",
   "Custom filename syntax templating",
-  "Priority harmonic key analyzer",
-  "Enhanced BPM detection",
 ]
 
 export function Pricing() {
