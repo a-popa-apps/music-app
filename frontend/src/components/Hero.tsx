@@ -4,10 +4,8 @@ import { useDropzone } from "react-dropzone"
 import { useNavigate } from "react-router-dom"
 import heroBg from "../assets/hero-bg.jpg"
 import { useAuth } from "../hooks/useAuth"
-import { useClickOutside } from "../hooks/useClickOutside"
 import { ApiError, uploadAndProcess } from "../services/api"
 import { buildPlaylist } from "../utils/buildPlaylist"
-import { buildRekordboxXml } from "../utils/buildRekordboxXml"
 
 interface ManifestEntry {
   bpm?: number | null
@@ -37,7 +35,6 @@ interface ProcessedTrack {
 }
 
 type Phase = "idle" | "auth-required" | "processing" | "done" | "error"
-type DownloadFormat = "audio" | "rekordbox"
 
 function parseManifest(files: Unzipped): ProcessedTrack[] {
   const manifestBytes = files["crateprep-manifest.json"]
@@ -72,9 +69,6 @@ export function Hero() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const dragIndex = useRef<number | null>(null)
   const [draggingIndex, setDraggingIndex] = useState<number | null>(null)
-  const [downloadMenuOpen, setDownloadMenuOpen] = useState(false)
-  const downloadMenuRef = useRef<HTMLDivElement>(null)
-  useClickOutside(downloadMenuRef, () => setDownloadMenuOpen(false), downloadMenuOpen)
 
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
@@ -120,10 +114,8 @@ export function Hero() {
     }
   }
 
-  function handleDownload(format: DownloadFormat) {
+  function handleDownload() {
     if (!zipFiles) return
-    setDownloadMenuOpen(false)
-
     const playlist = buildPlaylist(
       results.map((track) => ({ name: track.name, duration: track.duration }))
     )
@@ -131,31 +123,12 @@ export function Hero() {
       ...zipFiles,
       "crateprep-playlist.m3u8": new TextEncoder().encode(playlist),
     }
-
-    let downloadName = "crateprep-export.zip"
-    if (format === "rekordbox") {
-      const xml = buildRekordboxXml(
-        results.map((track) => ({
-          name: track.name,
-          artist: track.artist,
-          title: track.title,
-          genre: track.genre,
-          bpm: track.bpm,
-          tonality: track.tonality,
-          duration: track.duration,
-          fileSizeBytes: zipFiles[track.name]?.length ?? 0,
-        }))
-      )
-      rebuilt["rekordbox.xml"] = new TextEncoder().encode(xml)
-      downloadName = "crateprep-export-rekordbox.zip"
-    }
-
     const zipped = zipSync(rebuilt, { level: 0 })
     const blob = new Blob([zipped], { type: "application/zip" })
     const url = URL.createObjectURL(blob)
     const link = document.createElement("a")
     link.href = url
-    link.download = downloadName
+    link.download = "crateprep-export.zip"
     link.click()
     URL.revokeObjectURL(url)
   }
@@ -415,63 +388,13 @@ export function Hero() {
                     Process another folder
                   </button>
                 </div>
-                <div className="relative w-full sm:w-auto" ref={downloadMenuRef}>
-                  <button
-                    onClick={() => setDownloadMenuOpen((open) => !open)}
-                    className="inline-flex w-full items-center justify-center gap-1 rounded-full bg-secondary-container px-6 py-2 text-headline-sm font-semibold text-on-primary transition-all hover:opacity-90 sm:w-auto"
-                  >
-                    <span className="material-symbols-outlined text-[18px]">folder_zip</span>
-                    Download processed files
-                    <span
-                      className={`material-symbols-outlined text-[18px] transition-transform ${
-                        downloadMenuOpen ? "rotate-180" : ""
-                      }`}
-                    >
-                      expand_more
-                    </span>
-                  </button>
-
-                  {downloadMenuOpen && (
-                    <div className="absolute bottom-full right-0 z-10 mb-2 w-64 rounded border border-white/15 bg-[#161616] p-2 shadow-lg">
-                      <button
-                        onClick={() => handleDownload("audio")}
-                        className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-body-md text-white hover:bg-white/10"
-                      >
-                        <span className="material-symbols-outlined text-[18px]">
-                          audio_file
-                        </span>
-                        Just Processed Audio
-                      </button>
-                      <button
-                        onClick={() => handleDownload("rekordbox")}
-                        className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-body-md text-white hover:bg-white/10"
-                      >
-                        <span className="material-symbols-outlined text-[18px]">
-                          library_music
-                        </span>
-                        Rekordbox Format
-                      </button>
-                      <div className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-body-md text-white/40">
-                        <span className="material-symbols-outlined text-[18px]">
-                          library_music
-                        </span>
-                        Traktor Format
-                        <span className="ml-auto rounded-full bg-white/10 px-2 py-px font-mono text-[10px] font-bold uppercase tracking-wider text-white/50">
-                          Soon
-                        </span>
-                      </div>
-                      <div className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-body-md text-white/40">
-                        <span className="material-symbols-outlined text-[18px]">
-                          library_music
-                        </span>
-                        Serato Format
-                        <span className="ml-auto rounded-full bg-white/10 px-2 py-px font-mono text-[10px] font-bold uppercase tracking-wider text-white/50">
-                          Soon
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                </div>
+                <button
+                  onClick={handleDownload}
+                  className="inline-flex w-full items-center justify-center gap-1 rounded-full bg-secondary-container px-6 py-2 text-headline-sm font-semibold text-on-primary transition-all hover:opacity-90 sm:w-auto"
+                >
+                  <span className="material-symbols-outlined text-[18px]">folder_zip</span>
+                  Download processed files
+                </button>
               </div>
             </div>
           )}
