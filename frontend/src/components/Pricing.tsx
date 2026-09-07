@@ -18,6 +18,7 @@ const PRO_CHECKLIST = [
   "Unlimited tracks per month",
   "Up to 50 tracks per batch",
   "Custom filename syntax templating",
+  "Enhanced BPM & key detection",
 ]
 
 export function Pricing() {
