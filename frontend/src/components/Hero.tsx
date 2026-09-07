@@ -1,5 +1,5 @@
 import { unzipSync, zipSync, type Unzipped } from "fflate"
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useDropzone } from "react-dropzone"
 import { useNavigate } from "react-router-dom"
 import heroBg from "../assets/hero-bg.jpg"
@@ -17,6 +17,7 @@ interface ManifestEntry {
   artist?: string | null
   title?: string | null
   tonality?: string | null
+  name_source?: string | null
   error?: string
 }
 
@@ -31,7 +32,42 @@ interface ProcessedTrack {
   artist: string | null
   title: string | null
   tonality: string | null
+  nameSource: string | null
   failed: boolean
+}
+
+// How confidently a track's artist/title (and everything built on it) was
+// identified -- mirrors backend/app/process_audio.py's _resolve_artist_
+// title_genre resolution order. "guess" also covers the rare case where
+// nothing resolved at all (no name_source and no error).
+type Quality = "verified" | "guess" | "failed"
+const VERIFIED_SOURCES = new Set(["embedded_tags", "local_dash_split", "catalog_match"])
+
+function trackQuality(track: ProcessedTrack): Quality {
+  if (track.failed) return "failed"
+  if (track.nameSource && VERIFIED_SOURCES.has(track.nameSource)) return "verified"
+  return "guess"
+}
+
+function buildQualitySummary(tracks: ProcessedTrack[]): string | null {
+  if (tracks.length === 0) return null
+  let verified = 0
+  let guess = 0
+  let failed = 0
+  for (const track of tracks) {
+    const quality = trackQuality(track)
+    if (quality === "verified") verified++
+    else if (quality === "guess") guess++
+    else failed++
+  }
+
+  const parts: string[] = []
+  if (verified) parts.push(`${verified} catalog-verified`)
+  if (guess) parts.push(`${guess} best-effort guess${guess === 1 ? "" : "es"}`)
+  if (failed) parts.push(`${failed} couldn't be processed`)
+
+  const needsReview = guess > 0 || failed > 0
+  return `${parts.join(", ")}${needsReview ? " — worth a quick check before you gig." : "."}`
 }
 
 type Phase = "idle" | "auth-required" | "processing" | "done" | "error"
@@ -72,6 +108,7 @@ function parseManifest(files: Unzipped): ProcessedTrack[] {
     artist: entry.artist ?? null,
     title: entry.title ?? null,
     tonality: entry.tonality ?? null,
+    nameSource: entry.name_source ?? null,
     failed: Boolean(entry.error),
   }))
 }
@@ -96,6 +133,8 @@ export function Hero() {
   }, [phase])
   const dragIndex = useRef<number | null>(null)
   const [draggingIndex, setDraggingIndex] = useState<number | null>(null)
+  const [energySort, setEnergySort] = useState<"asc" | "desc" | null>(null)
+  const qualitySummary = useMemo(() => buildQualitySummary(results), [results])
 
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
@@ -192,6 +231,23 @@ export function Hero() {
   function handleRowDragEnd() {
     dragIndex.current = null
     setDraggingIndex(null)
+  }
+
+  // Opt-in only -- upload/drag order is left alone until the user clicks
+  // the Energy header. Composes with drag-reorder for free: both just
+  // reorder the same `results` array, which is what drives the playlist
+  // rebuilt at download time.
+  function toggleEnergySort() {
+    const next = energySort === "asc" ? "desc" : "asc"
+    setEnergySort(next)
+    setResults((prev) =>
+      [...prev].sort((a, b) => {
+        if (a.energy === null && b.energy === null) return 0
+        if (a.energy === null) return 1 // failed/unscored tracks always sort last
+        if (b.energy === null) return -1
+        return next === "asc" ? a.energy - b.energy : b.energy - a.energy
+      })
+    )
   }
 
   return (
@@ -354,12 +410,32 @@ export function Hero() {
                   </button>
                 </div>
               )}
+              {qualitySummary && (
+                <div className="flex items-center gap-2 border-b border-white/10 px-6 py-3 text-body-sm text-white/70">
+                  <span className="material-symbols-outlined text-[18px] text-secondary-container">
+                    fact_check
+                  </span>
+                  {qualitySummary}
+                </div>
+              )}
               <div className="grid grid-cols-12 items-center bg-white/5 px-6 py-2 font-mono text-meta-badge uppercase tracking-wider text-white/70">
                 <div className="col-span-1 text-center">#</div>
                 <div className="col-span-3">Track Title &amp; Artist</div>
                 <div className="col-span-1 text-center">BPM</div>
                 <div className="col-span-2 text-center">Key</div>
-                <div className="col-span-1 text-center">Energy</div>
+                <div className="col-span-1 text-center">
+                  <button
+                    onClick={toggleEnergySort}
+                    className="flex w-full items-center justify-center gap-0.5 hover:text-white"
+                  >
+                    Energy
+                    {energySort && (
+                      <span className="material-symbols-outlined text-[14px]">
+                        {energySort === "asc" ? "arrow_upward" : "arrow_downward"}
+                      </span>
+                    )}
+                  </button>
+                </div>
                 <div className="col-span-2 hidden lg:block">Genre Tag</div>
                 <div className="col-span-3 text-right lg:col-span-2">Status</div>
               </div>

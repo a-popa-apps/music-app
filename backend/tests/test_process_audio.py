@@ -44,6 +44,11 @@ def test_build_zip_processes_multiple_files_in_order():
     for entry in manifest.values():
         assert 1 <= entry["energy"] <= 10
         assert entry["artist"] and entry["title"]
+        # "Artist0 - Title0.wav" resolves via a clean local dash split --
+        # name_source must be set here too (previously only set on the
+        # embedded-tags/catalog-match/guessed branches), since the frontend's
+        # post-batch quality summary depends on it always being present.
+        assert entry["name_source"] == "local_dash_split"
 
     with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
         names = zf.namelist()

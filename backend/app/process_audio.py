@@ -95,6 +95,7 @@ def _resolve_artist_title_genre(
     if split:
         artist, title = split
         genre = detect_genre(artist, title, deep_search=deep_search)
+        debug["name_source"] = "local_dash_split"
         return artist, title, genre, debug
 
     match = lookup_track(stem)
