@@ -1,6 +1,6 @@
-# Website & Design System: Quickie Frontend
+# Website & Design System: CratePrem Frontend
 
-**Product:** Quickie — Ultra-minimal track organizer for DJs  
+**Product:** CratePrem — Ultra-minimal track organizer for DJs  
 **Design Approach:** Playful minimalism with music-industry credibility  
 **Platform:** Web (desktop-first, mobile-responsive)  
 **Framework:** React 18 + TypeScript + Tailwind CSS  
@@ -9,7 +9,7 @@
 > **Status: superseded.** The actual landing page was generated with Google
 > Stitch and implemented directly in `frontend/src/components/`. The
 > canonical design tokens now live in
-> `stitch_quickie_dj_track_organizer/DESIGN.md` and
+> `stitch_crateprem_dj_track_organizer/DESIGN.md` and
 > `frontend/src/index.css` (Tailwind v4 `@theme` block) — those are the
 > source of truth, not the color/typography/component specs below, which
 > are kept for historical reference only. Key differences: the accent
@@ -26,7 +26,7 @@
 
 ### 1.1 Design Philosophy
 
-Quickie's design must embody three things:
+CratePrem's design must embody three things:
 1. **Playful:** Approachable, fun, not corporate
 2. **Minimal:** Ultra-clean, only essentials visible
 3. **Credible:** Speaks DJ language, professional enough for serious gigs
@@ -531,7 +531,7 @@ Animation:
 Layout: Sticky at top, 80px height
 
 Left: Logo/Brand
-  "quickie." text (bold, 24px)
+  "crateprem." text (bold, 24px)
   Color: #000000
   Click: Return to top
 
@@ -551,7 +551,7 @@ Right: CTA Button
 
 ```
 Simplified: Logo + Mobile menu icon
-  Logo: "quickie."
+  Logo: "crateprem."
   Menu: Hamburger icon (3 lines)
   Tap menu → Slide-in sidebar (right side)
   
@@ -572,7 +572,7 @@ export function Header() {
     <header className="sticky top-0 z-50 bg-white border-b border-gray-200 h-20">
       <div className="max-w-6xl mx-auto px-6 h-full flex items-center justify-between">
         {/* Logo */}
-        <div className="text-2xl font-bold text-black">quickie.</div>
+        <div className="text-2xl font-bold text-black">crateprem.</div>
         
         {/* Desktop Nav */}
         <nav className="hidden md:flex gap-8">
@@ -626,7 +626,7 @@ Content: Centered column
 │                                │
 │  Subheading (18px, gray):      │
 │  "Drop your audio files.       │
-│   quickie cleans the messy     │
+│   crateprem cleans the messy     │
 │   names, builds playlists,     │
 │   and sorts your library —     │
 │   fast."                       │
@@ -670,7 +670,7 @@ export function Hero() {
         </h1>
         
         <p className="text-lg md:text-xl text-gray-600 mb-12 leading-relaxed">
-          Drop your audio files. quickie cleans the messy names, builds playlists, 
+          Drop your audio files. crateprem cleans the messy names, builds playlists, 
           and sorts your library — fast.
         </p>
         
@@ -699,7 +699,7 @@ Layout: 3 equal columns on desktop, stacked on mobile
 │ (visual) │  │ (visual) │  │ (visual) │
 │          │  │          │  │          │
 │ "Drop    │  │ "Let     │  │ "Export  │
-│  your    │  │  quickie │  │  & spin" │
+│  your    │  │  crateprem │  │  & spin" │
 │  tracks" │  │  sort    │  │          │
 │          │  │  them"   │  │          │
 │ Desc:    │  │ Desc:    │  │ Desc:    │
@@ -718,7 +718,7 @@ Step 1: Drop Your Tracks
 - Description: "Drag any folder of audio files onto the app. No accounts, no waiting."
 - Focus: Zero friction entry point
 
-Step 2: Let Quickie Sort Them
+Step 2: Let CratePrem Sort Them
 - Icon: Waveform or AI spark (SVG, 64px)
 - Description: "AI cleans messy names, detects BPM & key, and splits by genre in seconds."
 - Focus: Automation value
@@ -805,7 +805,7 @@ Section Title: "One plan. Everything unlocked."
 Subtitle: "Try free above (up to 25 tracks). Ready for real gigs? Grab Pro."
 
 ┌─────────────────────────────────────┐
-│           QUICKIE PRO               │
+│           CRATEPREM PRO               │
 │                                     │
 │ $4/month (billed annually)          │
 │                                     │
@@ -860,7 +860,7 @@ export function Pricing() {
         
         {/* Pricing Card */}
         <div className="bg-white border-2 border-black rounded-lg p-8 max-w-md mx-auto">
-          <h3 className="text-2xl font-bold mb-2">Quickie Pro</h3>
+          <h3 className="text-2xl font-bold mb-2">CratePrem Pro</h3>
           <p className="text-sm text-gray-600 mb-6">Best value — save 20%</p>
           
           <div className="mb-8">
@@ -920,7 +920,7 @@ A: Our AI reaches 85-90% accuracy for most electronic music.
    You can always manually adjust if needed.
 
 Q: Does this work offline?
-A: No, quickie requires internet for AI processing. 
+A: No, crateprem requires internet for AI processing. 
    But once exported, you can use your files offline.
 
 Q: Can I import my old playlists?
@@ -982,7 +982,7 @@ function FAQAccordion({ question, answer }: { question: string; answer: string }
 
 ```
 ┌─────────────────────────────────────┐
-│         quickie.                    │
+│         crateprem.                    │
 │                                     │
 │  Product                            │
 │  • How it works                     │
@@ -994,9 +994,9 @@ function FAQAccordion({ question, answer }: { question: string; answer: string }
 │  • Terms of Service                 │
 │  • Cookie Policy                    │
 │                                     │
-│  Contact: hello@quickie.app         │
+│  Contact: hello@crateprem.app         │
 │                                     │
-│  © 2026 Quickie. All rights         │
+│  © 2026 CratePrem. All rights         │
 │  reserved.                          │
 │                                     │
 │  [GitHub] [Twitter] [Email]         │
@@ -1011,7 +1011,7 @@ export function Footer() {
     <footer className="bg-black text-white py-16 px-6">
       <div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-12">
         <div>
-          <h3 className="text-2xl font-bold mb-6">quickie.</h3>
+          <h3 className="text-2xl font-bold mb-6">crateprem.</h3>
           <p className="text-gray-400">
             Ultra-minimal track organizer for DJs. 
             Drop, sort, export — before your set starts.
@@ -1037,8 +1037,8 @@ export function Footer() {
       </div>
       
       <div className="border-t border-gray-800 mt-12 pt-8 text-center text-gray-500">
-        <p>© 2026 Quickie. All rights reserved.</p>
-        <p className="text-sm mt-2">hello@quickie.app</p>
+        <p>© 2026 CratePrem. All rights reserved.</p>
+        <p className="text-sm mt-2">hello@crateprem.app</p>
       </div>
     </footer>
   );
@@ -1136,7 +1136,7 @@ a:focus-visible {
 
 ```typescript
 // Alt text for images
-<img src="logo.svg" alt="Quickie logo" />
+<img src="logo.svg" alt="CratePrem logo" />
 
 // Semantic HTML
 <button aria-label="Upload tracks">
@@ -1175,7 +1175,7 @@ Respect user's motion preferences:
 
 **Brand Voice:**
 - Direct: Say exactly what happens
-- Playful: Use casual language ("one quickie before my live set")
+- Playful: Use casual language ("one crateprem before my live set")
 - Confident: No apologizing or hedging
 - DJ-fluent: Use music/audio terminology appropriately
 
@@ -1244,7 +1244,7 @@ Secondary: "Process more tracks"
 ### 7.1 Figma File Structure
 
 ```
-Quickie Design System
+CratePrem Design System
 ├── 📄 Overview & Guidelines
 │   ├── Brand Book
 │   ├── Design Principles
@@ -1301,7 +1301,7 @@ Button/Primary/Sizes/Large
 ### 8.1 Project Structure
 
 ```
-quickie-frontend/
+crateprem-frontend/
 ├── src/
 │   ├── components/
 │   │   ├── layout/
@@ -1670,7 +1670,7 @@ npm run build
 <img 
   src="hero-desktop.webp" 
   srcSet="hero-mobile.webp 640w, hero-tablet.webp 1024w, hero-desktop.webp 1920w"
-  alt="Quickie hero section"
+  alt="CratePrem hero section"
   loading="lazy"
 />
 ```
@@ -1743,10 +1743,10 @@ When you're ready to code, use these deliverables:
 
 ```bash
 # 1. Create Vite project
-npm create vite@latest quickie-frontend -- --template react-ts
+npm create vite@latest crateprem-frontend -- --template react-ts
 
 # 2. Install dependencies
-cd quickie-frontend
+cd crateprem-frontend
 npm install
 npm install tailwindcss postcss autoprefixer react-dropzone axios zustand
 

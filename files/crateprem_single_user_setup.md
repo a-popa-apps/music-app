@@ -1,6 +1,6 @@
-# Single User MVP Setup: Quickie Test Environment
+# Single User MVP Setup: CratePrem Test Environment
 
-**Goal:** Build, deploy, and test Quickie with just you as the user — with $0/month cost, no billing setup required  
+**Goal:** Build, deploy, and test CratePrem with just you as the user — with $0/month cost, no billing setup required  
 **Timeline:** ~4 weeks to working MVP  
 **Approach:** Free tiers only, no credit card required
 
@@ -523,7 +523,7 @@ EOF
 # 5. Push to GitHub
 cd ..
 git add .
-git commit -m "Initial commit: Quickie MVP"
+git commit -m "Initial commit: CratePrem MVP"
 git push -u origin main
 
 # 6. Deploy frontend (Vercel handles this automatically after GitHub push)

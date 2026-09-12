@@ -1,4 +1,4 @@
-# Technology Stack & Architecture: Building Quickie-Like Product
+# Technology Stack & Architecture: Building CratePrem-Like Product
 
 **Project:** Ultra-minimal DJ track organizer  
 **Scope:** Web-only, MVP → Advanced → Gamification (phased)  
@@ -29,7 +29,7 @@
 
 ## 2. File Retention Strategy (Critical Decision)
 
-### What Should Quickie Do With Files?
+### What Should CratePrem Do With Files?
 
 **Two Approaches:**
 
@@ -71,7 +71,7 @@
 **Cost Impact:** ~$1-3/month in storage
 
 ### **Recommendation: Option A (Delete Immediately)**
-**Why:** Matches Quickie's brand, lowest cost, simplest implementation. Add re-download capability in Phase 2 if users demand it.
+**Why:** Matches CratePrem's brand, lowest cost, simplest implementation. Add re-download capability in Phase 2 if users demand it.
 
 ---
 
@@ -220,7 +220,7 @@ requests==2.31.0         # HTTP requests
 #### Cloud Storage
 **Google Cloud Storage (GCS)**
 ```
-Bucket Name: quickie-audio-uploads-{region}
+Bucket Name: crateprem-audio-uploads-{region}
 Location: Multi-region (US or EU for cost efficiency)
 Storage Class: Standard (not Nearline/Coldline)
 Lifecycle Policy: Delete objects after 24 hours
@@ -431,7 +431,7 @@ INFRASTRUCTURE: ~$1,925/month (~8% of revenue)
 
 ### Project Layout
 ```
-quickie/
+crateprem/
 ├── frontend/                    # React app
 │   ├── src/
 │   │   ├── components/
@@ -678,7 +678,7 @@ def tag_audio_file(file_path, metadata):
 ### Playlist Generation (.m3u8)
 
 ```python
-def generate_playlist(tracks, playlist_name="Quickie Set"):
+def generate_playlist(tracks, playlist_name="CratePrem Set"):
     """Generate .m3u8 playlist file."""
     m3u8_content = "#EXTM3U\n"
     
@@ -701,8 +701,8 @@ def generate_playlist(tracks, playlist_name="Quickie Set"):
 
 ```bash
 # 1. Create React app
-npm create vite@latest quickie-frontend -- --template react-ts
-cd quickie-frontend
+npm create vite@latest crateprem-frontend -- --template react-ts
+cd crateprem-frontend
 
 # 2. Install dependencies
 npm install react-dropzone axios zustand tailwindcss
@@ -712,7 +712,7 @@ git init
 git add .
 git commit -m "Initial commit"
 git branch -M main
-git remote add origin https://github.com/YOUR_USERNAME/quickie.git
+git remote add origin https://github.com/YOUR_USERNAME/crateprem.git
 git push -u origin main
 
 # 4. Deploy to Vercel
@@ -724,7 +724,7 @@ git push -u origin main
 
 ```bash
 # 1. Create GCP project
-gcloud projects create quickie-app-prod
+gcloud projects create crateprem-app-prod
 
 # 2. Enable APIs
 gcloud services enable cloudfunctions.googleapis.com
@@ -732,7 +732,7 @@ gcloud services enable cloudbuild.googleapis.com
 gcloud services enable storage-api.googleapis.com
 
 # 3. Create GCS bucket
-gsutil mb gs://quickie-audio-uploads
+gsutil mb gs://crateprem-audio-uploads
 
 # 4. Set lifecycle policy (delete after 24 hours)
 cat > lifecycle.json << EOF
@@ -747,7 +747,7 @@ cat > lifecycle.json << EOF
   }
 }
 EOF
-gsutil lifecycle set lifecycle.json gs://quickie-audio-uploads
+gsutil lifecycle set lifecycle.json gs://crateprem-audio-uploads
 
 # 5. Deploy Cloud Function
 gcloud functions deploy process_audio \
@@ -768,7 +768,7 @@ gcloud functions describe process_audio
 
 ```typescript
 // frontend/src/services/api.ts
-const BACKEND_URL = "https://us-central1-quickie-app-prod.cloudfunctions.net/process_audio";
+const BACKEND_URL = "https://us-central1-crateprem-app-prod.cloudfunctions.net/process_audio";
 
 export async function uploadAndProcess(files: File[]) {
   const formData = new FormData();

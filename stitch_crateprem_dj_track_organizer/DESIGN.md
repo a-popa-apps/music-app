@@ -1,5 +1,5 @@
 ---
-name: Quickie Design System
+name: CratePrem Design System
 colors:
   surface: '#faf9f7'
   surface-dim: '#dadad8'

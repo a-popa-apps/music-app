@@ -1,6 +1,6 @@
-# Product Requirements Document: Quickie
+# Product Requirements Document: CratePrem
 
-**Product Name:** Quickie  
+**Product Name:** CratePrem  
 **Tagline:** Clean your tracks — ultra-minimal track organizer for DJs  
 **Version:** 1.0  
 **Last Updated:** September 2026
@@ -10,7 +10,7 @@
 ## 1. Overview
 
 ### Vision Statement
-Quickie is an ultra-minimal, AI-powered track organizer designed to solve a specific pain point for DJs: the tedium of manually organizing, tagging, and sorting music files before live sets. By leveraging AI to automate metadata detection and cleanup, Quickie enables DJs to go from messy file folders to production-ready, tagged tracks in seconds.
+CratePrem is an ultra-minimal, AI-powered track organizer designed to solve a specific pain point for DJs: the tedium of manually organizing, tagging, and sorting music files before live sets. By leveraging AI to automate metadata detection and cleanup, CratePrem enables DJs to go from messy file folders to production-ready, tagged tracks in seconds.
 
 ### Problem Statement
 DJs typically maintain large music libraries with inconsistently named files, missing metadata, and unorganized folder structures. Before a gig, they must manually:
@@ -23,7 +23,7 @@ DJs typically maintain large music libraries with inconsistently named files, mi
 This process is time-consuming, especially when preparing a last-minute set or during high-stress pre-gig preparation.
 
 ### Solution Summary
-Quickie automates the entire music organization workflow through a three-step interface:
+CratePrem automates the entire music organization workflow through a three-step interface:
 1. **Drop** audio files (no signup required)
 2. **AI sorts** with metadata detection, genre tagging, and playlist building
 3. **Export** as a Rekordbox-ready ZIP with tagged files and .m3u8 playlists
@@ -63,7 +63,7 @@ The interface prioritizes speed and simplicity over features, making it accessib
 ### 2.5 Engagement Feature (Gamification)
 - **Mini-Game During Processing:** While AI processes tracks in the background, users play a mini-game
 - **Purpose:** Keeps users engaged during the wait time and adds a playful brand element
-- **Tone:** Aligns with Quickie's "playful" brand positioning
+- **Tone:** Aligns with CratePrem's "playful" brand positioning
 
 ---
 
@@ -90,7 +90,7 @@ The entire user experience is optimized around a single, frictionless workflow:
 ### 3.2 Design Philosophy
 - **Ultra-Minimal:** Stripped-down interface with only essential functions visible
 - **Zero Friction:** No signup, no complex settings, no onboarding
-- **Playful:** Approachable tone, mini-game element, casual language ("one quickie before my live set")
+- **Playful:** Approachable tone, mini-game element, casual language ("one crateprem before my live set")
 - **Fast:** Emphasis on speed throughout messaging and UX
 
 ---
@@ -103,7 +103,7 @@ The entire user experience is optimized around a single, frictionless workflow:
 - Access to demo/trial on the website
 - Demonstrates core value without requiring payment
 
-**Quickie Pro:**
+**CratePrem Pro:**
 - **Monthly:** $4/month (billed monthly)
 - **Annual:** $48/year (billed annually) — represents 20% discount vs. monthly
 - **Billing:** Flexible, "cancel anytime" positioned prominently
@@ -141,7 +141,7 @@ The entire user experience is optimized around a single, frictionless workflow:
 - **Event Organizers:** Managing music for DJ lineups or events
 
 ### 5.3 Use Cases
-- Preparing for a last-minute gig ("one quickie before my live set")
+- Preparing for a last-minute gig ("one crateprem before my live set")
 - Organizing new music acquisitions from Beatport, Bandcamp, or other sources
 - Archiving and cleaning up years of accumulated tracks
 - Preparing tracks for remix or production
@@ -165,7 +165,7 @@ The entire user experience is optimized around a single, frictionless workflow:
 5. **Affordability:** $4/month or $48/year
 
 ### 6.3 Social Proof Elements
-- Implied social sharing ("one quickie before my live set" suggests viral potential)
+- Implied social sharing ("one crateprem before my live set" suggests viral potential)
 - DJ-focused positioning (niche credibility)
 - Email contact provided (approachability)
 
@@ -226,12 +226,12 @@ The entire user experience is optimized around a single, frictionless workflow:
 - **Rekordbox:** Pioneer's native DJ software (more complex, bundled with hardware ecosystem)
 - **Pacemaker:** Genre-based sorting features (mobile-first, different use case)
 
-### 9.2 Quickie's Differentiators
-- **Simplicity:** Competitors offer more features; Quickie offers only what DJs actually need
+### 9.2 CratePrem's Differentiators
+- **Simplicity:** Competitors offer more features; CratePrem offers only what DJs actually need
 - **Speed:** Ultra-fast processing with no setup friction
 - **Affordability:** $4/month beats $10-20+ alternatives
 - **No-Account Model:** Removes friction for casual/occasional users
-- **Playful Brand:** Competitors feel corporate; Quickie feels designed by DJs for DJs
+- **Playful Brand:** Competitors feel corporate; CratePrem feels designed by DJs for DJs
 
 ### 9.3 Competitive Advantages
 - Niche focus: Solving one problem extremely well
@@ -244,7 +244,7 @@ The entire user experience is optimized around a single, frictionless workflow:
 ## 10. Non-Goals & Out of Scope
 
 ### 10.1 Explicit Non-Goals
-- ❌ **Full DJ Software:** Quickie is not a Rekordbox replacement; it's a preparation tool
+- ❌ **Full DJ Software:** CratePrem is not a Rekordbox replacement; it's a preparation tool
 - ❌ **Music Production:** No DAW integration or audio editing capabilities
 - ❌ **Streaming Integration:** No Spotify/Apple Music sync (out of scope for gig preparation)
 - ❌ **Social Sharing:** No built-in sharing or collaboration features (yet)
@@ -279,7 +279,7 @@ The entire user experience is optimized around a single, frictionless workflow:
 ### 12.1 Acquisition Channels
 - **Social Media (DJ Community):** TikTok, Instagram, Twitter (DJ accounts, music production)
 - **DJ Forums & Communities:** r/DJing, DJ.com forums, electronic music communities
-- **Word of Mouth:** "One quickie before my live set" brand phrase encourages sharing
+- **Word of Mouth:** "One crateprem before my live set" brand phrase encourages sharing
 - **Influencer Marketing:** Partnership with micro-influencers in DJ/electronic music space
 - **Content Marketing:** Blog posts on organizing DJ libraries, BPM, music theory for DJs
 
@@ -338,7 +338,7 @@ The entire user experience is optimized around a single, frictionless workflow:
 
 ## 15. Conclusion
 
-Quickie is a **focused, frictionless solution** to a **specific, acute pain point** for a **well-defined niche audience** (gigging DJs). Its strength lies in ruthless simplification—doing one thing (organizing tracks) exceptionally well, without feature bloat.
+CratePrem is a **focused, frictionless solution** to a **specific, acute pain point** for a **well-defined niche audience** (gigging DJs). Its strength lies in ruthless simplification—doing one thing (organizing tracks) exceptionally well, without feature bloat.
 
 **Success will depend on:**
 1. **Accuracy** of AI detection (BPM, key, genre)
