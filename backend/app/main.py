@@ -30,6 +30,7 @@ from .billing import (
 )
 from .detect_bpm import warm_up
 from .feedback_store import create_feedback, list_feedback, mark_feedback_read
+from .feedback_summary import generate_feedback_summary
 from .history_store import add_history_entries, clear_history, list_history
 from .process_audio import MAX_FILES_FREE, MAX_FILES_PRO, build_zip, validate_files
 from .profile_store import check_and_reserve_usage, delete_settings, get_settings, save_settings
@@ -233,6 +234,13 @@ def admin_mark_feedback_read(feedback_id: str, body: FeedbackReadUpdate, request
         return mark_feedback_read(feedback_id, body.read)
     except ValueError as e:
         raise HTTPException(404, str(e))
+
+
+@app.post("/admin/feedback/summarize")
+def admin_summarize_feedback(request: Request):
+    _require_admin(request)
+    unread = [f for f in list_feedback() if not f.get("read")]
+    return {"summary": generate_feedback_summary(unread)}
 
 
 def _frontend_base_url(request: Request) -> str:

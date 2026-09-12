@@ -395,3 +395,12 @@ export async function setFeedbackRead(
   if (!res.ok) throw new Error(`Failed to update feedback: ${res.status}`)
   return res.json()
 }
+
+export async function summarizeFeedback(idToken: string): Promise<{ summary: string | null }> {
+  const res = await fetch(`${BACKEND_URL}/admin/feedback/summarize`, {
+    method: "POST",
+    headers: adminHeaders(idToken),
+  })
+  if (!res.ok) throw new Error(`Failed to summarize feedback: ${res.status}`)
+  return res.json()
+}

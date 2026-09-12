@@ -252,6 +252,42 @@ def test_admin_mark_feedback_read_allowed_for_admin(client, monkeypatch):
     assert res.json() == {"feedback_id": "f1", "read": True}
 
 
+def test_admin_summarize_feedback_requires_auth(client):
+    assert client.post("/admin/feedback/summarize").status_code == 401
+
+
+def test_admin_summarize_feedback_forbidden_for_non_admin(client, monkeypatch):
+    monkeypatch.setattr(main, "get_current_user", lambda request: "uid-1")
+    monkeypatch.setattr(main, "get_settings", lambda uid: {"is_admin": False})
+    assert client.post("/admin/feedback/summarize").status_code == 403
+
+
+def test_admin_summarize_feedback_only_sends_unread(client, monkeypatch):
+    monkeypatch.setattr(main, "get_current_user", lambda request: "admin-uid")
+    monkeypatch.setattr(main, "get_settings", lambda uid: {"is_admin": True})
+    monkeypatch.setattr(
+        main,
+        "list_feedback",
+        lambda: [
+            {"feedback_id": "f1", "read": False, "message": "unread one"},
+            {"feedback_id": "f2", "read": True, "message": "already read"},
+        ],
+    )
+    captured = {}
+
+    def fake_generate(entries):
+        captured["entries"] = entries
+        return "summary text"
+
+    monkeypatch.setattr(main, "generate_feedback_summary", fake_generate)
+
+    res = client.post("/admin/feedback/summarize")
+
+    assert res.status_code == 200
+    assert res.json() == {"summary": "summary text"}
+    assert [e["feedback_id"] for e in captured["entries"]] == ["f1"]
+
+
 def test_admin_billing_stats_requires_auth(client):
     assert client.get("/admin/billing-stats").status_code == 401
 

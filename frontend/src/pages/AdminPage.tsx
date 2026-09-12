@@ -15,6 +15,7 @@ import {
   setFeedbackRead,
   setUserAdmin,
   setUserPlan,
+  summarizeFeedback,
   type AdminStats,
   type AdminUser,
   type BillingStats,
@@ -474,6 +475,9 @@ function FeedbackTab({
   onReload: () => void
 }) {
   const [busyId, setBusyId] = useState<string | null>(null)
+  const [aiSummary, setAiSummary] = useState<string | null>(null)
+  const [summarizing, setSummarizing] = useState(false)
+  const [summaryError, setSummaryError] = useState<string | null>(null)
 
   async function handleToggleRead(f: FeedbackSubmission) {
     setBusyId(f.feedback_id)
@@ -485,11 +489,56 @@ function FeedbackTab({
     }
   }
 
+  async function handleSummarize() {
+    setSummarizing(true)
+    setSummaryError(null)
+    try {
+      const { summary } = await summarizeFeedback(token)
+      setAiSummary(summary)
+    } catch {
+      setSummaryError("Couldn't generate a summary.")
+    } finally {
+      setSummarizing(false)
+    }
+  }
+
   if (error) return <p className="text-body-sm text-red-400">{error}</p>
   if (!feedback) return <p className="text-body-md text-white/60">Loading...</p>
 
+  const unreadCount = feedback.filter((f) => !f.read).length
+
   return (
-    <Card>
+    <div className="flex flex-col gap-4">
+      {unreadCount > 0 && (
+        <Card>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-2 text-body-sm text-white/70">
+              <span className="material-symbols-outlined text-[18px] text-secondary-container">
+                auto_awesome
+              </span>
+              {aiSummary ? (
+                <span className="text-white">{aiSummary}</span>
+              ) : (
+                <span>
+                  {unreadCount} unread submission{unreadCount === 1 ? "" : "s"} — summarize with AI
+                  to triage quickly.
+                </span>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={handleSummarize}
+              disabled={summarizing}
+              className="whitespace-nowrap rounded-full border border-white/20 bg-white/10 px-4 py-2 text-body-sm font-semibold text-white transition-colors hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {summarizing ? "Summarizing..." : aiSummary ? "Re-summarize" : "Summarize unread"}
+            </button>
+          </div>
+          {summaryError && <p className="mt-2 text-body-sm text-red-400">{summaryError}</p>}
+        </Card>
+      )}
+
+      <Card>
       {feedback.length === 0 ? (
         <p className="text-body-md text-white/60">No submissions yet.</p>
       ) : (
@@ -545,7 +594,8 @@ function FeedbackTab({
           </table>
         </div>
       )}
-    </Card>
+      </Card>
+    </div>
   )
 }
 
