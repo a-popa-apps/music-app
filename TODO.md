@@ -24,4 +24,6 @@ I can't read Render/Vercel's env var dashboards from here, so I don't know which
 
 ## Other loose ends noticed while working in this repo
 
-- [ ] Give Claude (this session's GitHub App) write access on Render/Vercel if you want direct deploy/log access — not needed for normal code work, only for live debugging or triggering deploys directly
+- [ ] Connect the **Render** connector at claude.ai → Settings → Connectors (search "Render", authorize via OAuth) — lets Claude check deploys/logs/metrics and manage the web service directly
+- [ ] Connect the **Vercel** connector the same way (search "Vercel") — lets Claude check deployments/projects directly
+- [ ] After connecting both, enable them for future chat sessions (per-conversation connector toggle) so their tools actually load
