@@ -66,6 +66,7 @@ def health():
         "spotify_configured": bool(
             os.environ.get("SPOTIFY_CLIENT_ID") and os.environ.get("SPOTIFY_CLIENT_SECRET")
         ),
+        "ai_cleanup_configured": bool(os.environ.get("ANTHROPIC_API_KEY")),
     }
 
 
@@ -77,6 +78,8 @@ class ProfileUpdate(BaseModel):
     primary_genres: list[str] | None = None
     filename_template: str | None = None
     discogs_deep_search: bool | None = None
+    enhanced_detection: bool | None = None
+    ai_filename_cleanup: bool | None = None
 
 
 def _require_user(request: Request) -> str:
@@ -398,6 +401,7 @@ async def process(request: Request, files: list[UploadFile] = File(...)):
     filename_template = None
     deep_search = False
     enhanced_detection = False
+    ai_cleanup = False
     plan = "free"
     settings = None
     try:
@@ -409,10 +413,12 @@ async def process(request: Request, files: list[UploadFile] = File(...)):
             # Double-gated: only ever honored for Pro, regardless of what's
             # stored, the same trust model filename_template already uses.
             enhanced_detection = bool(settings.get("enhanced_detection"))
+            ai_cleanup = bool(settings.get("ai_filename_cleanup"))
     except Exception:
         filename_template = None  # don't let a profile lookup failure block processing
         deep_search = False
         enhanced_detection = False
+        ai_cleanup = False
         plan = "free"
         settings = None
 
@@ -434,6 +440,7 @@ async def process(request: Request, files: list[UploadFile] = File(...)):
         filename_template=filename_template,
         deep_search=deep_search,
         enhanced_detection=enhanced_detection,
+        ai_cleanup=ai_cleanup,
     )
     try:
         add_history_entries(uid, manifest)

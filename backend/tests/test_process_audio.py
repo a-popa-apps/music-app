@@ -62,17 +62,62 @@ def test_build_zip_enhanced_detection_threads_through_without_error():
     entry = next(iter(manifest.values()))
     assert entry["bpm"] is not None
     assert entry["key"] is not None
+    with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
+        names = zf.namelist()
     assert "crateprep-manifest.json" in names
     assert "crateprep-playlist.m3u8" in names
+
+
+def test_build_zip_ai_cleanup_used_when_local_paths_fail(monkeypatch):
+    # No dash, single ambiguous word that guess_split can't split and that
+    # lookup_track (mocked here to simulate no catalog match) can't resolve
+    # -- ai_cleanup should be consulted before falling back to guess_split.
+    monkeypatch.setattr(process_audio, "lookup_track", lambda stem: None)
+    monkeypatch.setattr(
+        process_audio, "ai_split_artist_title", lambda stem: ("Bicep", "Glue")
+    )
+
+    files = [_upload("bicepgluefinalmasterv2.wav", _make_wav(200))]
+    _, manifest = asyncio.run(process_audio.build_zip(files, ai_cleanup=True))
+
+    entry = next(iter(manifest.values()))
+    assert (entry["artist"], entry["title"]) == ("Bicep", "Glue")
+    assert entry["name_source"] == "ai_cleanup"
+
+
+def test_build_zip_ai_cleanup_disabled_by_default(monkeypatch):
+    monkeypatch.setattr(process_audio, "lookup_track", lambda stem: None)
+    monkeypatch.setattr(
+        process_audio,
+        "ai_split_artist_title",
+        lambda stem: (_ for _ in ()).throw(AssertionError("should not be called")),
+    )
+
+    files = [_upload("Two Words.wav", _make_wav(200))]
+    _, manifest = asyncio.run(process_audio.build_zip(files))
+
+    entry = next(iter(manifest.values()))
+    assert entry["name_source"] == "guessed"
 
 
 def test_build_zip_one_failure_does_not_lose_others(monkeypatch):
     real_analyze = process_audio._analyze_and_tag
 
-    def flaky(content, ext, stem, version_tag, filename_template=None, deep_search=False):
+    def flaky(
+        content,
+        ext,
+        stem,
+        version_tag,
+        filename_template=None,
+        deep_search=False,
+        enhanced_detection=False,
+        ai_cleanup=False,
+    ):
         if stem == "bad":
             raise RuntimeError("boom")
-        return real_analyze(content, ext, stem, version_tag, filename_template, deep_search)
+        return real_analyze(
+            content, ext, stem, version_tag, filename_template, deep_search, enhanced_detection, ai_cleanup
+        )
 
     monkeypatch.setattr(process_audio, "_analyze_and_tag", flaky)
 

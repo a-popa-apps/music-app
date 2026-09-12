@@ -364,6 +364,39 @@ export function ProfileFieldsForm({
             />
           </button>
         </div>
+
+        <div className="flex items-center justify-between rounded border border-white/10 px-4 py-3">
+          <span className="flex items-center gap-1.5 text-body-md text-white">
+            AI filename cleanup
+            {!isPro && (
+              <span className="rounded-full bg-secondary-container/15 px-2 py-px font-mono text-[10px] font-bold uppercase tracking-wider text-secondary-container">
+                Pro
+              </span>
+            )}
+          </span>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={settings.ai_filename_cleanup}
+            disabled={!isPro && !onRequestUpgrade}
+            onClick={() => {
+              if (isPro) {
+                onChange("ai_filename_cleanup", !settings.ai_filename_cleanup)
+              } else if (onRequestUpgrade) {
+                onRequestUpgrade()
+              }
+            }}
+            className={`h-6 w-11 rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+              settings.ai_filename_cleanup ? "bg-secondary-container" : "bg-white/20"
+            }`}
+          >
+            <span
+              className={`block h-5 w-5 rounded-full bg-white transition-transform ${
+                settings.ai_filename_cleanup ? "translate-x-5" : "translate-x-0.5"
+              }`}
+            />
+          </button>
+        </div>
       </Section>
     </>
   )

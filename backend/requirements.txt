@@ -5,3 +5,4 @@ essentia==2.1b6.dev1389
 mutagen==1.47.0
 firebase-admin==6.5.0
 stripe==15.6.1
+anthropic==1.5.0

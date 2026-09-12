@@ -10,6 +10,7 @@ import zipfile
 from fastapi import HTTPException, UploadFile
 from fastapi.concurrency import run_in_threadpool
 
+from .ai_cleanup import ai_split_artist_title
 from .audio_io import SAMPLE_RATE, load_audio
 from .clean_filename import compose_name, guess_split, local_dash_split, prepare_stem
 from .detect_bpm import detect_bpm
@@ -76,13 +77,17 @@ def validate_files(files: list[UploadFile], max_files: int = MAX_FILES_FREE) -> 
 
 
 def _resolve_artist_title_genre(
-    stem: str, deep_search: bool = False, embedded_tags: dict | None = None
+    stem: str,
+    deep_search: bool = False,
+    embedded_tags: dict | None = None,
+    ai_cleanup: bool = False,
 ) -> tuple[str | None, str | None, str | None, dict]:
     """Embedded file tags first, if the file already carries a usable
     artist/title (most reliable -- no guessing needed); else local dash
     split; else search Spotify/Discogs using the raw stem so a real catalog
-    match beats guessing; else a best-effort word-count guess as a last
-    resort."""
+    match beats guessing; else, if enabled, an LLM split (smarter than the
+    word-count guess for filenames with no separator and no catalog match);
+    else a best-effort word-count guess as the final fallback."""
     debug: dict = {}
 
     if embedded_tags:
@@ -103,6 +108,14 @@ def _resolve_artist_title_genre(
         debug["name_source"] = "catalog_match"
         return match["artist"], match["title"], match["genre"], debug
 
+    if ai_cleanup:
+        split = ai_split_artist_title(stem)
+        if split:
+            artist, title = split
+            genre = detect_genre(artist, title, deep_search=deep_search)
+            debug["name_source"] = "ai_cleanup"
+            return artist, title, genre, debug
+
     split = guess_split(stem)
     if split:
         artist, title = split
@@ -121,10 +134,11 @@ def _analyze_and_tag(
     filename_template: str | None = None,
     deep_search: bool = False,
     enhanced_detection: bool = False,
+    ai_cleanup: bool = False,
 ) -> tuple[bytes, dict, str]:
     embedded_tags = read_embedded_tags(content, ext)
     artist, title, genre, name_debug = _resolve_artist_title_genre(
-        stem, deep_search, embedded_tags=embedded_tags
+        stem, deep_search, embedded_tags=embedded_tags, ai_cleanup=ai_cleanup
     )
     if embedded_tags and not version_tag:
         version_tag = embedded_tags["version_tag"]
@@ -225,6 +239,7 @@ async def _analyze_one(
     filename_template: str | None,
     deep_search: bool,
     enhanced_detection: bool,
+    ai_cleanup: bool,
 ) -> tuple[bytes, dict, str]:
     async with semaphore:
         try:
@@ -237,6 +252,7 @@ async def _analyze_one(
                 filename_template,
                 deep_search,
                 enhanced_detection,
+                ai_cleanup,
             )
         except Exception as e:
             # One file misbehaving shouldn't lose the rest of the batch --
@@ -251,6 +267,7 @@ async def build_zip(
     filename_template: str | None = None,
     deep_search: bool = False,
     enhanced_detection: bool = False,
+    ai_cleanup: bool = False,
 ) -> tuple[bytes, dict]:
     buffer = io.BytesIO()
     manifest = {}
@@ -287,6 +304,7 @@ async def build_zip(
                 filename_template,
                 deep_search,
                 enhanced_detection,
+                ai_cleanup,
             )
             for original_name, data in reads
             if "error" not in data

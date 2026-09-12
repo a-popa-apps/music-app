@@ -31,6 +31,35 @@ def test_profile_requires_auth(client):
     assert client.delete("/profile").status_code == 401
 
 
+def test_update_profile_forwards_toggle_fields(client, monkeypatch):
+    # Regression test: ProfileUpdate previously had no `enhanced_detection`
+    # field, so FastAPI/Pydantic silently dropped it from the request body
+    # and the "Enhanced BPM & key detection" profile toggle could never
+    # actually persist. Covers the same class of bug for the new
+    # `ai_filename_cleanup` field added alongside it.
+    monkeypatch.setattr(main, "get_current_user", lambda request: "uid-1")
+    captured = {}
+
+    def fake_save_settings(uid, payload):
+        captured.update(payload)
+        return payload
+
+    monkeypatch.setattr(main, "save_settings", fake_save_settings)
+
+    client.put(
+        "/profile",
+        json={
+            "discogs_deep_search": True,
+            "enhanced_detection": True,
+            "ai_filename_cleanup": True,
+        },
+    )
+
+    assert captured["discogs_deep_search"] is True
+    assert captured["enhanced_detection"] is True
+    assert captured["ai_filename_cleanup"] is True
+
+
 def test_history_requires_auth(client):
     assert client.get("/history").status_code == 401
     assert client.delete("/history").status_code == 401

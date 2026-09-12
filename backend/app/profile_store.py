@@ -27,6 +27,7 @@ DEFAULT_SETTINGS = {
     "filename_template": None,
     "discogs_deep_search": False,
     "enhanced_detection": False,
+    "ai_filename_cleanup": False,
     "plan": "free",
     "is_admin": False,
     "stripe_customer_id": None,

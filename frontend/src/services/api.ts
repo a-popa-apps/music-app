@@ -21,6 +21,7 @@ export interface ProfileSettings {
   filename_template: string | null
   discogs_deep_search: boolean
   enhanced_detection: boolean
+  ai_filename_cleanup: boolean
   plan: "free" | "pro"
   is_admin: boolean
   stripe_customer_id: string | null

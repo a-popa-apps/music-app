@@ -133,6 +133,7 @@ export function ProfileDetails() {
         filename_template: settings.filename_template,
         discogs_deep_search: settings.discogs_deep_search,
         enhanced_detection: settings.enhanced_detection,
+        ai_filename_cleanup: settings.ai_filename_cleanup,
       })
       setSettings(updated)
       setSavedSettings(updated)
