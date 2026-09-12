@@ -9,6 +9,7 @@ const FREE_INCLUDED = [
   "Standard BPM & key detection",
   "FLAC, AIFF & WAV 24-bit precision",
   "Rekordbox-ready .m3u8 playlist export",
+  "AI batch summary after every export",
 ]
 
 const FREE_EXCLUDED = ["Custom filename syntax templating"]

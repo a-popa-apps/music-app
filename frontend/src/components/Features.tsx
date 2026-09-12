@@ -27,6 +27,13 @@ const FEATURES = [
       "When a filename has no separator and no catalog match -- the cases regex and Spotify/Discogs can't crack -- an AI model steps in to split artist and title correctly instead of a coin-flip word-count guess.",
     footnote: "Pro Feature",
   },
+  {
+    icon: "insights",
+    title: "AI Batch Insights",
+    description:
+      "The moment your batch finishes, get a plain-English read on its genre mix, BPM range, and energy arc -- plus a heads-up on anything that stands out from the rest -- so you know what you're working with before you even open your DJ software.",
+    footnote: "Included On Every Plan",
+  },
 ]
 
 export function Features() {
