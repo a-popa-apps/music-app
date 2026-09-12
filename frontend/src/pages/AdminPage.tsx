@@ -475,7 +475,9 @@ function FeedbackTab({
   onReload: () => void
 }) {
   const [busyId, setBusyId] = useState<string | null>(null)
-  const [aiSummary, setAiSummary] = useState<string | null>(null)
+  // undefined = never requested, null = requested but nothing came back
+  // (e.g. AI not configured), string = an actual summary.
+  const [aiSummary, setAiSummary] = useState<string | null | undefined>(undefined)
   const [summarizing, setSummarizing] = useState(false)
   const [summaryError, setSummaryError] = useState<string | null>(null)
 
@@ -516,14 +518,16 @@ function FeedbackTab({
               <span className="material-symbols-outlined text-[18px] text-secondary-container">
                 auto_awesome
               </span>
-              {aiSummary ? (
-                <span className="text-white">{aiSummary}</span>
-              ) : (
+              {aiSummary === undefined && (
                 <span>
                   {unreadCount} unread submission{unreadCount === 1 ? "" : "s"} — summarize with AI
                   to triage quickly.
                 </span>
               )}
+              {aiSummary === null && (
+                <span>No summary available right now (AI may not be configured).</span>
+              )}
+              {aiSummary && <span className="text-white">{aiSummary}</span>}
             </div>
             <button
               type="button"
