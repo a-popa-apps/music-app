@@ -19,6 +19,7 @@ const PRO_CHECKLIST = [
   "Up to 50 tracks per batch",
   "Custom filename syntax templating",
   "Enhanced BPM & key detection",
+  "AI-assisted filename cleanup",
 ]
 
 export function Pricing() {

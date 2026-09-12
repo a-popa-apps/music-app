@@ -20,6 +20,13 @@ const FEATURES = [
       "Cross-references Spotify and Discogs to tag every track's real genre, then rates its energy 1-10 from loudness -- no more guessing by ear.",
     footnote: "Spotify + Discogs Verified",
   },
+  {
+    icon: "auto_awesome",
+    title: "AI-Assisted Filename Cleanup",
+    description:
+      "When a filename has no separator and no catalog match -- the cases regex and Spotify/Discogs can't crack -- an AI model steps in to split artist and title correctly instead of a coin-flip word-count guess.",
+    footnote: "Pro Feature",
+  },
 ]
 
 export function Features() {
