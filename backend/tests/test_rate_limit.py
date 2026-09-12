@@ -17,13 +17,6 @@ class _FakeRequest:
         self.headers = {"x-forwarded-for": forwarded_for} if forwarded_for else {}
 
 
-@pytest.fixture(autouse=True)
-def _reset_rate_limit_state():
-    rate_limit._requests.clear()
-    yield
-    rate_limit._requests.clear()
-
-
 def test_allows_requests_under_limit():
     request = _FakeRequest(host="10.0.0.1")
     for _ in range(rate_limit.MAX_REQUESTS_FREE):
