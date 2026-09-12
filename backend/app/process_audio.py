@@ -12,6 +12,7 @@ from fastapi.concurrency import run_in_threadpool
 
 from .ai_cleanup import ai_split_artist_title
 from .audio_io import SAMPLE_RATE, load_audio
+from .batch_summary import generate_batch_summary
 from .clean_filename import compose_name, guess_split, local_dash_split, prepare_stem
 from .detect_bpm import detect_bpm
 from .detect_energy import detect_energy
@@ -331,6 +332,12 @@ async def build_zip(
 
         zip_file.writestr("crateprep-manifest.json", json.dumps(manifest, indent=2))
         zip_file.writestr("crateprep-playlist.m3u8", build_playlist(playlist_tracks))
+
+        # One call for the whole batch, not per track -- cheap regardless of
+        # batch size, so this runs for every user, free or Pro.
+        summary = generate_batch_summary(manifest)
+        if summary:
+            zip_file.writestr("crateprep-summary.json", json.dumps({"summary": summary}))
 
     buffer.seek(0)
     return buffer.read(), manifest

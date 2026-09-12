@@ -89,6 +89,17 @@ const PROCESSING_STATUSES = [
 ]
 const PROCESSING_STATUS_INTERVAL_MS = 2000
 
+function parseBatchSummary(files: Unzipped): string | null {
+  const bytes = files["crateprep-summary.json"]
+  if (!bytes) return null
+  try {
+    const parsed = JSON.parse(new TextDecoder().decode(bytes))
+    return typeof parsed.summary === "string" ? parsed.summary : null
+  } catch {
+    return null
+  }
+}
+
 function parseManifest(files: Unzipped): ProcessedTrack[] {
   const manifestBytes = files["crateprep-manifest.json"]
   if (!manifestBytes) return []
@@ -120,6 +131,7 @@ export function Hero() {
   const [fileCount, setFileCount] = useState(0)
   const [results, setResults] = useState<ProcessedTrack[]>([])
   const [zipFiles, setZipFiles] = useState<Unzipped | null>(null)
+  const [aiSummary, setAiSummary] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [statusIndex, setStatusIndex] = useState(0)
 
@@ -172,6 +184,7 @@ export function Hero() {
       const parsed = parseManifest(unzipped)
       setZipFiles(unzipped)
       setResults(parsed)
+      setAiSummary(parseBatchSummary(unzipped))
       setPhase("done")
     } catch (err) {
       if (err instanceof ApiError && err.status === 402) {
@@ -207,6 +220,7 @@ export function Hero() {
     setFileCount(0)
     setResults([])
     setZipFiles(null)
+    setAiSummary(null)
     setErrorMessage(null)
   }
 
@@ -408,6 +422,14 @@ export function Hero() {
                   >
                     Sign up free
                   </button>
+                </div>
+              )}
+              {aiSummary && (
+                <div className="flex items-center gap-2 border-b border-white/10 px-6 py-3 text-body-sm text-white/70">
+                  <span className="material-symbols-outlined text-[18px] text-secondary-container">
+                    auto_awesome
+                  </span>
+                  {aiSummary}
                 </div>
               )}
               {qualitySummary && (

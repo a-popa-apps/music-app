@@ -1,5 +1,6 @@
 import asyncio
 import io
+import json
 import math
 import struct
 import wave
@@ -98,6 +99,30 @@ def test_build_zip_ai_cleanup_disabled_by_default(monkeypatch):
 
     entry = next(iter(manifest.values()))
     assert entry["name_source"] == "guessed"
+
+
+def test_build_zip_includes_batch_summary_when_available(monkeypatch):
+    monkeypatch.setattr(
+        process_audio, "generate_batch_summary", lambda manifest: "Mostly house, energy builds."
+    )
+    files = [_upload(f"Artist{i} - Title{i}.wav", _make_wav(200 + i * 10)) for i in range(2)]
+
+    zip_bytes, _ = asyncio.run(process_audio.build_zip(files))
+
+    with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
+        assert "crateprep-summary.json" in zf.namelist()
+        summary = json.loads(zf.read("crateprep-summary.json"))
+    assert summary == {"summary": "Mostly house, energy builds."}
+
+
+def test_build_zip_omits_summary_file_when_none_returned(monkeypatch):
+    monkeypatch.setattr(process_audio, "generate_batch_summary", lambda manifest: None)
+    files = [_upload("Artist - Title.wav", _make_wav(200))]
+
+    zip_bytes, _ = asyncio.run(process_audio.build_zip(files))
+
+    with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
+        assert "crateprep-summary.json" not in zf.namelist()
 
 
 def test_build_zip_one_failure_does_not_lose_others(monkeypatch):
