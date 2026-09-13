@@ -21,6 +21,8 @@ const PRO_CHECKLIST = [
   "Custom filename syntax templating",
   "Enhanced BPM & key detection",
   "AI-assisted filename cleanup",
+  "AI-suggested harmonic set order",
+  "Automatic energy sorting",
 ]
 
 export function Pricing() {
@@ -124,7 +126,7 @@ export function Pricing() {
               <div>
                 <h3 className="text-headline-lg font-bold text-white">CratePrep Pro</h3>
                 <span className="text-body-sm text-white/70">
-                  Unlimited tracks, bigger batches, and saved templates for ${price}/mo
+                  Unlimited tracks, AI set ordering, and saved templates for ${price}/mo
                 </span>
               </div>
 

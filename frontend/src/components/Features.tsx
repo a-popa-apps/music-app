@@ -34,6 +34,13 @@ const FEATURES = [
       "The moment your batch finishes, get a plain-English read on its genre mix, BPM range, and energy arc -- plus a heads-up on anything that stands out from the rest -- so you know what you're working with before you even open your DJ software.",
     footnote: "Included On Every Plan",
   },
+  {
+    icon: "shuffle",
+    title: "AI Harmonic Set Ordering",
+    description:
+      "One click orders your whole batch by Camelot-wheel compatibility and BPM -- starting straight from the messy files you dropped, no separate step to first build an organized library like other set-building tools require.",
+    footnote: "Pro Feature",
+  },
 ]
 
 export function Features() {
