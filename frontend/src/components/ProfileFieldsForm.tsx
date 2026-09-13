@@ -397,6 +397,39 @@ export function ProfileFieldsForm({
             />
           </button>
         </div>
+
+        <div className="flex items-center justify-between rounded border border-white/10 px-4 py-3">
+          <span className="flex items-center gap-1.5 text-body-md text-white">
+            Automatically sort by energy
+            {!isPro && (
+              <span className="rounded-full bg-secondary-container/15 px-2 py-px font-mono text-[10px] font-bold uppercase tracking-wider text-secondary-container">
+                Pro
+              </span>
+            )}
+          </span>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={settings.auto_sort_by_energy}
+            disabled={!isPro && !onRequestUpgrade}
+            onClick={() => {
+              if (isPro) {
+                onChange("auto_sort_by_energy", !settings.auto_sort_by_energy)
+              } else if (onRequestUpgrade) {
+                onRequestUpgrade()
+              }
+            }}
+            className={`h-6 w-11 rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+              settings.auto_sort_by_energy ? "bg-secondary-container" : "bg-white/20"
+            }`}
+          >
+            <span
+              className={`block h-5 w-5 rounded-full bg-white transition-transform ${
+                settings.auto_sort_by_energy ? "translate-x-5" : "translate-x-0.5"
+              }`}
+            />
+          </button>
+        </div>
       </Section>
     </>
   )

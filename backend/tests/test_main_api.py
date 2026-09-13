@@ -52,11 +52,13 @@ def test_update_profile_forwards_toggle_fields(client, monkeypatch):
             "discogs_deep_search": True,
             "enhanced_detection": True,
             "ai_filename_cleanup": True,
+            "auto_sort_by_energy": True,
         },
     )
 
     assert captured["discogs_deep_search"] is True
     assert captured["enhanced_detection"] is True
+    assert captured["auto_sort_by_energy"] is True
     assert captured["ai_filename_cleanup"] is True
 
 

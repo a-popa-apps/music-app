@@ -109,6 +109,7 @@ export function AdminUserDetail() {
         discogs_deep_search: settings.discogs_deep_search,
         enhanced_detection: settings.enhanced_detection,
         ai_filename_cleanup: settings.ai_filename_cleanup,
+        auto_sort_by_energy: settings.auto_sort_by_energy,
       })
       setSettings(updated)
       setSavedSettings(updated)

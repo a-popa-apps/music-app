@@ -103,6 +103,18 @@ function parseBatchSummary(files: Unzipped): string | null {
   }
 }
 
+function sortByEnergy<T extends { energy: number | null }>(
+  tracks: T[],
+  direction: "asc" | "desc"
+): T[] {
+  return [...tracks].sort((a, b) => {
+    if (a.energy === null && b.energy === null) return 0
+    if (a.energy === null) return 1 // failed/unscored tracks always sort last
+    if (b.energy === null) return -1
+    return direction === "asc" ? a.energy - b.energy : b.energy - a.energy
+  })
+}
+
 function parseManifest(files: Unzipped): ProcessedTrack[] {
   const manifestBytes = files["crateprep-manifest.json"]
   if (!manifestBytes) return []
@@ -192,7 +204,11 @@ export function Hero() {
       const blob = await uploadAndProcess(files, idToken)
       const bytes = new Uint8Array(await blob.arrayBuffer())
       const unzipped = unzipSync(bytes)
-      const parsed = parseManifest(unzipped)
+      let parsed = parseManifest(unzipped)
+      if (isPro && profile?.auto_sort_by_energy) {
+        parsed = sortByEnergy(parsed, "asc")
+        setEnergySort("asc")
+      }
       setZipFiles(unzipped)
       setResults(parsed)
       setOriginalResults(parsed)
@@ -322,14 +338,7 @@ export function Hero() {
   function toggleEnergySort() {
     const next = energySort === "asc" ? "desc" : "asc"
     setEnergySort(next)
-    setResults((prev) =>
-      [...prev].sort((a, b) => {
-        if (a.energy === null && b.energy === null) return 0
-        if (a.energy === null) return 1 // failed/unscored tracks always sort last
-        if (b.energy === null) return -1
-        return next === "asc" ? a.energy - b.energy : b.energy - a.energy
-      })
-    )
+    setResults((prev) => sortByEnergy(prev, next))
   }
 
   return (

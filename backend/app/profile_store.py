@@ -28,6 +28,7 @@ DEFAULT_SETTINGS = {
     "discogs_deep_search": False,
     "enhanced_detection": False,
     "ai_filename_cleanup": False,
+    "auto_sort_by_energy": False,
     "plan": "free",
     "is_admin": False,
     "stripe_customer_id": None,

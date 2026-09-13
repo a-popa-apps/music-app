@@ -81,6 +81,7 @@ class ProfileUpdate(BaseModel):
     discogs_deep_search: bool | None = None
     enhanced_detection: bool | None = None
     ai_filename_cleanup: bool | None = None
+    auto_sort_by_energy: bool | None = None
 
 
 def _require_user(request: Request) -> str:
