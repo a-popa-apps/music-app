@@ -4,8 +4,11 @@ import { useDropzone } from "react-dropzone"
 import { useNavigate } from "react-router-dom"
 import heroBg from "../assets/hero-bg.jpg"
 import { useAuth } from "../hooks/useAuth"
-import { ApiError, uploadAndProcess } from "../services/api"
+import { useProfile } from "../hooks/useProfile"
+import { ApiError, createCheckoutSession, uploadAndProcess } from "../services/api"
 import { buildPlaylist } from "../utils/buildPlaylist"
+import { suggestSetOrder } from "../utils/suggestSetOrder"
+import { UpgradeModal } from "./UpgradeModal"
 
 interface ManifestEntry {
   bpm?: number | null
@@ -126,13 +129,21 @@ function parseManifest(files: Unzipped): ProcessedTrack[] {
 
 export function Hero() {
   const { user, isVerified } = useAuth()
+  const { profile } = useProfile()
+  const isPro = Boolean(user && isVerified && profile?.plan === "pro")
   const navigate = useNavigate()
   const [phase, setPhase] = useState<Phase>("idle")
   const [fileCount, setFileCount] = useState(0)
   const [results, setResults] = useState<ProcessedTrack[]>([])
+  // Snapshot of the order right after processing -- "default state" to
+  // revert to if a free user previews a reorder (drag or Suggest Set Order)
+  // and dismisses the upgrade prompt without upgrading.
+  const [originalResults, setOriginalResults] = useState<ProcessedTrack[]>([])
   const [zipFiles, setZipFiles] = useState<Unzipped | null>(null)
   const [aiSummary, setAiSummary] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+  const [billingLoading, setBillingLoading] = useState(false)
   const [statusIndex, setStatusIndex] = useState(0)
 
   useEffect(() => {
@@ -184,6 +195,7 @@ export function Hero() {
       const parsed = parseManifest(unzipped)
       setZipFiles(unzipped)
       setResults(parsed)
+      setOriginalResults(parsed)
       setAiSummary(parseBatchSummary(unzipped))
       setPhase("done")
     } catch (err) {
@@ -196,15 +208,39 @@ export function Hero() {
     }
   }
 
+  // Only true once the batch's order actually differs from right after
+  // processing -- a drag that ends up back where it started, or a Suggest
+  // Set Order click on a batch too small to reorder, doesn't count.
+  function isReordered(current: ProcessedTrack[]): boolean {
+    return current.some((track, i) => track.name !== originalResults[i]?.name)
+  }
+
   function handleDownload() {
     if (!zipFiles) return
-    const playlist = buildPlaylist(
-      results.map((track) => ({ name: track.name, duration: track.duration }))
-    )
-    const rebuilt: Unzipped = {
-      ...zipFiles,
-      "crateprep-playlist.m3u8": new TextEncoder().encode(playlist),
+    const reordered = isReordered(results)
+    const width = String(results.length).length
+    const exportTracks = results.map((track, i) => ({
+      ...track,
+      exportName: reordered ? `${String(i + 1).padStart(width, "0")} - ${track.name}` : track.name,
+    }))
+
+    const rebuilt: Unzipped = {}
+    if (zipFiles["crateprep-manifest.json"]) {
+      rebuilt["crateprep-manifest.json"] = zipFiles["crateprep-manifest.json"]
     }
+    if (zipFiles["crateprep-summary.json"]) {
+      rebuilt["crateprep-summary.json"] = zipFiles["crateprep-summary.json"]
+    }
+    for (const track of exportTracks) {
+      const bytes = zipFiles[track.name]
+      if (bytes) rebuilt[track.exportName] = bytes
+    }
+
+    const playlist = buildPlaylist(
+      exportTracks.map((t) => ({ name: t.exportName, duration: t.duration }))
+    )
+    rebuilt["crateprep-playlist.m3u8"] = new TextEncoder().encode(playlist)
+
     const zipped = zipSync(rebuilt, { level: 0 })
     const blob = new Blob([zipped], { type: "application/zip" })
     const url = URL.createObjectURL(blob)
@@ -219,9 +255,11 @@ export function Hero() {
     setPhase("idle")
     setFileCount(0)
     setResults([])
+    setOriginalResults([])
     setZipFiles(null)
     setAiSummary(null)
     setErrorMessage(null)
+    setShowUpgradeModal(false)
   }
 
   function handleRowDragStart(index: number) {
@@ -245,6 +283,36 @@ export function Hero() {
   function handleRowDragEnd() {
     dragIndex.current = null
     setDraggingIndex(null)
+    if (!isPro && isReordered(results)) setShowUpgradeModal(true)
+  }
+
+  const canSuggestSetOrder =
+    results.filter((t) => t.bpm !== null || t.key !== null).length >= 3
+
+  function handleSuggestSetOrder() {
+    const suggested = suggestSetOrder(results)
+    setResults(suggested)
+    if (!isPro && isReordered(suggested)) setShowUpgradeModal(true)
+  }
+
+  function closeUpgradeModalWithoutUpgrading() {
+    setShowUpgradeModal(false)
+    setResults(originalResults)
+  }
+
+  async function handleUpgrade() {
+    if (!user) {
+      navigate("/auth")
+      return
+    }
+    setBillingLoading(true)
+    try {
+      const token = await user.getIdToken()
+      const url = await createCheckoutSession(token, "monthly")
+      window.location.href = url
+    } catch {
+      setBillingLoading(false)
+    }
   }
 
   // Opt-in only -- upload/drag order is left alone until the user clicks
@@ -543,17 +611,44 @@ export function Hero() {
                     Process another folder
                   </button>
                 </div>
-                <button
-                  onClick={handleDownload}
-                  className="inline-flex w-full items-center justify-center gap-1 rounded-full bg-secondary-container px-6 py-2 text-headline-sm font-semibold text-on-primary transition-all hover:opacity-90 sm:w-auto"
-                >
-                  <span className="material-symbols-outlined text-[18px]">folder_zip</span>
-                  Download processed files
-                </button>
+                <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+                  <button
+                    onClick={handleSuggestSetOrder}
+                    disabled={!canSuggestSetOrder}
+                    className="inline-flex items-center justify-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-5 py-2 text-body-sm font-semibold text-white transition-colors hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    <span className="material-symbols-outlined text-[18px] text-secondary-container">
+                      shuffle
+                    </span>
+                    Suggest Set Order
+                    {!isPro && (
+                      <span className="rounded-full bg-secondary-container/20 px-2 py-px font-mono text-[10px] font-bold uppercase tracking-wider text-secondary-container">
+                        Pro
+                      </span>
+                    )}
+                  </button>
+                  <button
+                    onClick={handleDownload}
+                    className="inline-flex w-full items-center justify-center gap-1 rounded-full bg-secondary-container px-6 py-2 text-headline-sm font-semibold text-on-primary transition-all hover:opacity-90 sm:w-auto"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">folder_zip</span>
+                    Download processed files
+                  </button>
+                </div>
               </div>
             </div>
           )}
         </div>
+
+        {showUpgradeModal && (
+          <UpgradeModal
+            title="Smart Set Ordering is a Pro feature"
+            description="Upgrade to Pro to auto-order your set by harmonic key and BPM compatibility -- and keep any reordering (drag or suggested) when you export."
+            loading={billingLoading}
+            onUpgrade={handleUpgrade}
+            onClose={closeUpgradeModalWithoutUpgrading}
+          />
+        )}
       </div>
     </section>
   )
