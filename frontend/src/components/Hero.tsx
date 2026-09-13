@@ -314,6 +314,7 @@ export function Hero() {
   function closeUpgradeModalWithoutUpgrading() {
     setShowUpgradeModal(false)
     setResults(originalResults)
+    setEnergySort(null)
   }
 
   async function handleUpgrade() {
@@ -331,14 +332,15 @@ export function Hero() {
     }
   }
 
-  // Opt-in only -- upload/drag order is left alone until the user clicks
-  // the Energy header. Composes with drag-reorder for free: both just
-  // reorder the same `results` array, which is what drives the playlist
-  // rebuilt at download time.
+  // Any reordering is a Pro feature -- same preview-then-revert gate as
+  // drag and Suggest Set Order, since this reorders the same `results`
+  // array they all share.
   function toggleEnergySort() {
     const next = energySort === "asc" ? "desc" : "asc"
+    const sorted = sortByEnergy(results, next)
     setEnergySort(next)
-    setResults((prev) => sortByEnergy(prev, next))
+    setResults(sorted)
+    if (!isPro && isReordered(sorted)) setShowUpgradeModal(true)
   }
 
   return (
@@ -528,6 +530,11 @@ export function Hero() {
                     className="flex w-full items-center justify-center gap-0.5 hover:text-white"
                   >
                     Energy
+                    {!isPro && (
+                      <span className="material-symbols-outlined text-[13px] text-secondary-container">
+                        lock
+                      </span>
+                    )}
                     {energySort && (
                       <span className="material-symbols-outlined text-[14px]">
                         {energySort === "asc" ? "arrow_upward" : "arrow_downward"}
@@ -651,8 +658,8 @@ export function Hero() {
 
         {showUpgradeModal && (
           <UpgradeModal
-            title="Smart Set Ordering is a Pro feature"
-            description="Upgrade to Pro to auto-order your set by harmonic key and BPM compatibility -- and keep any reordering (drag or suggested) when you export."
+            title="Custom Track Ordering is a Pro feature"
+            description="Upgrade to Pro to reorder your tracks -- drag to rearrange, sort by energy, or auto-order by harmonic key and BPM compatibility -- and keep it when you export."
             loading={billingLoading}
             onUpgrade={handleUpgrade}
             onClose={closeUpgradeModalWithoutUpgrading}
