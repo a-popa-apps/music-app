@@ -11,19 +11,19 @@ export function CookiePolicyPage() {
         },
         {
           heading: "2. Cookies We Use",
-          body: "CratePrep uses only strictly necessary cookies and local storage, set by Firebase Authentication, to keep you signed in between visits. We don't use any advertising, analytics, or tracking cookies, and we don't sell or share data with ad networks.",
+          body: "Strictly necessary: local storage set by Firebase Authentication to keep you signed in between visits — always on, since the app can't function without it. Optional analytics: if you accept our cookie consent banner, Google Analytics sets cookies to help us understand overall usage (pages visited, features used). It's off by default and only activates if you click \"Accept\" — declining or ignoring the banner keeps it off. We don't use any advertising or ad-tracking cookies, and we don't sell or share data with ad networks.",
         },
         {
           heading: "3. Third-Party Cookies",
-          body: "We don't embed any third-party trackers, ads, or analytics scripts that set cookies in your browser. Genre lookups against Spotify and Discogs happen server-side and never set cookies on your device.",
+          body: "The only third-party cookies we use are Google Analytics', and only after you accept the consent banner. Genre lookups against Spotify and Discogs happen server-side and never set cookies on your device.",
         },
         {
           heading: "4. Managing Cookies",
-          body: "Because we only use the cookies required to keep you signed in, disabling them in your browser will simply sign you out and require you to log in again — there's nothing optional to turn off. You can still clear cookies for this site at any time through your browser's settings.",
+          body: "You can withdraw analytics consent at any time by clearing your browser's local storage for this site, which brings the consent banner back on your next visit. Disabling the strictly-necessary sign-in storage will simply sign you out and require you to log in again. You can also clear all cookies for this site at any time through your browser's settings.",
         },
         {
           heading: "5. Changes to This Policy",
-          body: "If we ever start using additional cookies (for example, if we add analytics in the future), we'll update this page and, where required, ask for your consent first.",
+          body: "If we start using additional cookies beyond what's listed here, we'll update this page and, where required, ask for your consent first.",
         },
         {
           heading: "6. Contact",

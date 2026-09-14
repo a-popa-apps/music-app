@@ -2,6 +2,7 @@ import { useState } from "react"
 import { Navigate, useNavigate } from "react-router-dom"
 import { Header } from "../components/Header"
 import { useAuth } from "../hooks/useAuth"
+import { trackEvent } from "../utils/analytics"
 import { checkPwnedPassword } from "../utils/checkPwnedPassword"
 
 type Mode = "login" | "signup"
@@ -51,9 +52,11 @@ export function AuthPage() {
           return
         }
         await signUp(email, password)
+        trackEvent("sign_up", { method: "email" })
         setView("check-inbox")
       } else {
         const user = await logIn(email, password)
+        trackEvent("login", { method: "email" })
         if (user.emailVerified) {
           navigate("/")
         } else {
@@ -70,7 +73,8 @@ export function AuthPage() {
   async function handleGoogle() {
     setError(null)
     try {
-      await signInWithGoogle()
+      const { isNewUser } = await signInWithGoogle()
+      trackEvent(isNewUser ? "sign_up" : "login", { method: "google" })
       navigate("/")
     } catch {
       setError("Google sign-in failed. Please try again.")

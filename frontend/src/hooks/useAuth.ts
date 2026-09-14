@@ -1,5 +1,6 @@
 import {
   createUserWithEmailAndPassword,
+  getAdditionalUserInfo,
   GoogleAuthProvider,
   onAuthStateChanged,
   sendEmailVerification,
@@ -49,7 +50,8 @@ export function useAuth() {
 
     async signInWithGoogle() {
       const credential = await signInWithPopup(auth, new GoogleAuthProvider())
-      return credential.user
+      const isNewUser = getAdditionalUserInfo(credential)?.isNewUser ?? false
+      return { user: credential.user, isNewUser }
     },
 
     async resendVerification() {

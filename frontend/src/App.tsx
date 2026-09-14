@@ -1,4 +1,5 @@
 import { Route, Routes } from "react-router-dom"
+import { CookieConsentBanner } from "./components/CookieConsentBanner"
 import { FAQ } from "./components/FAQ"
 import { Features } from "./components/Features"
 import { FeedbackWidget } from "./components/FeedbackWidget"
@@ -51,6 +52,7 @@ function App() {
         <Route path="*" element={<NotFound />} />
       </Routes>
       <FeedbackWidget />
+      <CookieConsentBanner />
     </>
   )
 }
