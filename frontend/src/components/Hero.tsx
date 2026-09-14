@@ -9,6 +9,7 @@ import { ApiError, createCheckoutSession, uploadAndProcess } from "../services/a
 import { buildPlaylist } from "../utils/buildPlaylist"
 import { suggestSetOrder } from "../utils/suggestSetOrder"
 import { UpgradeModal } from "./UpgradeModal"
+import { Waveform } from "./Waveform"
 
 interface ManifestEntry {
   bpm?: number | null
@@ -402,9 +403,7 @@ export function Hero() {
 
           {phase === "processing" && (
             <div className="flex w-full flex-col items-center gap-4 rounded border-2 border-white/20 bg-white/10 p-12 text-center backdrop-blur-md">
-              <span className="material-symbols-outlined animate-spin text-[36px] text-secondary-container">
-                progress_activity
-              </span>
+              <Waveform className="h-9" />
               <h3 className="text-headline-sm text-white">
                 Processing {fileCount} file{fileCount === 1 ? "" : "s"}...
               </h3>

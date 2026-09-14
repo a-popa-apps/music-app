@@ -1,27 +1,23 @@
-const BAR_HEIGHTS = [
-  20, 35, 15, 50, 65, 40, 80, 55, 30, 70, 90, 60, 45, 75, 35, 55, 85, 50, 25,
-  60, 95, 70, 40, 65, 30, 50, 80, 45, 60, 20, 55, 75, 35, 65, 90, 50, 30, 70,
-  45, 60,
-]
+// A small looping audio-equalizer icon: bars bounce independently (varied
+// duration/delay per bar) rather than in lockstep, so it reads as organic
+// motion instead of a mechanical pulse.
+const BAR_DURATIONS = [0.9, 1.15, 0.8, 1.3, 0.85, 1.2, 0.95]
+const BAR_DELAYS = [0, 0.15, 0.3, 0.05, 0.25, 0.1, 0.35]
 
 interface WaveformProps {
-  progress?: number
   className?: string
 }
 
-export function Waveform({ progress = 0.5, className = "" }: WaveformProps) {
+export function Waveform({ className = "" }: WaveformProps) {
   return (
-    <div className={`flex h-full w-full items-center gap-[1px] ${className}`}>
-      {BAR_HEIGHTS.map((height, i) => (
-        <div
+    <div className={`flex items-center justify-center gap-1 ${className}`} aria-hidden="true">
+      {BAR_DURATIONS.map((duration, i) => (
+        <span
           key={i}
-          className="w-[2px] flex-1 rounded-full"
+          className="h-full w-1.5 rounded-full bg-secondary-container animate-waveform-bar"
           style={{
-            height: `${height}%`,
-            backgroundColor:
-              i / BAR_HEIGHTS.length < progress
-                ? "var(--color-secondary-container)"
-                : "var(--color-surface-container-highest)",
+            animationDuration: `${duration}s`,
+            animationDelay: `${BAR_DELAYS[i]}s`,
           }}
         />
       ))}
