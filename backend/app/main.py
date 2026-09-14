@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 
 import essentia.standard as es
 import mutagen
+import sentry_sdk
 from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
@@ -36,6 +37,17 @@ from .history_store import add_history_entries, clear_history, list_history
 from .process_audio import MAX_FILES_FREE, MAX_FILES_PRO, build_zip, validate_files
 from .profile_store import check_and_reserve_usage, delete_settings, get_settings, save_settings
 from .rate_limit import MAX_REQUESTS_FREE, MAX_REQUESTS_PRO, _client_ip, enforce_rate_limit
+
+# Optional -- no-op if SENTRY_DSN isn't set, same pattern as every other
+# integration in this codebase (Firebase, Spotify, Anthropic). Reports
+# unhandled exceptions from the FastAPI app so a silent 500 in production
+# actually surfaces somewhere instead of just failing a request unnoticed.
+if os.environ.get("SENTRY_DSN"):
+    sentry_sdk.init(
+        dsn=os.environ["SENTRY_DSN"],
+        environment=os.environ.get("SENTRY_ENVIRONMENT", "production"),
+        traces_sample_rate=0.0,
+    )
 
 app = FastAPI(title="CratePrep Backend")
 
@@ -71,6 +83,7 @@ def health():
         "ai_cleanup_configured": bool(os.environ.get("ANTHROPIC_API_KEY")),
         "ai_calls_today": ai_budget.calls_used_today(),
         "ai_daily_limit": ai_budget.DAILY_AI_CALL_LIMIT,
+        "sentry_configured": bool(os.environ.get("SENTRY_DSN")),
     }
 
 

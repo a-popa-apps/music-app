@@ -10,15 +10,24 @@ Backend (Render):
 - [ ] `DISCOGS_TOKEN` — optional, unconfirmed either way; works without it.
 
 Frontend (Vercel):
-- [ ] `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_STORAGE_BUCKET`, `VITE_FIREBASE_MESSAGING_SENDER_ID`, `VITE_FIREBASE_APP_ID` — client-side Firebase config (sign-in won't work without these)
+- [x] `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_STORAGE_BUCKET`, `VITE_FIREBASE_MESSAGING_SENDER_ID`, `VITE_FIREBASE_APP_ID` — **confirmed set with real-looking values** (inspected the built production JS bundle at `music-app-sage-sigma.vercel.app`, found a real Firebase API key and `a-popa-music-apps.firebaseapp.com` auth domain baked in, checked 2026-09-14). Not the same as a verified end-to-end sign-in (no test credentials used) but rules out "vars are empty/placeholder".
 - [ ] `VITE_BACKEND_URL` — already defaults to the Render URL in `.env.example`; only needs setting if that URL changes
+
+Backend (Render), error monitoring:
+- [ ] `SENTRY_DSN` — optional, not yet set. Backend now initializes Sentry when present (`/health` → `sentry_configured`); without it, unhandled exceptions in production still fail silently (a request just 500s with nothing surfaced anywhere). Get a DSN from a Sentry project (free tier is enough) and set it on Render to close this gap.
+- [ ] `SENTRY_ENVIRONMENT` — optional, defaults to `"production"`; only needed if you want staging/prod separated in Sentry.
 
 ## Verify what's actually already set
 
 This session's network access was restricted for most of this work (couldn't reach any external site, including the production backend); that got fixed 2026-09-14 by switching the environment to full network access, so the checks below could finally run for real:
 - [x] Hit the deployed backend's `/health` endpoint — confirmed `firebase_configured: true`, `spotify_configured: true`, `ai_cleanup_configured: false`.
-- [x] Confirmed the deployed frontend (`music-app-sage-sigma.vercel.app`) is reachable (HTTP 200) — but reachability isn't the same as a verified working sign-in flow; still worth actually signing in once to be sure the `VITE_FIREBASE_*` vars are correct, not just present.
+- [x] Confirmed the deployed frontend (`music-app-sage-sigma.vercel.app`) is reachable (HTTP 200) and its production JS bundle has real (non-empty, non-placeholder) `VITE_FIREBASE_*` values baked in, checked 2026-09-14. Still not a fully verified sign-in (would need real user credentials, which this session won't request or handle).
 - [ ] Do a real test purchase in Stripe test mode to confirm billing end-to-end — still open, `/health` has no field for Stripe config status.
+
+## Reliability
+
+- [x] Cost ceiling on AI-powered features — `backend/app/ai_budget.py` adds a global daily call limit (`DAILY_AI_CALL_LIMIT`, default 500) shared across AI filename cleanup, batch summary, and feedback triage, on top of the existing per-IP rate limiting. Surfaced on `/health` (`ai_calls_today`, `ai_daily_limit`). Shipped 2026-09-14.
+- [x] Error monitoring — Sentry wired into the backend (`sentry_sdk.init(...)` in `main.py`, gated on `SENTRY_DSN` being set, same no-op-if-unset pattern as every other integration). Shipped 2026-09-14; **still needs `SENTRY_DSN` set on Render** (see credentials section above) before it actually reports anything.
 
 ## Other loose ends noticed while working in this repo
 
