@@ -5,7 +5,7 @@ import { useProfile } from "../hooks/useProfile"
 import { createBillingPortalSession, createCheckoutSession } from "../services/api"
 
 const FREE_INCLUDED = [
-  "25 tracks per month",
+  "10 tracks per month",
   "Standard BPM & key detection",
   "FLAC, AIFF & WAV 24-bit precision",
   "Rekordbox-ready .m3u8 playlist export",

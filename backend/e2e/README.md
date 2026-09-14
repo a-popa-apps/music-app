@@ -40,8 +40,8 @@ E2E_FIREBASE_API_KEY=<firebase web api key> python3 backend/e2e/smoke_test.py
 - Anonymous `/process` is rejected; an authenticated one actually
   processes a synthetic audio file into a real zip.
 - History reflects a processed track and can be cleared.
-- The Free-tier 25-tracks/month quota boundary triggers a 402 exactly
-  at the 26th track (batched into few requests to stay under the
+- The Free-tier 10-tracks/month quota boundary triggers a 402 exactly
+  at the 11th track (batched into few requests to stay under the
   separate per-request rate limit).
 - Checkout/portal endpoints return real Stripe artifacts without
   needing to complete a hosted Checkout page.

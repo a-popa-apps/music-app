@@ -6,7 +6,7 @@ from firebase_admin import firestore
 
 from .auth import get_app
 
-FREE_MONTHLY_TRACK_LIMIT = 25
+FREE_MONTHLY_TRACK_LIMIT = 10
 
 VALID_ROLES = {"dj", "producer", "dj_producer", "enthusiast"}
 VALID_GENRES = {

@@ -230,7 +230,7 @@ export function ProfileDetails() {
                     Go Pro for more tracks &amp; priority detection
                   </span>
                   <span className="text-body-sm text-on-primary/80">
-                    {settings.tracks_processed_this_period} / 25 tracks used this month
+                    {settings.tracks_processed_this_period} / 10 tracks used this month
                     (resets {quotaResetLabel()}) — unlock 50/batch, custom filename
                     templates &amp; more.
                   </span>
@@ -280,7 +280,7 @@ export function ProfileDetails() {
                 ) : (
                   <>
                     <span className="text-body-sm text-white/60">
-                      {settings.tracks_processed_this_period} / 25 tracks used this month
+                      {settings.tracks_processed_this_period} / 10 tracks used this month
                       (resets {quotaResetLabel()})
                     </span>
                     <span className="text-body-sm text-white/60">

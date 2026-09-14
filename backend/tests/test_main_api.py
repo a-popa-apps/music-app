@@ -353,7 +353,7 @@ def test_process_anonymous_trial_exhausted_returns_402(client, monkeypatch):
     monkeypatch.setattr(main, "get_current_user", lambda request: None)
 
     def _raise(ip, count):
-        raise ValueError("Free trial used up (5/5 tracks, 0 remaining). Sign up free for 25 tracks/month.")
+        raise ValueError("Free trial used up (5/5 tracks, 0 remaining). Sign up free for 10 tracks/month.")
 
     monkeypatch.setattr(main, "check_and_reserve_trial", _raise)
     res = client.post(
@@ -387,15 +387,15 @@ def _fake_file(name="track.mp3", size=1000):
     return SimpleNamespace(filename=name, size=size)
 
 
-def test_validate_files_free_tier_rejects_over_25():
-    files = [_fake_file(f"track{i}.mp3") for i in range(26)]
+def test_validate_files_free_tier_rejects_over_limit():
+    files = [_fake_file(f"track{i}.mp3") for i in range(MAX_FILES_FREE + 1)]
     with pytest.raises(HTTPException) as exc_info:
         validate_files(files, max_files=MAX_FILES_FREE)
     assert exc_info.value.status_code == 400
 
 
-def test_validate_files_free_tier_allows_up_to_25():
-    files = [_fake_file(f"track{i}.mp3") for i in range(25)]
+def test_validate_files_free_tier_allows_up_to_limit():
+    files = [_fake_file(f"track{i}.mp3") for i in range(MAX_FILES_FREE)]
     validate_files(files, max_files=MAX_FILES_FREE)
 
 

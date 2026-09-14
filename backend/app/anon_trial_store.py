@@ -8,7 +8,7 @@ from .auth import get_app
 
 # A one-time trial, not a recurring allowance -- lets an anonymous visitor
 # see real value before hitting a signup wall, without giving away the
-# actual Free plan (25 tracks/month, requires an account).
+# actual Free plan (10 tracks/month, requires an account).
 ANON_TRIAL_LIMIT = 5
 
 
@@ -38,7 +38,7 @@ def check_and_reserve_trial(ip: str, file_count: int) -> None:
         remaining = max(0, ANON_TRIAL_LIMIT - used)
         raise ValueError(
             f"Free trial used up ({used}/{ANON_TRIAL_LIMIT} tracks, {remaining} remaining). "
-            "Sign up free for 25 tracks/month."
+            "Sign up free for 10 tracks/month."
         )
 
     doc_ref.set({"tracks_used": used + file_count}, merge=True)

@@ -9,7 +9,7 @@ const FAQS = [
   {
     question: "Do I need an account to use CratePrep?",
     answer:
-      "No — you can process up to 5 tracks free with no signup at all, as a one-time trial. Sign up free afterward for 25 tracks a month, saved history, and drag-to-reorder.",
+      "No — you can process up to 5 tracks free with no signup at all, as a one-time trial. Sign up free afterward for 10 tracks a month, saved history, and drag-to-reorder.",
   },
   {
     question: "Which DJ software does CratePrep support?",

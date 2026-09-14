@@ -427,7 +427,7 @@ export function Hero() {
               </h3>
               <p className="text-body-md text-white/70">
                 Drop {ANON_TRIAL_LIMIT} or fewer to try it with no account, or sign up free
-                for 25 tracks a month, no credit card required.
+                for 10 tracks a month, no credit card required.
               </p>
               <div className="flex items-center gap-3">
                 <button
@@ -492,7 +492,7 @@ export function Hero() {
                       Like what you see? That was your free trial.
                     </span>
                     <span className="text-body-sm text-white/70">
-                      Sign up free for 25 tracks a month, saved history, and drag-to-reorder.
+                      Sign up free for 10 tracks a month, saved history, and drag-to-reorder.
                     </span>
                   </div>
                   <button

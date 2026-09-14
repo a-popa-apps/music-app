@@ -165,7 +165,7 @@ export function AdminUserDetail() {
                   <div className="flex flex-col gap-1">
                     <h2 className="text-headline-sm text-white">Monthly usage</h2>
                     <span className="text-body-sm text-white/60">
-                      {settings.tracks_processed_this_period} / 25 tracks used
+                      {settings.tracks_processed_this_period} / 10 tracks used
                       {settings.usage_period_start ? ` (${settings.usage_period_start})` : ""}
                     </span>
                   </div>

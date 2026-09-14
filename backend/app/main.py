@@ -392,7 +392,7 @@ async def process(request: Request, files: list[UploadFile] = File(...)):
     if uid is None:
         # No-signup trial: up to ANON_TRIAL_LIMIT tracks, once, ever -- lets
         # a visitor see real value before hitting a signup wall, without
-        # giving away the actual Free plan (25/month, requires an account).
+        # giving away the actual Free plan (10/month, requires an account).
         enforce_rate_limit(request)
         validate_files(files, max_files=ANON_TRIAL_LIMIT)
         try:

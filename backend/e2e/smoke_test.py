@@ -174,22 +174,22 @@ def run() -> int:
         res = client.get(f"{BACKEND_URL}/history", headers=auth_headers(test_uid_token))
         check("GET /history empty after clear", res.json() == [])
 
-        # 6. Free-tier monthly quota boundary (25 tracks/month). One batch
-        # request for the remaining 24 tracks -- not 24 separate requests --
+        # 6. Free-tier monthly quota boundary (10 tracks/month). One batch
+        # request for the remaining 9 tracks -- not 9 separate requests --
         # to stay under the free tier's 5-requests-per-5-minutes rate limit
         # (MAX_REQUESTS_FREE), which is a separate, tighter limit from the
-        # 25-tracks/month quota this step is actually testing.
+        # 10-tracks/month quota this step is actually testing.
         tiny_wav = make_wav(200, 120, duration=1)
         res = client.post(
             f"{BACKEND_URL}/process",
             headers=auth_headers(test_uid_token),
-            files=[("files", (f"t{i}.wav", tiny_wav, "audio/wav")) for i in range(24)],
+            files=[("files", (f"t{i}.wav", tiny_wav, "audio/wav")) for i in range(9)],
         )
-        check("batch of 24 tracks -> 200", res.status_code == 200, f"status={res.status_code} body={res.text[:200]}")
+        check("batch of 9 tracks -> 200", res.status_code == 200, f"status={res.status_code} body={res.text[:200]}")
 
         res = client.get(f"{BACKEND_URL}/profile", headers=auth_headers(test_uid_token))
         used = res.json().get("tracks_processed_this_period")
-        check("quota counter reached 25", used == 25, f"got {used}")
+        check("quota counter reached 10", used == 10, f"got {used}")
 
         res = client.post(
             f"{BACKEND_URL}/process",
@@ -197,7 +197,7 @@ def run() -> int:
             files={"files": ("over-limit.wav", make_wav(200, 120, duration=1), "audio/wav")},
         )
         check(
-            "26th track -> 402 quota exceeded",
+            "11th track -> 402 quota exceeded",
             res.status_code == 402,
             f"status={res.status_code} body={res.text[:200]}",
         )

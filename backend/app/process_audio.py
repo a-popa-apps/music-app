@@ -23,7 +23,7 @@ from .read_tags import read_embedded_tags
 from .write_tags import write_tags
 
 ALLOWED_EXTENSIONS = {".mp3", ".wav", ".flac", ".aiff", ".aif", ".ogg", ".aac"}
-MAX_FILES_FREE = 25
+MAX_FILES_FREE = 10
 MAX_FILES_PRO = 50
 MAX_FILE_SIZE = 100 * 1024 * 1024  # 100MB per file
 MAX_TOTAL_SIZE = 2 * 1024 * 1024 * 1024  # 2GB per upload

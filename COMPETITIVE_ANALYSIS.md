@@ -22,10 +22,13 @@ plan. Everything unlocked" -- what looked like a comparable free tier
 in the original pass is actually just "try it free (up to 25 tracks)"
 before you must buy Pro; there's no recurring free allowance, and
 genre-based folder/playlist splitting turns out to be bundled *inside*
-their one paid plan, not a free-tier feature. CratePrep's Free plan (25
-tracks *every month*, forever, no card) is a genuinely better ongoing
-free offer than what Quickie actually ships -- this flips a gap the
-original analysis treated as neutral into a real CratePrep advantage.
+their one paid plan, not a free-tier feature. CratePrep's Free plan (10
+tracks *every month*, forever, no card, lowered from 25 on 2026-09-14)
+is a *recurring* free offer Quickie has no equivalent to at any price --
+a real advantage in kind, even though Quickie's one-time 25-track trial
+is now larger than a single month of CratePrep's allowance in raw
+volume. The two aren't directly comparable any more: ours compounds
+every month forever, theirs is a one-shot ceiling before you must pay.
 
 We're close to parity on the core mechanic (drop files → get BPM/key/
 genre → export), genuinely ahead on a growing list of real features
@@ -45,7 +48,7 @@ recurring and theirs isn't."
 | | **CratePrep** | **Quickie** |
 |---|---|---|
 | Account required to process files | **No** for a 5-track trial (once, ever); sign-in required beyond that for the recurring Free plan | **No** — "no accounts, no waiting" (confirmed live copy) — but there's no recurring free plan to sign in *for*; Pro requires signup |
-| Ongoing free plan | **Yes** — 25 tracks **every month**, recurring, forever, no card | **No.** Confirmed live: "One plan. Everything unlocked" — only a one-time-reading "try it free (up to 25 tracks)" trial exists, then Pro is required. Not a recurring allowance. |
+| Ongoing free plan | **Yes** — 10 tracks **every month**, recurring, forever, no card (lowered from 25, 2026-09-14) | **No.** Confirmed live: "One plan. Everything unlocked" — only a one-time-reading "try it free (up to 25 tracks)" trial exists, then Pro is required. Not a recurring allowance. |
 | Filename cleanup | Yes — strips junk phrases, watermarks, catalog codes | Yes — confirmed live copy: "AI cleanup" |
 | BPM detection | Yes (essentia) | Yes — confirmed live copy: "BPM & key detection" |
 | Key detection | Yes (essentia, Camelot + standard notation) | Yes (see above) |
@@ -69,7 +72,7 @@ recurring and theirs isn't."
 
 | | **CratePrep** | **Quickie** |
 |---|---|---|
-| Ongoing free plan | **Yes** — 25 tracks/month, recurring, no card | **No.** Confirmed live: a one-time-reading "try it free (up to 25 tracks)" trial, no account -- but no recurring plan behind it. Their pricing section header is literally "One plan. Everything unlocked." |
+| Ongoing free plan | **Yes** — 10 tracks/month, recurring, no card (lowered from 25, 2026-09-14) | **No.** Confirmed live: a one-time-reading "try it free (up to 25 tracks)" trial, no account -- but no recurring plan behind it. Their pricing section header is literally "One plan. Everything unlocked." |
 | Pro (annual) | $5/month billed annually ("Save 38%") | Confirmed live: **$4/month**, "Best value — save 20%" |
 | Pro (monthly) | Not shown standalone on pricing card | Not scraped directly, but their own "save 20%" annual framing implies ~$5/month at the monthly rate (12 × $4 = 0.8 × 12 × monthly ⇒ monthly ≈ $5) |
 | Pro batch cap | 50 tracks/batch | Unlimited -- confirmed live: "Unlimited track uploads," "Unlimited ZIP exports" |
@@ -78,11 +81,14 @@ recurring and theirs isn't."
 **The framing changes completely with the confirmed pricing.** The
 original analysis read this as "$5/mo vs $4/mo for a comparable free
 tier" -- a small, defensible premium. It's now "$5/mo (with a genuinely
-recurring 25/month free plan) vs. effectively-$5/mo-at-the-monthly-rate
-(with no recurring free plan at all, just a one-time trial)." On price
-alone we're not really more expensive once you account for what each
-plan actually includes below the top-line number -- CratePrep's free
-tier has no equivalent on Quickie's side at any price point.
+recurring 10/month free plan) vs. effectively-$5/mo-at-the-monthly-rate
+(with no recurring free plan at all, just a one-time 25-track trial)."
+On price alone we're not really more expensive once you account for
+what each plan actually includes below the top-line number -- but
+worth being honest that Quickie's one-time trial is now more generous
+in raw volume than a single month of CratePrep's Free plan (25 vs. 10);
+the CratePrep advantage is that it recurs indefinitely and Quickie's
+doesn't, not that it's bigger on day one.
 
 ## Positioning & tone
 
@@ -112,7 +118,7 @@ Quickie's throwaway one.
 7. **AI-assisted filename cleanup** (shipped since the original snapshot) — an LLM fallback split for filenames regex and catalog lookup can't crack, vs. Quickie's unverified "AI cleanup" claim.
 8. **AI batch summary** (shipped since the original snapshot) — free for every user, a plain-language read on the batch's genre/BPM/energy shape after processing. No equivalent found on Quickie.
 9. **Suggest Set Order + auto-sort-by-energy** (shipped since the original snapshot, Pro) — see the new "Adjacent competitors" section below; this moves CratePrep into a second competitive category, not just a like-for-like Quickie feature.
-10. **A genuinely recurring free plan** (confirmed via live re-fetch, 2026-09-14) — Quickie has no ongoing free tier at any price point, only a one-time trial before Pro is required. CratePrep's 25/month, forever, no-card plan has no Quickie equivalent to compare against at all.
+10. **A genuinely recurring free plan** (confirmed via live re-fetch, 2026-09-14) — Quickie has no ongoing free tier at any price point, only a one-time trial before Pro is required. CratePrep's 10/month, forever, no-card plan has no Quickie equivalent to compare against at all, even though Quickie's one-time trial ceiling (25) is larger in a single shot.
 
 ## Where we're behind or exposed
 
@@ -120,7 +126,7 @@ Quickie's throwaway one.
 2. **Price** — reframed by the live re-fetch, not resolved: $5/mo vs. their $4/mo annual (~$5/mo at their monthly rate, inferred from their own "save 20%" annual framing) is close enough that it's arguably not really a premium once you factor in that our $5/mo comes with a genuinely recurring free tier and theirs doesn't. Still worth making legible on the pricing page (see recommendation below) — the raw numbers alone still read as "we cost more" to a skimming visitor.
 3. ~~No genre-based folder/playlist splitting~~ — **decided against, not just left open.** Confirmed real and live on Quickie's side ("Split by genre, sort by folders, build playlists"), but Pro-only there too — not building it for CratePrep. Not worth the scope for a niche organizational preference relative to everything else on the roadmap.
 4. ~~No processing-time engagement~~ — **resolved.** A rotating status line during processing already shipped (`c791156`), explicitly built against this recommendation.
-5. ~~Re-verify the free-tier session vs. monthly framing~~ — **resolved by live re-fetch (2026-09-14).** Quickie's free tier is not a recurring allowance at all — it's a one-time trial before their single paid plan is required. CratePrep's recurring 25/month is a clear, confirmed advantage, not a wash.
+5. ~~Re-verify the free-tier session vs. monthly framing~~ — **resolved by live re-fetch (2026-09-14).** Quickie's free tier is not a recurring allowance at all — it's a one-time trial before their single paid plan is required. CratePrep's recurring 10/month is a real, confirmed advantage in kind (indefinite vs. one-shot), not a wash — though not larger in raw volume for a single month.
 
 ## Adjacent competitors: AI/harmonic set-building tools
 
