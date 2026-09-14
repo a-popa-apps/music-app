@@ -225,7 +225,9 @@ def _analyze_and_tag(
     )
 
     try:
-        tagged_content = write_tags(content, ext, bpm=bpm, key_tag=tonality, genre=genre)
+        tagged_content = write_tags(
+            content, ext, bpm=bpm, key_tag=tonality, genre=genre, artist=artist, title=title
+        )
     except Exception as e:
         tagged_content = content
         entry["tag_error"] = f"{type(e).__name__}: {e}"
