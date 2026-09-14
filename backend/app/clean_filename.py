@@ -38,11 +38,15 @@ TELEGRAM = re.compile(r"(@[\w.]+|t\.me/\S+)", re.IGNORECASE)
 JUNK_PHRASE = re.compile(
     "|".join(re.escape(k) for k in JUNK_KEYWORDS), re.IGNORECASE
 )
-DASH_SPLIT = re.compile(r"\s*[-–—]\s*")
+DASH_SPLIT = re.compile(r"\s*[-–—,]\s*")
 WHITESPACE_RUN = re.compile(r"\s{2,}")
 EDGE_JUNK = re.compile(r"^[\s\-_.,]+|[\s\-_.,]+$")
 CATALOG_CODE_AT_END = re.compile(r"\s+[A-Za-z]{2,6}\d{2,5}$")
 LEADING_VINYL_CODE = re.compile(r"^[A-Da-d]{1,2}\d{1,2}[\s.\-_]+")
+# Zero-padded track numbers only ("01", "09") -- real artist names that start
+# with digits (21 Savage, 50 Cent, 2 Chainz) never have a leading zero, so
+# this doesn't collide with them the way a bare "^\d+" strip would.
+LEADING_TRACK_NUMBER = re.compile(r"^0\d{1,2}[\s.\-_]+")
 TRAILING_LABEL_CREDIT = re.compile(
     r"\s*[-–—]\s*[^-–—]{1,50}\bRecord(?:s|ings)?\b\.?\s*$", re.IGNORECASE
 )
@@ -75,6 +79,7 @@ def _clean_text(text: str) -> tuple[str, str | None]:
     any free text, not just filenames (no extension assumptions) -- used for
     both filename stems and embedded tag values (see read_tags.py)."""
     text = LEADING_VINYL_CODE.sub("", text)
+    text = LEADING_TRACK_NUMBER.sub("", text)
     text = URL.sub(" ", text)
     text = TELEGRAM.sub(" ", text)
     text, version_tag = _extract_version_tag(text)
@@ -100,7 +105,10 @@ def prepare_stem(filename: str) -> tuple[str, str, str | None]:
 
 
 def local_dash_split(stem: str) -> tuple[str, str] | None:
-    """Split on an explicit dash separator, e.g. "Artist - Title"."""
+    """Split on an explicit artist/title separator: a dash ("Artist -
+    Title") or a comma ("Artist, Title"), the two conventions actually seen
+    in the wild (e.g. ripped-CD track listings like "09 Slam , Life Between
+    Life")."""
     parts = DASH_SPLIT.split(stem, maxsplit=1)
     if len(parts) == 2 and parts[0] and parts[1]:
         return _tidy(parts[0]), _tidy(parts[1])

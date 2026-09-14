@@ -192,6 +192,27 @@ def test_resolve_artist_title_trusts_tags_when_they_agree_with_filename(monkeypa
     assert debug["name_source"] == "embedded_tags"
 
 
+def test_resolve_artist_title_prefers_filename_with_comma_separator_and_track_number(monkeypatch):
+    # The exact real-world case this was reported from: a ripped-CD-style
+    # filename with a leading zero-padded track number and a comma
+    # separator, plus tags mistagged with the wrong artist.
+    monkeypatch.setattr(process_audio, "detect_genre", lambda artist, title, deep_search=False: None)
+
+    stem, _, _ = process_audio.prepare_stem("09 Slam , Life Between Life.mp3")
+    artist, title, genre, debug = process_audio._resolve_artist_title_genre(
+        stem,
+        embedded_tags={
+            "artist": "Wrong Tagged Artist",
+            "title": "Life Between Life",
+            "genre": None,
+            "version_tag": None,
+        },
+    )
+
+    assert (artist, title) == ("Slam", "Life Between Life")
+    assert debug["name_source"] == "local_dash_split"
+
+
 def test_resolve_artist_title_trusts_tags_when_filename_has_no_dash_split(monkeypatch):
     # No explicit "Artist - Title" filename to compare against -- tags stay
     # authoritative, matching the app's primary use case (messy filename,

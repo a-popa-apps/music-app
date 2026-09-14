@@ -73,11 +73,30 @@ class TestLocalDashSplit:
     def test_splits_on_en_dash(self):
         assert local_dash_split("Artist – Title") == ("Artist", "Title")
 
+    def test_splits_on_comma(self):
+        assert local_dash_split("Artist, Title") == ("Artist", "Title")
+
+    def test_splits_on_comma_with_extra_spacing(self):
+        # e.g. "Slam , Life Between Life" -- real-world ripped-CD naming
+        assert local_dash_split("Slam , Life Between Life") == ("Slam", "Life Between Life")
+
     def test_no_dash_returns_none(self):
         assert local_dash_split("Artist Title") is None
 
     def test_empty_side_returns_none(self):
         assert local_dash_split("- Title") is None
+
+
+class TestLeadingTrackNumber:
+    def test_strips_zero_padded_track_number(self):
+        stem, _, _ = prepare_stem("09 Slam , Life Between Life.mp3")
+        assert stem == "Slam , Life Between Life"
+
+    def test_does_not_strip_artist_name_starting_with_digits(self):
+        # Real artist names with a leading number are never zero-padded --
+        # only an actual track-number prefix is ("09", not "21" or "50").
+        stem, _, _ = prepare_stem("21 Savage - Bank Account.mp3")
+        assert stem == "21 Savage - Bank Account"
 
 
 class TestGuessSplit:
