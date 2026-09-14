@@ -12,10 +12,10 @@ from fastapi import HTTPException, UploadFile
 from fastapi.concurrency import run_in_threadpool
 
 from .ai_cleanup import ai_split_artist_title
-from .audio_io import SAMPLE_RATE, load_audio
+from .audio_io import get_duration_seconds, load_audio
 from .batch_summary import generate_batch_summary
 from .clean_filename import compose_name, guess_split, local_dash_split, prepare_stem
-from .detect_bpm import detect_bpm
+from .detect_bpm import ANALYSIS_SECONDS, detect_bpm
 from .detect_energy import detect_energy
 from .detect_genre import detect_genre, lookup_track
 from .detect_key import detect_key
@@ -162,7 +162,16 @@ def _analyze_and_tag(
         version_tag = embedded_tags["version_tag"]
 
     try:
-        audio = load_audio(content, ext)
+        # Free/default mode only ever analyzes the first ANALYSIS_SECONDS
+        # (BPM, key, energy all already fast-path to a short window) --
+        # decoding just that slice instead of the whole track is the
+        # single biggest speed win available, since decode cost scales
+        # with track length. "Enhanced Detection" (Pro) still needs the
+        # full track for its full-track BPM pass and low-confidence key
+        # retry, so it decodes everything as before.
+        audio = load_audio(
+            content, ext, max_seconds=None if enhanced_detection else ANALYSIS_SECONDS
+        )
     except Exception as e:
         entry = {
             "bpm": None,
@@ -177,7 +186,10 @@ def _analyze_and_tag(
         return content, entry, final_name
 
     entry: dict = {
-        "duration_seconds": round(len(audio) / SAMPLE_RATE, 2),
+        # From the file's own header, not len(audio)/SAMPLE_RATE -- audio
+        # may only be a truncated window above, but the track's real
+        # duration (shown in the UI, written into the playlist) must not be.
+        "duration_seconds": get_duration_seconds(content, ext),
         "artist": artist,
         "title": title,
         **name_debug,

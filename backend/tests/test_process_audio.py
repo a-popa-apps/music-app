@@ -161,6 +161,49 @@ def test_build_zip_one_failure_does_not_lose_others(monkeypatch):
     assert "error" not in by_original["good2.wav"]
 
 
+def test_duration_reflects_full_track_even_though_default_mode_only_decodes_a_window():
+    # Default (non-enhanced) mode only decodes/analyzes the first
+    # ANALYSIS_SECONDS for speed -- duration must still reflect the
+    # track's real, full length, not however much was actually decoded.
+    files = [_upload("Artist - Title.wav", _make_wav(duration=35))]
+    _, manifest = asyncio.run(process_audio.build_zip(files))
+    entry = next(iter(manifest.values()))
+    assert entry["duration_seconds"] is not None
+    assert abs(entry["duration_seconds"] - 35) < 0.5
+
+
+def test_default_mode_only_decodes_the_analysis_window(monkeypatch):
+    real_load_audio = process_audio.load_audio
+    calls = []
+
+    def spy(content, ext, max_seconds=None):
+        calls.append(max_seconds)
+        return real_load_audio(content, ext, max_seconds=max_seconds)
+
+    monkeypatch.setattr(process_audio, "load_audio", spy)
+
+    files = [_upload("Artist - Title.wav", _make_wav(duration=2))]
+    asyncio.run(process_audio.build_zip(files))
+
+    assert calls == [process_audio.ANALYSIS_SECONDS]
+
+
+def test_enhanced_detection_decodes_the_full_track(monkeypatch):
+    real_load_audio = process_audio.load_audio
+    calls = []
+
+    def spy(content, ext, max_seconds=None):
+        calls.append(max_seconds)
+        return real_load_audio(content, ext, max_seconds=max_seconds)
+
+    monkeypatch.setattr(process_audio, "load_audio", spy)
+
+    files = [_upload("Artist - Title.wav", _make_wav(duration=2))]
+    asyncio.run(process_audio.build_zip(files, enhanced_detection=True))
+
+    assert calls == [None]
+
+
 def test_resolve_artist_title_prefers_filename_when_tags_conflict(monkeypatch):
     # The file's own ID3 tags say "Wrong Artist", but the filename is an
     # unambiguous "Artist - Title" split naming the real artist -- the
