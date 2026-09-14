@@ -5,6 +5,8 @@ import os
 
 import anthropic
 
+from .ai_budget import allow_ai_call
+
 MODEL = "claude-opus-5"
 
 SCHEMA = {
@@ -68,7 +70,7 @@ def generate_batch_summary(manifest: dict) -> str | None:
     meaningful about the batch as a whole."""
     client = _get_client()
     facts = _track_facts(manifest)
-    if client is None or len(facts) < MIN_TRACKS_FOR_SUMMARY:
+    if client is None or len(facts) < MIN_TRACKS_FOR_SUMMARY or not allow_ai_call():
         return None
 
     try:

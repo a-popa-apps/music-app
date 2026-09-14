@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from pydantic import BaseModel
 
+from . import ai_budget
 from .admin_store import (
     create_discount_code,
     delete_user_account,
@@ -68,6 +69,8 @@ def health():
             os.environ.get("SPOTIFY_CLIENT_ID") and os.environ.get("SPOTIFY_CLIENT_SECRET")
         ),
         "ai_cleanup_configured": bool(os.environ.get("ANTHROPIC_API_KEY")),
+        "ai_calls_today": ai_budget.calls_used_today(),
+        "ai_daily_limit": ai_budget.DAILY_AI_CALL_LIMIT,
     }
 
 

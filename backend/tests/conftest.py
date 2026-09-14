@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from app import rate_limit
+from app import ai_budget, rate_limit
 
 
 @pytest.fixture(autouse=True)
@@ -16,3 +16,14 @@ def _reset_rate_limit_state():
     rate_limit._requests.clear()
     yield
     rate_limit._requests.clear()
+
+
+@pytest.fixture(autouse=True)
+def _reset_ai_budget_state():
+    """Same leakage risk as rate_limit._requests above -- ai_budget._calls is
+    a module-level dict, so any test anywhere that triggers an AI-powered
+    feature (ai_cleanup/batch_summary/feedback_summary) consumes from the
+    same global counter unless this resets between every test."""
+    ai_budget._calls.clear()
+    yield
+    ai_budget._calls.clear()

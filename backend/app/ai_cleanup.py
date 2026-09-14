@@ -5,6 +5,8 @@ import os
 
 import anthropic
 
+from .ai_budget import allow_ai_call
+
 MODEL = "claude-opus-5"
 
 SCHEMA = {
@@ -49,7 +51,7 @@ def ai_split_artist_title(stem: str) -> tuple[str, str] | None:
     already have guess_split as a fallback for that case."""
     client = _get_client()
     stem = stem.strip()
-    if client is None or not stem:
+    if client is None or not stem or not allow_ai_call():
         return None
 
     try:

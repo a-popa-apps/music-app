@@ -5,6 +5,8 @@ import os
 
 import anthropic
 
+from .ai_budget import allow_ai_call
+
 MODEL = "claude-opus-5"
 
 SCHEMA = {
@@ -47,7 +49,7 @@ def generate_feedback_summary(entries: list[dict]) -> str | None:
     (never raises) if that's unset, on any API error, or if there's
     nothing to summarize."""
     client = _get_client()
-    if client is None or not entries:
+    if client is None or not entries or not allow_ai_call():
         return None
 
     payload = [
