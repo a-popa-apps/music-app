@@ -159,3 +159,49 @@ def test_build_zip_one_failure_does_not_lose_others(monkeypatch):
     assert "error" in by_original["bad.wav"]
     assert "error" not in by_original["good1.wav"]
     assert "error" not in by_original["good2.wav"]
+
+
+def test_resolve_artist_title_prefers_filename_when_tags_conflict(monkeypatch):
+    # The file's own ID3 tags say "Wrong Artist", but the filename is an
+    # unambiguous "Artist - Title" split naming the real artist -- the
+    # filename should win rather than silently propagating a mistagged
+    # artist (e.g. from a re-rip or a bad auto-tagger).
+    monkeypatch.setattr(process_audio, "detect_genre", lambda artist, title, deep_search=False: None)
+
+    artist, title, genre, debug = process_audio._resolve_artist_title_genre(
+        "Real Artist - Real Title",
+        embedded_tags={"artist": "Wrong Artist", "title": "Real Title", "genre": None, "version_tag": None},
+    )
+
+    assert (artist, title) == ("Real Artist", "Real Title")
+    assert debug["name_source"] == "local_dash_split"
+
+
+def test_resolve_artist_title_trusts_tags_when_they_agree_with_filename(monkeypatch):
+    monkeypatch.setattr(process_audio, "detect_genre", lambda artist, title, deep_search=False: None)
+
+    artist, title, genre, debug = process_audio._resolve_artist_title_genre(
+        "real artist - Real Title",
+        embedded_tags={"artist": "Real Artist", "title": "Real Title", "genre": "House", "version_tag": None},
+    )
+
+    # Formatting differs (case) but it's the same artist -- no conflict, so
+    # the tag's own (better-formatted) artist casing is kept.
+    assert (artist, title) == ("Real Artist", "Real Title")
+    assert genre == "House"
+    assert debug["name_source"] == "embedded_tags"
+
+
+def test_resolve_artist_title_trusts_tags_when_filename_has_no_dash_split(monkeypatch):
+    # No explicit "Artist - Title" filename to compare against -- tags stay
+    # authoritative, matching the app's primary use case (messy filename,
+    # trustworthy tags).
+    monkeypatch.setattr(process_audio, "detect_genre", lambda artist, title, deep_search=False: None)
+
+    artist, title, genre, debug = process_audio._resolve_artist_title_genre(
+        "messydownloadfilenamev2final",
+        embedded_tags={"artist": "Real Artist", "title": "Real Title", "genre": None, "version_tag": None},
+    )
+
+    assert (artist, title) == ("Real Artist", "Real Title")
+    assert debug["name_source"] == "embedded_tags"

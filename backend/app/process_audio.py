@@ -5,6 +5,7 @@ import gc
 import io
 import json
 import os
+import re
 import zipfile
 
 from fastapi import HTTPException, UploadFile
@@ -77,6 +78,10 @@ def validate_files(files: list[UploadFile], max_files: int = MAX_FILES_FREE) -> 
         )
 
 
+def _normalized_artist(text: str) -> str:
+    return re.sub(r"[^a-z0-9]", "", text.lower())
+
+
 def _resolve_artist_title_genre(
     stem: str,
     deep_search: bool = False,
@@ -84,22 +89,34 @@ def _resolve_artist_title_genre(
     ai_cleanup: bool = False,
 ) -> tuple[str | None, str | None, str | None, dict]:
     """Embedded file tags first, if the file already carries a usable
-    artist/title (most reliable -- no guessing needed); else local dash
-    split; else search Spotify/Discogs using the raw stem so a real catalog
-    match beats guessing; else, if enabled, an LLM split (smarter than the
-    word-count guess for filenames with no separator and no catalog match);
-    else a best-effort word-count guess as the final fallback."""
+    artist/title (most reliable -- no guessing needed) *and* doesn't
+    contradict an explicit "Artist - Title" filename. A filename already in
+    that form is a deliberate, unambiguous signal, so if its artist
+    disagrees with the tag's artist (a mistagged file -- tags copied from
+    the wrong track, a bad auto-tagger, a re-rip that kept stale metadata)
+    the filename wins instead of silently propagating the wrong tag. Else
+    local dash split; else search Spotify/Discogs using the raw stem so a
+    real catalog match beats guessing; else, if enabled, an LLM split
+    (smarter than the word-count guess for filenames with no separator and
+    no catalog match); else a best-effort word-count guess as the final
+    fallback."""
     debug: dict = {}
 
-    if embedded_tags:
+    dash_split = local_dash_split(stem)
+    tag_conflicts_with_filename = bool(
+        embedded_tags
+        and dash_split
+        and _normalized_artist(dash_split[0]) != _normalized_artist(embedded_tags["artist"])
+    )
+
+    if embedded_tags and not tag_conflicts_with_filename:
         artist, title = embedded_tags["artist"], embedded_tags["title"]
         genre = embedded_tags["genre"] or detect_genre(artist, title, deep_search=deep_search)
         debug["name_source"] = "embedded_tags"
         return artist, title, genre, debug
 
-    split = local_dash_split(stem)
-    if split:
-        artist, title = split
+    if dash_split:
+        artist, title = dash_split
         genre = detect_genre(artist, title, deep_search=deep_search)
         debug["name_source"] = "local_dash_split"
         return artist, title, genre, debug
