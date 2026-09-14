@@ -42,7 +42,11 @@ def get_current_user(request: Request) -> str | None:
 
     token = header.removeprefix("Bearer ")
     try:
-        decoded = firebase_auth.verify_id_token(token, app=app)
+        # check_revoked=True so a token issued before an account was banned/
+        # deleted stops working immediately instead of surviving until its
+        # own (up to ~1hr) natural expiry -- costs one extra Firebase lookup
+        # per request, worth it for admin bans to actually take effect.
+        decoded = firebase_auth.verify_id_token(token, app=app, check_revoked=True)
         return decoded["uid"]
     except Exception:
         return None

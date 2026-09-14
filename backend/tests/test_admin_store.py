@@ -47,6 +47,34 @@ def test_set_admin_flag_promotes_and_demotes(fake_users):
     assert updated["is_admin"] is False
 
 
+def test_delete_user_account_revokes_tokens_before_deleting(fake_users, monkeypatch):
+    # Regression test: revoking must happen before -- not instead of, and not
+    # after -- deleting, so an in-flight request can't slip through in the
+    # instant between the two calls.
+    monkeypatch.setattr(admin_store, "get_app", lambda: "fake-app")
+    calls = []
+    monkeypatch.setattr(
+        admin_store.firebase_auth,
+        "revoke_refresh_tokens",
+        lambda uid, app=None: calls.append(("revoke", uid)),
+    )
+    monkeypatch.setattr(
+        admin_store.firebase_auth,
+        "delete_user",
+        lambda uid, app=None: calls.append(("delete", uid)),
+    )
+
+    admin_store.delete_user_account("uid-1")
+
+    assert calls == [("revoke", "uid-1"), ("delete", "uid-1")]
+
+
+def test_delete_user_account_requires_firebase_configured(fake_users, monkeypatch):
+    monkeypatch.setattr(admin_store, "get_app", lambda: None)
+    with pytest.raises(RuntimeError):
+        admin_store.delete_user_account("uid-1")
+
+
 def test_reset_usage_clears_counter_and_period(fake_users):
     profile_store.check_and_reserve_usage("uid-1", 20, "free")
     assert profile_store.get_settings("uid-1")["tracks_processed_this_period"] == 20

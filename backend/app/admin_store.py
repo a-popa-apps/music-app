@@ -61,6 +61,11 @@ def delete_user_account(uid: str) -> None:
     app = get_app()
     if app is None:
         raise RuntimeError("Firebase is not configured")
+    # Belt-and-suspenders alongside get_current_user's check_revoked=True:
+    # deleting the user already makes later lookups fail (and so get
+    # rejected), but revoking first also covers any request already
+    # in flight at the exact moment of deletion.
+    firebase_auth.revoke_refresh_tokens(uid, app=app)
     firebase_auth.delete_user(uid, app=app)
 
 
