@@ -164,6 +164,20 @@ class TestComposeName:
         name = compose_name("Artist", "Title", "fallback", None, ".mp3")
         assert name == "Artist - Title.mp3"
 
+    def test_slash_in_artist_or_title_does_not_create_a_subfolder(self):
+        # A "/" left in a zip entry name is a path separator to zipfile --
+        # it silently nests the track inside a folder instead of writing it
+        # as a flat file, e.g. from a multi-artist catalog credit like
+        # "Lady Aïda / Slam" or a title like "AC/DC".
+        name = compose_name("Lady Aïda", "Slam/Life Between Life", "fallback", None, ".flac")
+        assert "/" not in name
+        name = compose_name("AC/DC", "Highway to Hell", "fallback", None, ".mp3")
+        assert "/" not in name
+
+    def test_backslash_in_artist_or_title_does_not_create_a_subfolder(self):
+        name = compose_name("Artist", "A\\B", "fallback", None, ".mp3")
+        assert "\\" not in name
+
     def test_falls_back_to_stem_without_artist_title(self):
         name = compose_name(None, None, "Original Stem", None, ".mp3")
         assert name == "Original Stem.mp3"

@@ -51,6 +51,12 @@ TRAILING_LABEL_CREDIT = re.compile(
     r"\s*[-–—]\s*[^-–—]{1,50}\bRecord(?:s|ings)?\b\.?\s*$", re.IGNORECASE
 )
 TEMPLATE_PLACEHOLDER = re.compile(r"\{(\w+)\}")
+# "/" and "\" are path separators to a zip writer (and every OS's
+# filesystem) -- left in an artist/title, a genuinely slash-containing
+# credit (a multi-artist "Lady Aïda / Slam" catalog match, "AC/DC", etc.)
+# silently turns into an unwanted subfolder instead of staying part of the
+# filename. The rest are just Windows-reserved filename characters.
+FILESYSTEM_UNSAFE = re.compile(r'[\\/:*?"<>|]')
 
 
 def _extract_version_tag(stem: str) -> tuple[str, str | None]:
@@ -166,6 +172,10 @@ def apply_template(
     return TEMPLATE_PLACEHOLDER.sub(replace, template)
 
 
+def _sanitize_filename_part(text: str) -> str:
+    return _tidy(FILESYSTEM_UNSAFE.sub("-", text))
+
+
 def compose_name(
     artist: str | None,
     title: str | None,
@@ -179,6 +189,11 @@ def compose_name(
     genre: str | None = None,
     duration: float | None = None,
 ) -> str:
+    if artist:
+        artist = _sanitize_filename_part(artist)
+    if title:
+        title = _sanitize_filename_part(title)
+
     if filename_template and artist and title:
         result = apply_template(
             filename_template,
