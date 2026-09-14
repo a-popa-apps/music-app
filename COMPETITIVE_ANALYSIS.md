@@ -20,10 +20,11 @@ genre → export), genuinely ahead on a growing list of real features
 (several of them AI-powered, shipped since the original pass), and the
 account/trust gap identified in the original pass has already been
 closed: CratePrep now offers a no-signup trial (up to 5 tracks, once,
-ever) matching Quickie's zero-friction first try. What's left is a
-smaller price gap ($5/mo vs. their $4/mo) and one real unclaimed
-feature (genre-based folder/playlist splitting) — both cheaper to close
-than the trust/friction gap already was.
+ever) matching Quickie's zero-friction first try. Genre-based folder/
+playlist splitting -- the one Quickie-PRD feature we don't have -- was
+deliberately decided against rather than left as an open gap (see
+below). What's left is a smaller price gap ($5/mo vs. their $4/mo),
+cheaper to close than the trust/friction gap already was.
 
 ## Feature-by-feature
 
@@ -99,7 +100,7 @@ Quickie's throwaway one.
 
 1. ~~Sign-in wall on Free~~ — **resolved.** A no-signup trial (up to 5 tracks, no account) already shipped (`a418c65`), closing most of this gap.
 2. **Price** — still $5/mo vs. their $4/mo annual; the on-page argument for the premium has been improved (`fa71747` tied price copy to differentiators) but the raw number is still higher, and the differentiator list is now longer than what that copy pass covered (see recommendation below).
-3. **No genre-based folder/playlist splitting** — if Quickie has actually shipped this (PRD-only claim, unconfirmed), it's a real organizational feature we still don't have. Still open.
+3. ~~No genre-based folder/playlist splitting~~ — **decided against, not just left open.** If Quickie has actually shipped this (PRD-only claim, unconfirmed), it's a real feature we don't match, but we're not building it. Not worth the scope for a niche organizational preference relative to everything else on the roadmap.
 4. ~~No processing-time engagement~~ — **resolved.** A rotating status line during processing already shipped (`c791156`), explicitly built against this recommendation.
 5. **Re-verify the free-tier session vs. monthly framing** — still open; unconfirmed whether Quickie's real free tier is "25 tracks once" vs. a recurring allowance.
 
@@ -149,7 +150,7 @@ page actually says it.
 
 1. ~~Ship a no-signup trial tier.~~ **Done.**
 2. ~~Make the Pro price premium legible on the pricing page itself.~~ **Done, but incomplete** — the copy pass predates AI filename cleanup, AI batch summary, and Suggest Set Order. Worth another pass now that the differentiator list is longer (see the landing-page update alongside this doc refresh).
-3. **Decide, deliberately, on genre-based folder/playlist splitting.** Either build it for real (there's already a `genre` field on every track — grouping into per-genre playlists is a contained addition, not a rebuild) or don't claim it; don't let it become another "Genre-Sorted Playlists" situation like the one already caught and fixed this session. Still the single largest unclaimed feature gap against Quickie specifically.
+3. ~~Decide, deliberately, on genre-based folder/playlist splitting.~~ **Decided: not building it.** Deliberately choosing not to close this gap rather than leaving it ambiguous — don't let it drift into an implied/claimed feature on the landing page or pricing copy, since it genuinely isn't there.
 4. ~~Consider a lightweight processing-time delight moment.~~ **Done.**
 5. **Re-verify the free-tier session vs. monthly framing.** If Quickie's real (not PRD-inferred) free tier is genuinely "25 tracks, once, ever" rather than a recurring monthly allowance, our recurring 25/month is a stronger offer and worth saying so explicitly rather than leaving it implicit.
 6. **Say the "one tool, not two" thing out loud.** Now that CratePrep also does what SetFlow does (harmonic+BPM+energy set ordering), but starting from raw files instead of an already-organized library, that combination is worth a line on the landing page -- it's not a claim any of the three tools reviewed here can make.
