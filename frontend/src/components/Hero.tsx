@@ -241,13 +241,11 @@ export function Hero() {
       exportName: reordered ? `${String(i + 1).padStart(width, "0")} - ${track.name}` : track.name,
     }))
 
+    // crateprep-manifest.json / crateprep-summary.json are internal-only --
+    // the app already read everything it needs from them (results table,
+    // AI summary, reorder state) right after processing. They were never
+    // meant to land in the DJ's actual crate folder alongside the tracks.
     const rebuilt: Unzipped = {}
-    if (zipFiles["crateprep-manifest.json"]) {
-      rebuilt["crateprep-manifest.json"] = zipFiles["crateprep-manifest.json"]
-    }
-    if (zipFiles["crateprep-summary.json"]) {
-      rebuilt["crateprep-summary.json"] = zipFiles["crateprep-summary.json"]
-    }
     for (const track of exportTracks) {
       const bytes = zipFiles[track.name]
       if (bytes) rebuilt[track.exportName] = bytes
