@@ -1,4 +1,6 @@
 import { Link } from "react-router-dom"
+import { useAuth } from "../hooks/useAuth"
+import { useProfile } from "../hooks/useProfile"
 
 const PRODUCT_LINKS = [
   { label: "Key & BPM Analysis", href: "#features" },
@@ -18,6 +20,15 @@ const LEGAL_LINKS = [
 ]
 
 export function Footer() {
+  const { user, isVerified } = useAuth()
+  const { profile } = useProfile()
+  const isPro = Boolean(user && isVerified && profile?.plan === "pro")
+  // The Pricing section itself is hidden for Pro users (see Pricing.tsx),
+  // so this link would otherwise point at an anchor that no longer exists.
+  const productLinks = isPro
+    ? PRODUCT_LINKS.filter((link) => link.label !== "Pricing")
+    : PRODUCT_LINKS
+
   return (
     <footer className="w-full bg-tertiary-container text-inverse-on-surface">
       <div className="mx-auto w-full max-w-7xl px-4 pb-12 pt-16 lg:px-12">
@@ -35,7 +46,7 @@ export function Footer() {
             <span className="font-mono text-meta-badge font-semibold uppercase tracking-wider text-on-tertiary-container">
               Product
             </span>
-            {PRODUCT_LINKS.map((link) => (
+            {productLinks.map((link) => (
               <a
                 key={link.label}
                 href={link.href}

@@ -37,6 +37,10 @@ export function Pricing() {
   const cadence =
     billing === "annual" ? "/ month (billed annually)" : "/ month"
 
+  // Nothing to sell a Pro user -- billing management for them lives on the
+  // Profile page instead, not this marketing section.
+  if (isPro) return null
+
   async function handleGetPro() {
     if (!user || !isVerified) {
       navigate("/auth")

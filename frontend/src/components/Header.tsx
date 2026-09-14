@@ -21,6 +21,11 @@ export function Header({ dark = false }: { dark?: boolean }) {
   const { profile } = useProfile()
   const isAdmin = profile?.is_admin ?? false
   const loggedIn = user && isVerified
+  const isPro = Boolean(loggedIn && profile?.plan === "pro")
+  // Nothing to upgrade to once you're already Pro -- and the landing page's
+  // Pricing section itself is hidden for Pro users (see Pricing.tsx), so
+  // the anchor link would just scroll to a spot that no longer exists.
+  const navLinks = isPro ? NAV_LINKS.filter((link) => link.label !== "Pricing") : NAV_LINKS
   const location = useLocation()
   const overHero = dark || (location.pathname === "/" && !scrolled)
   const headerRef = useRef<HTMLElement>(null)
@@ -77,7 +82,7 @@ export function Header({ dark = false }: { dark?: boolean }) {
           </span>
         </Link>
         <nav className="hidden items-center gap-8 md:flex">
-          {NAV_LINKS.map((link) => (
+          {navLinks.map((link) => (
             <a
               key={link.href}
               href={link.href}
@@ -135,7 +140,7 @@ export function Header({ dark = false }: { dark?: boolean }) {
               : "border-outline-variant bg-surface"
           }`}
         >
-          {NAV_LINKS.map((link) => (
+          {navLinks.map((link) => (
             <a
               key={link.href}
               href={link.href}
