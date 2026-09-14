@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /auth
+Disallow: /auth/action
+Disallow: /profile
+Disallow: /history
+Disallow: /admin
+
+Sitemap: https://music-app-sage-sigma.vercel.app/sitemap.xml
