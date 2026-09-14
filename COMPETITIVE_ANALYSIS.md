@@ -193,7 +193,7 @@ page actually says it.
 4. ~~Consider a lightweight processing-time delight moment.~~ **Done.**
 5. ~~Re-verify the free-tier session vs. monthly framing.~~ **Confirmed, and it's better than hoped:** Quickie has no recurring free plan at all, just a one-time trial. **New recommendation:** say this explicitly on the pricing page ("the only DJ track-prep tool with a free plan you can actually come back to every month" or similar) -- this is now a confirmed fact, not a hedge.
 6. **Say the "one tool, not two" thing out loud.** Now that CratePrep also does what SetFlow does (harmonic+BPM+energy set ordering), but starting from raw files instead of an already-organized library, that combination is worth a line on the landing page -- it's not a claim any of the three tools reviewed here can make.
-7. **Consider re-pricing the "we cost more" narrative entirely.** With Quickie's real structure confirmed (no recurring free tier, ~$5/mo-equivalent Pro), CratePrep isn't obviously the more expensive option anymore once the free tier is factored in -- the pricing page should make this comparison explicitly rather than just listing CratePrep's own features in isolation.
+7. ~~Consider re-pricing the "we cost more" narrative entirely.~~ **Done.** The Free plan card's subtitle now reads "A real monthly plan — not a one-time trial" instead of "Perfect for one-off gig prep" -- states the advantage positively without naming a competitor.
 
 ## Caveats
 

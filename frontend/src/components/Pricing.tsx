@@ -72,7 +72,7 @@ export function Pricing() {
           <div className="flex h-full flex-col rounded-2xl border border-white/10 bg-white/5 p-10 backdrop-blur-md">
             <h3 className="text-headline-lg font-bold text-white">Free</h3>
             <span className="text-body-sm text-white/70">
-              Perfect for one-off gig prep
+              A real monthly plan — not a one-time trial
             </span>
 
             <div className="flex items-baseline gap-1 py-6">
