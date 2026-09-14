@@ -3,13 +3,11 @@
 ## Credentials / environment variables
 
 Backend (Render):
-- [ ] `ANTHROPIC_API_KEY` — enables the new AI filename cleanup feature; currently no-ops without it
-- [ ] `FIREBASE_SERVICE_ACCOUNT_JSON` — service-account JSON for `firebase-admin`; without it, auth/Firestore-backed features (profiles, history, admin) silently disable rather than error (check `/health` → `firebase_configured`)
-- [ ] `STRIPE_SECRET_KEY` — required for billing/checkout to work at all
-- [ ] `STRIPE_WEBHOOK_SECRET` — required for Stripe webhook signature verification (plan upgrades/downgrades won't sync without it)
-- [ ] `STRIPE_PRICE_MONTHLY` / `STRIPE_PRICE_ANNUAL` — Stripe Price IDs for the Pro plan
-- [ ] `SPOTIFY_CLIENT_ID` / `SPOTIFY_CLIENT_SECRET` — genre lookup; without these it silently falls back to Discogs only (check `/health` → `spotify_configured`)
-- [ ] `DISCOGS_TOKEN` — optional, just raises Discogs' rate limit; works without it
+- [ ] `ANTHROPIC_API_KEY` — **confirmed missing** (`/health` → `ai_cleanup_configured: false`, checked 2026-09-14). Enables AI filename cleanup, AI batch summary, and feedback triage; all three currently no-op without it.
+- [x] `FIREBASE_SERVICE_ACCOUNT_JSON` — **confirmed set** (`/health` → `firebase_configured: true`, checked 2026-09-14).
+- [ ] `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` / `STRIPE_PRICE_MONTHLY` / `STRIPE_PRICE_ANNUAL` — not checkable via `/health` (no field for it); still needs a real test-mode purchase to confirm end-to-end (see below).
+- [x] `SPOTIFY_CLIENT_ID` / `SPOTIFY_CLIENT_SECRET` — **confirmed set** (`/health` → `spotify_configured: true`, checked 2026-09-14).
+- [ ] `DISCOGS_TOKEN` — optional, unconfirmed either way; works without it.
 
 Frontend (Vercel):
 - [ ] `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_STORAGE_BUCKET`, `VITE_FIREBASE_MESSAGING_SENDER_ID`, `VITE_FIREBASE_APP_ID` — client-side Firebase config (sign-in won't work without these)
@@ -17,10 +15,10 @@ Frontend (Vercel):
 
 ## Verify what's actually already set
 
-I can't read Render/Vercel's env var dashboards from here, so I don't know which of the above are already configured vs. missing — only that the *code* expects them. Worth doing:
-- [ ] Hit the deployed backend's `/health` endpoint and check `firebase_configured` / `spotify_configured` / `ai_cleanup_configured`
-- [ ] Confirm sign-in actually works on the deployed frontend (validates the `VITE_FIREBASE_*` vars)
-- [ ] Do a real test purchase in Stripe test mode to confirm billing end-to-end
+This session's network access was restricted for most of this work (couldn't reach any external site, including the production backend); that got fixed 2026-09-14 by switching the environment to full network access, so the checks below could finally run for real:
+- [x] Hit the deployed backend's `/health` endpoint — confirmed `firebase_configured: true`, `spotify_configured: true`, `ai_cleanup_configured: false`.
+- [x] Confirmed the deployed frontend (`music-app-sage-sigma.vercel.app`) is reachable (HTTP 200) — but reachability isn't the same as a verified working sign-in flow; still worth actually signing in once to be sure the `VITE_FIREBASE_*` vars are correct, not just present.
+- [ ] Do a real test purchase in Stripe test mode to confirm billing end-to-end — still open, `/health` has no field for Stripe config status.
 
 ## Other loose ends noticed while working in this repo
 
