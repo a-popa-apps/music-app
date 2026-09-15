@@ -42,7 +42,9 @@ from .detect_bpm import warm_up
 from .email_service import send_email
 from .email_templates import (
     new_feedback_email_html,
+    password_changed_email_html,
     password_reset_email_html,
+    usage_limit_warning_email_html,
     verification_email_html,
     welcome_email_html,
 )
@@ -51,6 +53,7 @@ from .feedback_summary import generate_feedback_summary
 from .history_store import add_history_entries, clear_history, list_history
 from .process_audio import MAX_FILES_FREE, MAX_FILES_PRO, build_zip, validate_files
 from .profile_store import (
+    FREE_MONTHLY_TRACK_LIMIT,
     check_and_reserve_usage,
     delete_settings,
     get_settings,
@@ -356,6 +359,32 @@ def send_welcome_email(body: WelcomeEmailRequest, request: Request):
     return {"sent": sent}
 
 
+class PasswordChangedRequest(BaseModel):
+    email: str
+
+
+@app.post("/auth/password-changed-notice")
+def password_changed_notice(body: PasswordChangedRequest, request: Request):
+    """Public and unauthenticated by nature -- called by AuthActionPage
+    right after a password reset succeeds via the Firebase client SDK,
+    which the backend has no direct visibility into. Same exposure as
+    /auth/forgot-password: rate-limited by IP, no stronger proof a reset
+    just happened, and always returns the same response either way. A
+    false positive here is a mildly annoying email, not a security hole --
+    same bar the app already accepts for forgot-password."""
+    enforce_rate_limit(request, max_requests=MAX_REQUESTS_FREE)
+
+    user = get_user_by_email(body.email)
+    if user is not None:
+        send_email(
+            user.email,
+            "Your CratePrep password was changed",
+            password_changed_email_html(f"{_frontend_base_url(request)}/auth"),
+        )
+
+    return {"sent": True}
+
+
 class CheckoutRequest(BaseModel):
     billing_cycle: str
 
@@ -556,9 +585,20 @@ async def process(request: Request, files: list[UploadFile] = File(...)):
     try:
         # Reuse the settings already fetched above (when available) instead
         # of check_and_reserve_usage reading the same document a second time.
-        check_and_reserve_usage(uid, len(files), plan, settings=settings)
+        tracks_used, should_warn_usage = check_and_reserve_usage(uid, len(files), plan, settings=settings)
     except ValueError as e:
         raise HTTPException(402, str(e))
+
+    if should_warn_usage:
+        user = get_user_record(uid)
+        if user and user.email:
+            send_email(
+                user.email,
+                "You're close to your CratePrep Free plan limit",
+                usage_limit_warning_email_html(
+                    tracks_used, FREE_MONTHLY_TRACK_LIMIT, f"{_frontend_base_url(request)}/pricing"
+                ),
+            )
 
     zip_bytes, manifest = await build_zip(
         files,

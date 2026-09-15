@@ -44,6 +44,21 @@ export async function sendWelcomeEmail(email: string): Promise<void> {
   }
 }
 
+// Best-effort -- called right after a password reset succeeds. Never
+// throws: this is a courtesy security notice, not something that should
+// block or alarm someone who just successfully reset their password.
+export async function notifyPasswordChanged(email: string): Promise<void> {
+  try {
+    await fetch(`${BACKEND_URL}/auth/password-changed-notice`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    })
+  } catch {
+    // ignore
+  }
+}
+
 export interface ProfileSettings {
   name: string
   country: string

@@ -8,7 +8,11 @@ from firebase_admin import auth as firebase_auth
 
 from .auth import get_app
 from .email_service import send_email
-from .email_templates import payment_failed_email_html
+from .email_templates import (
+    payment_failed_email_html,
+    subscription_canceled_email_html,
+    subscription_started_email_html,
+)
 from .profile_store import _users_collection, get_settings
 
 REVENUE_WINDOW_DAYS = 30
@@ -208,6 +212,8 @@ def handle_webhook_event(payload: bytes, sig_header: str) -> None:
         if not uid:
             return
 
+        was_pro_already = get_settings(uid).get("plan") == "pro"
+
         subscription_id = data.get("subscription")
         status = "active"
         if subscription_id:
@@ -224,16 +230,54 @@ def handle_webhook_event(payload: bytes, sig_header: str) -> None:
             merge=True,
         )
 
+        # Guards against a retried webhook delivery re-sending this on an
+        # already-Pro account -- checkout.session.completed should only
+        # ever fire once per new subscription, but Stripe retries on any
+        # non-2xx response.
+        if not was_pro_already and _plan_for_status(status) == "pro":
+            email = _user_email(uid)
+            if email:
+                send_email(
+                    email,
+                    "You're on CratePrep Pro!",
+                    subscription_started_email_html(
+                        TRIAL_DAYS if status == "trialing" else None, f"{FRONTEND_URL}/profile"
+                    ),
+                )
+
     elif event_type in ("customer.subscription.updated", "customer.subscription.deleted"):
         uid = data.get("metadata", {}).get("uid") or _uid_from_customer(client, data.get("customer"))
         if not uid:
             return
+
+        # Only relevant (and only fetched) for a deleted subscription --
+        # guards against a retried webhook delivery re-sending the
+        # cancellation email for a subscription that's already canceled.
+        previously_canceled = (
+            event_type == "customer.subscription.deleted"
+            and get_settings(uid).get("subscription_status") == "canceled"
+        )
 
         status = "canceled" if event_type == "customer.subscription.deleted" else data.get("status")
         _users_collection().document(uid).set(
             {"plan": _plan_for_status(status), "subscription_status": status},
             merge=True,
         )
+
+        if event_type == "customer.subscription.deleted":
+            # Skip the "sorry to see you go" email when the dunning process
+            # (repeated failed payments), not a deliberate cancellation, is
+            # what ended the subscription -- those users already got the
+            # payment-failed email and know why.
+            cancellation_reason = (data.get("cancellation_details") or {}).get("reason")
+            if not previously_canceled and cancellation_reason != "payment_failed":
+                email = _user_email(uid)
+                if email:
+                    send_email(
+                        email,
+                        "Your CratePrep Pro subscription has ended",
+                        subscription_canceled_email_html(f"{FRONTEND_URL}/pricing"),
+                    )
 
         # Only on the transition *into* a failed-payment state -- not on
         # every subsequent webhook delivery while already there (Stripe

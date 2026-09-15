@@ -135,6 +135,129 @@ def test_webhook_subscription_deleted_reverts_to_free(fake_users, fake_stripe):
     assert settings["subscription_status"] == "canceled"
 
 
+def test_webhook_checkout_completed_sends_subscription_started_email(fake_users, fake_stripe, monkeypatch):
+    subscription = MagicMock(status="active")
+    subscription.to_dict.return_value = {"status": "active"}
+    fake_stripe.Subscription.retrieve.return_value = subscription
+    sent = []
+    monkeypatch.setattr(billing, "send_email", lambda to, subject, html: sent.append((to, subject, html)) or True)
+    fake_stripe.Webhook.construct_event.return_value = {
+        "type": "checkout.session.completed",
+        "data": {
+            "object": _stripe_obj(
+                {"metadata": {"uid": "uid-1"}, "customer": "cus_123", "subscription": "sub_123"}
+            )
+        },
+    }
+
+    billing.handle_webhook_event(b"payload", "sig")
+
+    assert len(sent) == 1
+    assert sent[0][0] == "test@example.com"
+    assert "Pro" in sent[0][1]
+    assert "trial" not in sent[0][2].lower()
+
+
+def test_webhook_checkout_completed_mentions_trial_when_trialing(fake_users, fake_stripe, monkeypatch):
+    subscription = MagicMock(status="trialing")
+    subscription.to_dict.return_value = {"status": "trialing"}
+    fake_stripe.Subscription.retrieve.return_value = subscription
+    sent = []
+    monkeypatch.setattr(billing, "send_email", lambda to, subject, html: sent.append(html) or True)
+    fake_stripe.Webhook.construct_event.return_value = {
+        "type": "checkout.session.completed",
+        "data": {
+            "object": _stripe_obj(
+                {"metadata": {"uid": "uid-1"}, "customer": "cus_123", "subscription": "sub_123"}
+            )
+        },
+    }
+
+    billing.handle_webhook_event(b"payload", "sig")
+
+    assert len(sent) == 1
+    assert "trial" in sent[0].lower()
+
+
+def test_webhook_checkout_completed_does_not_resend_when_already_pro(fake_users, fake_stripe, monkeypatch):
+    # A retried webhook delivery for a checkout that already activated Pro
+    # shouldn't re-send the "welcome to Pro" email.
+    fake_users.document("uid-1").set({"plan": "pro", "subscription_status": "active"}, merge=True)
+    subscription = MagicMock(status="active")
+    subscription.to_dict.return_value = {"status": "active"}
+    fake_stripe.Subscription.retrieve.return_value = subscription
+    sent = []
+    monkeypatch.setattr(billing, "send_email", lambda *a, **k: sent.append(1) or True)
+    fake_stripe.Webhook.construct_event.return_value = {
+        "type": "checkout.session.completed",
+        "data": {
+            "object": _stripe_obj(
+                {"metadata": {"uid": "uid-1"}, "customer": "cus_123", "subscription": "sub_123"}
+            )
+        },
+    }
+
+    billing.handle_webhook_event(b"payload", "sig")
+
+    assert sent == []
+
+
+def test_webhook_subscription_deleted_sends_cancellation_email(fake_users, fake_stripe, monkeypatch):
+    fake_users.document("uid-1").set({"plan": "pro", "subscription_status": "active"}, merge=True)
+    sent = []
+    monkeypatch.setattr(billing, "send_email", lambda to, subject, html: sent.append((to, subject)) or True)
+    fake_stripe.Webhook.construct_event.return_value = {
+        "type": "customer.subscription.deleted",
+        "data": {"object": _stripe_obj({"metadata": {"uid": "uid-1"}, "customer": "cus_123"})},
+    }
+
+    billing.handle_webhook_event(b"payload", "sig")
+
+    assert len(sent) == 1
+    assert sent[0][0] == "test@example.com"
+    assert "ended" in sent[0][1].lower()
+
+
+def test_webhook_subscription_deleted_skips_cancellation_email_on_payment_failure(
+    fake_users, fake_stripe, monkeypatch
+):
+    fake_users.document("uid-1").set({"plan": "pro", "subscription_status": "past_due"}, merge=True)
+    sent = []
+    monkeypatch.setattr(billing, "send_email", lambda *a, **k: sent.append(1) or True)
+    fake_stripe.Webhook.construct_event.return_value = {
+        "type": "customer.subscription.deleted",
+        "data": {
+            "object": _stripe_obj(
+                {
+                    "metadata": {"uid": "uid-1"},
+                    "customer": "cus_123",
+                    "cancellation_details": {"reason": "payment_failed"},
+                }
+            )
+        },
+    }
+
+    billing.handle_webhook_event(b"payload", "sig")
+
+    assert sent == []
+
+
+def test_webhook_subscription_deleted_does_not_resend_cancellation_email_when_already_canceled(
+    fake_users, fake_stripe, monkeypatch
+):
+    fake_users.document("uid-1").set({"plan": "free", "subscription_status": "canceled"}, merge=True)
+    sent = []
+    monkeypatch.setattr(billing, "send_email", lambda *a, **k: sent.append(1) or True)
+    fake_stripe.Webhook.construct_event.return_value = {
+        "type": "customer.subscription.deleted",
+        "data": {"object": _stripe_obj({"metadata": {"uid": "uid-1"}, "customer": "cus_123"})},
+    }
+
+    billing.handle_webhook_event(b"payload", "sig")
+
+    assert sent == []
+
+
 def test_webhook_falls_back_to_customer_lookup_for_uid(fake_users, fake_stripe):
     fake_stripe.Customer.retrieve.return_value = _stripe_obj({"metadata": {"uid": "uid-2"}})
     fake_stripe.Webhook.construct_event.return_value = {
@@ -195,9 +318,12 @@ def test_webhook_does_not_resend_payment_failed_email_while_already_past_due(
 def test_webhook_does_not_send_payment_failed_email_on_deliberate_cancellation(
     fake_users, fake_stripe, monkeypatch
 ):
+    # A deliberate cancellation still sends the cancellation-confirmation
+    # email (see test_webhook_subscription_deleted_sends_cancellation_email)
+    # -- this test only guards against the *payment-failed* email firing too.
     fake_users.document("uid-1").set({"plan": "pro", "subscription_status": "active"}, merge=True)
     sent = []
-    monkeypatch.setattr(billing, "send_email", lambda *a, **k: sent.append(1) or True)
+    monkeypatch.setattr(billing, "send_email", lambda to, subject, html: sent.append(subject) or True)
     fake_stripe.Webhook.construct_event.return_value = {
         "type": "customer.subscription.deleted",
         "data": {"object": _stripe_obj({"metadata": {"uid": "uid-1"}, "customer": "cus_123"})},
@@ -205,7 +331,7 @@ def test_webhook_does_not_send_payment_failed_email_on_deliberate_cancellation(
 
     billing.handle_webhook_event(b"payload", "sig")
 
-    assert sent == []
+    assert sent == ["Your CratePrep Pro subscription has ended"]
 
 
 def test_webhook_skips_payment_failed_email_when_no_email_on_file(fake_users, fake_stripe, monkeypatch):

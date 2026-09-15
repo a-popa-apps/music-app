@@ -8,6 +8,10 @@ from .auth import get_app
 
 FREE_MONTHLY_TRACK_LIMIT = 10
 
+# 80% of the monthly limit -- a heads-up before someone hits the wall
+# outright, with enough runway left to actually act on it.
+USAGE_WARNING_THRESHOLD = round(FREE_MONTHLY_TRACK_LIMIT * 0.8)
+
 VALID_ROLES = {"dj", "producer", "dj_producer", "enthusiast"}
 VALID_GENRES = {
     "Electronic music",
@@ -37,6 +41,7 @@ DEFAULT_SETTINGS = {
     "tracks_processed_this_period": 0,
     "usage_period_start": None,
     "welcome_email_sent": False,
+    "usage_warning_period": None,
 }
 
 # Not user-editable via the regular PUT /profile endpoint -- "plan" and the
@@ -54,6 +59,7 @@ READ_ONLY_FIELDS = {
     "tracks_processed_this_period",
     "usage_period_start",
     "welcome_email_sent",
+    "usage_warning_period",
 }
 
 
@@ -104,31 +110,42 @@ def _current_period_key() -> str:
 
 def check_and_reserve_usage(
     uid: str, file_count: int, plan: str, settings: dict | None = None
-) -> None:
+) -> tuple[int, bool]:
     """Enforces the Free plan's monthly track quota. Pro is unlimited here
     (still bounded by the per-batch MAX_FILES_PRO cap elsewhere). Raises
     ValueError if this batch would exceed the quota; otherwise reserves the
     capacity by incrementing the counter, resetting it first if the
     calendar month has rolled over since the last reserved batch.
 
+    Returns (tracks_used_after_this_batch, should_send_usage_warning) --
+    should_send_usage_warning is True the first time usage reaches
+    USAGE_WARNING_THRESHOLD within a billing period (never True twice for
+    the same period). Pro always returns (0, False).
+
     Pass `settings` when the caller already fetched this user's settings
     (e.g. /process already needs plan/filename_template from it) to avoid
     reading the same document twice in one request; fetches its own
     otherwise."""
     if plan == "pro":
-        return
+        return 0, False
 
     settings = settings if settings is not None else get_settings(uid)
     period = _current_period_key()
     used = settings["tracks_processed_this_period"] if settings["usage_period_start"] == period else 0
+    new_used = used + file_count
 
-    if used + file_count > FREE_MONTHLY_TRACK_LIMIT:
+    if new_used > FREE_MONTHLY_TRACK_LIMIT:
         raise ValueError(
             f"Monthly Free plan limit reached ({used}/{FREE_MONTHLY_TRACK_LIMIT} tracks used). "
             "Upgrade to Pro for more."
         )
 
-    _users_collection().document(uid).set(
-        {"tracks_processed_this_period": used + file_count, "usage_period_start": period},
-        merge=True,
-    )
+    warning_already_sent = settings.get("usage_warning_period") == period
+    should_warn = new_used >= USAGE_WARNING_THRESHOLD and not warning_already_sent
+
+    update = {"tracks_processed_this_period": new_used, "usage_period_start": period}
+    if should_warn:
+        update["usage_warning_period"] = period
+    _users_collection().document(uid).set(update, merge=True)
+
+    return new_used, should_warn

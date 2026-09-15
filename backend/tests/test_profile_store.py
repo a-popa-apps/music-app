@@ -65,19 +65,49 @@ def test_delete_settings_removes_doc(fake_collection):
 
 
 def test_check_and_reserve_usage_pro_is_unlimited(fake_collection):
-    profile_store.check_and_reserve_usage("uid-1", 999, "pro")
+    used, should_warn = profile_store.check_and_reserve_usage("uid-1", 999, "pro")
+    assert (used, should_warn) == (0, False)
     # no-op: doesn't even create a doc
     assert profile_store.get_settings("uid-1") == profile_store.DEFAULT_SETTINGS
 
 
 def test_check_and_reserve_usage_free_tracks_usage(fake_collection):
-    profile_store.check_and_reserve_usage("uid-1", 6, "free")
+    used, should_warn = profile_store.check_and_reserve_usage("uid-1", 6, "free")
+    assert used == 6
+    assert should_warn is False  # below USAGE_WARNING_THRESHOLD (8)
     settings = profile_store.get_settings("uid-1")
     assert settings["tracks_processed_this_period"] == 6
     assert settings["usage_period_start"] == profile_store._current_period_key()
 
-    profile_store.check_and_reserve_usage("uid-1", 4, "free")
+    used, _ = profile_store.check_and_reserve_usage("uid-1", 4, "free")
+    assert used == 10
     assert profile_store.get_settings("uid-1")["tracks_processed_this_period"] == 10
+
+
+def test_check_and_reserve_usage_warns_once_when_crossing_threshold(fake_collection):
+    used, should_warn = profile_store.check_and_reserve_usage("uid-1", 8, "free")
+    assert used == 8
+    assert should_warn is True
+    period = profile_store._current_period_key()
+    assert profile_store.get_settings("uid-1")["usage_warning_period"] == period
+
+    # already warned this period -- doesn't fire again on the next batch
+    used, should_warn = profile_store.check_and_reserve_usage("uid-1", 1, "free")
+    assert used == 9
+    assert should_warn is False
+
+
+def test_check_and_reserve_usage_warns_again_next_period(fake_collection):
+    profile_store.check_and_reserve_usage("uid-1", 8, "free")
+    # Simulate a new billing period rolling over -- both the usage counter
+    # and the warning flag are period-scoped, so both reset.
+    fake_collection.document("uid-1").set(
+        {"usage_period_start": "2000-01", "usage_warning_period": "2000-01"}, merge=True
+    )
+
+    used, should_warn = profile_store.check_and_reserve_usage("uid-1", 8, "free")
+    assert used == 8
+    assert should_warn is True
 
 
 def test_check_and_reserve_usage_free_rejects_over_limit(fake_collection):

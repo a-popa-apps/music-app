@@ -94,6 +94,72 @@ def welcome_email_html(app_url: str) -> str:
     )
 
 
+def subscription_started_email_html(trial_days: int | None, manage_billing_url: str) -> str:
+    if trial_days:
+        body_html = (
+            f"Your {trial_days}-day free trial of CratePrep Pro has started -- "
+            "unlimited tracks, AI set ordering, and saved templates are all "
+            "unlocked right now. You won't be charged until the trial ends, "
+            "and you can cancel anytime before then."
+        )
+    else:
+        body_html = (
+            "You're all set. Unlimited tracks, AI set ordering, and saved "
+            "templates are unlocked on your account."
+        )
+    return _base_email(
+        preheader="Your CratePrep Pro subscription is active.",
+        heading="Welcome to CratePrep Pro",
+        body_html=body_html,
+        button_text="Manage Billing",
+        button_url=manage_billing_url,
+    )
+
+
+def subscription_canceled_email_html(resubscribe_url: str) -> str:
+    return _base_email(
+        preheader="Your CratePrep Pro subscription has ended.",
+        heading="Subscription canceled",
+        body_html=(
+            "Your CratePrep Pro subscription has ended, and your account is "
+            "now on the Free plan (10 tracks a month). Your saved templates "
+            "and history are still there if you resubscribe."
+        ),
+        button_text="Resubscribe",
+        button_url=resubscribe_url,
+    )
+
+
+def usage_limit_warning_email_html(tracks_used: int, tracks_limit: int, upgrade_url: str) -> str:
+    return _base_email(
+        preheader=f"You've used {tracks_used} of {tracks_limit} free tracks this month.",
+        heading="Almost at your monthly limit",
+        body_html=(
+            f"You've processed {tracks_used} of your {tracks_limit} free "
+            "tracks this month. Upgrade to Pro for unlimited tracks, AI set "
+            "ordering, and saved templates -- or your limit resets at the "
+            "start of next month."
+        ),
+        button_text="Upgrade to Pro",
+        button_url=upgrade_url,
+    )
+
+
+def password_changed_email_html(reset_url: str) -> str:
+    return _base_email(
+        preheader="Your CratePrep password was just changed.",
+        heading="Your password was changed",
+        body_html=(
+            "This confirms your CratePrep account password was just "
+            "changed. If this was you, no action is needed. If you didn't "
+            "make this change, secure your account immediately by "
+            "resetting your password again."
+        ),
+        button_text="Reset Password",
+        button_url=reset_url,
+    )
+
+
 def payment_failed_email_html(manage_billing_url: str) -> str:
     return _base_email(
         preheader="We couldn't process your CratePrep Pro payment.",

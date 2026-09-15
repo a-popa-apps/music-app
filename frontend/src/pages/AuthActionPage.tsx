@@ -8,7 +8,7 @@ import { useEffect, useState } from "react"
 import { useNavigate, useSearchParams } from "react-router-dom"
 import { Header } from "../components/Header"
 import { auth } from "../firebase"
-import { sendWelcomeEmail } from "../services/api"
+import { notifyPasswordChanged, sendWelcomeEmail } from "../services/api"
 import { checkPwnedPassword } from "../utils/checkPwnedPassword"
 
 const REDIRECT_DELAY_SECONDS = 4
@@ -111,6 +111,7 @@ export function AuthActionPage() {
         return
       }
       await confirmPasswordReset(auth, oobCode!, newPassword)
+      if (resetEmail) void notifyPasswordChanged(resetEmail)
       setStatus("reset-success")
     } catch {
       setResetError("Couldn't reset your password. The link may have expired -- try again.")

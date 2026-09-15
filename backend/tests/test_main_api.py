@@ -445,6 +445,54 @@ def test_process_rejects_unsupported_extension(client, monkeypatch):
     assert res.status_code == 400
 
 
+def test_process_sends_usage_warning_email_when_threshold_crossed(client, monkeypatch):
+    monkeypatch.setattr(main, "get_current_user", lambda request: "uid-1")
+    monkeypatch.setattr(
+        main,
+        "get_settings",
+        lambda uid: {"plan": "free", "discogs_deep_search": False, "filename_template": None},
+    )
+    monkeypatch.setattr(main, "check_and_reserve_usage", lambda uid, count, plan, settings=None: (8, True))
+    monkeypatch.setattr(
+        main, "get_user_record", lambda uid: SimpleNamespace(email="dj@example.com", email_verified=True)
+    )
+    monkeypatch.setattr(main, "build_zip", _fake_build_zip)
+    captured = {}
+    monkeypatch.setattr(
+        main, "send_email", lambda to, subject, html: captured.update(to=to, subject=subject) or True
+    )
+
+    res = client.post(
+        "/process",
+        files=[("files", ("track.mp3", b"fake audio", "audio/mpeg"))],
+    )
+
+    assert res.status_code == 200
+    assert captured["to"] == "dj@example.com"
+    assert "limit" in captured["subject"].lower()
+
+
+def test_process_does_not_send_usage_warning_when_not_flagged(client, monkeypatch):
+    monkeypatch.setattr(main, "get_current_user", lambda request: "uid-1")
+    monkeypatch.setattr(
+        main,
+        "get_settings",
+        lambda uid: {"plan": "free", "discogs_deep_search": False, "filename_template": None},
+    )
+    monkeypatch.setattr(main, "check_and_reserve_usage", lambda uid, count, plan, settings=None: (3, False))
+    monkeypatch.setattr(main, "build_zip", _fake_build_zip)
+    sent = []
+    monkeypatch.setattr(main, "send_email", lambda *a, **k: sent.append(1) or True)
+
+    res = client.post(
+        "/process",
+        files=[("files", ("track.mp3", b"fake audio", "audio/mpeg"))],
+    )
+
+    assert res.status_code == 200
+    assert sent == []
+
+
 def _fake_file(name="track.mp3", size=1000):
     return SimpleNamespace(filename=name, size=size)
 
@@ -637,3 +685,34 @@ def test_welcome_email_does_not_mark_sent_when_delivery_fails(client, monkeypatc
     assert res.status_code == 200
     assert res.json() == {"sent": False}
     assert marked == []
+
+
+def test_password_changed_notice_sends_when_account_exists(client, monkeypatch):
+    monkeypatch.setattr(
+        main, "get_user_by_email", lambda email: SimpleNamespace(uid="uid-1", email="dj@example.com")
+    )
+    captured = {}
+    monkeypatch.setattr(
+        main, "send_email", lambda to, subject, html: captured.update(to=to, subject=subject) or True
+    )
+
+    res = client.post("/auth/password-changed-notice", json={"email": "dj@example.com"})
+
+    assert res.status_code == 200
+    assert res.json() == {"sent": True}
+    assert captured["to"] == "dj@example.com"
+    assert "changed" in captured["subject"].lower()
+
+
+def test_password_changed_notice_always_returns_sent_true(client, monkeypatch):
+    # Same enumeration-safety guarantee as forgot-password: whether or not
+    # the account exists, the response looks identical.
+    monkeypatch.setattr(main, "get_user_by_email", lambda email: None)
+    sent = []
+    monkeypatch.setattr(main, "send_email", lambda *a, **k: sent.append(1) or True)
+
+    res = client.post("/auth/password-changed-notice", json={"email": "nobody@example.com"})
+
+    assert res.status_code == 200
+    assert res.json() == {"sent": True}
+    assert sent == []
