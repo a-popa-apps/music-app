@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react"
-import { Link, useLocation } from "react-router-dom"
+import { Link, useLocation, useNavigate } from "react-router-dom"
 import { AccountMenu } from "./AccountMenu"
 import { useAuth } from "../hooks/useAuth"
 import { useProfile } from "../hooks/useProfile"
+import { createCheckoutSession } from "../services/api"
+import { trackEvent } from "../utils/analytics"
 
 const NAV_LINKS = [
   { label: "How it works", href: "/#how-it-works" },
@@ -27,8 +29,11 @@ export function Header({ dark = false }: { dark?: boolean }) {
   // the anchor link would just scroll to a spot that no longer exists.
   const navLinks = isPro ? NAV_LINKS.filter((link) => link.label !== "Pricing") : NAV_LINKS
   const location = useLocation()
+  const navigate = useNavigate()
   const overHero = dark || (location.pathname === "/" && !scrolled)
   const headerRef = useRef<HTMLElement>(null)
+  const [activeSection, setActiveSection] = useState<string | null>(null)
+  const [goProLoading, setGoProLoading] = useState(false)
 
   useEffect(() => {
     function handleScroll() {
@@ -38,6 +43,52 @@ export function Header({ dark = false }: { dark?: boolean }) {
     window.addEventListener("scroll", handleScroll, { passive: true })
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
+
+  // Highlights the nav link for whichever section currently sits just below
+  // the fixed header, so the nav reflects where you actually are on the
+  // page instead of staying static the whole scroll.
+  useEffect(() => {
+    if (location.pathname !== "/") {
+      setActiveSection(null)
+      return
+    }
+
+    const sectionIds = ["how-it-works", "features", "pricing", "faq"]
+    const elements = sectionIds
+      .map((id) => document.getElementById(id))
+      .filter((el): el is HTMLElement => el !== null)
+    if (elements.length === 0) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries.filter((entry) => entry.isIntersecting)
+        if (visible.length === 0) return
+        const topMost = visible.reduce((a, b) =>
+          a.boundingClientRect.top < b.boundingClientRect.top ? a : b
+        )
+        setActiveSection(topMost.target.id)
+      },
+      { rootMargin: "-80px 0px -70% 0px", threshold: 0 }
+    )
+    elements.forEach((el) => observer.observe(el))
+    return () => observer.disconnect()
+  }, [location.pathname])
+
+  async function handleGoPro() {
+    if (!user || !isVerified) {
+      navigate("/auth")
+      return
+    }
+    setGoProLoading(true)
+    try {
+      const token = await user.getIdToken()
+      trackEvent("begin_checkout", { billing_cycle: "annual", source: "header" })
+      const url = await createCheckoutSession(token, "annual")
+      window.location.href = url
+    } catch {
+      setGoProLoading(false)
+    }
+  }
 
   // Close the mobile menu on an outside tap/click or on scroll, matching
   // the usual dropdown-menu convention (nothing else on this page does
@@ -80,44 +131,68 @@ export function Header({ dark = false }: { dark?: boolean }) {
           >
             crateprep.
           </span>
+          <span className="rounded bg-white/10 px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-secondary-container">
+            Pro
+          </span>
         </Link>
-        <nav className="hidden items-center gap-8 md:flex">
-          {navLinks.map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
-              className={`text-body-md transition-colors ${
-                overHero
-                  ? "text-white/80 hover:text-white"
-                  : "text-on-surface-variant hover:text-on-surface"
-              }`}
-            >
-              {link.label}
-            </a>
-          ))}
+        <nav className="hidden items-center gap-2 md:flex">
+          {navLinks.map((link) => {
+            const isActive = activeSection !== null && link.href === `/#${activeSection}`
+            return (
+              <a
+                key={link.href}
+                href={link.href}
+                className={`rounded-full px-4 py-2 text-body-md transition-colors ${
+                  isActive
+                    ? overHero
+                      ? "bg-white/10 text-white"
+                      : "bg-surface-container-low text-on-surface"
+                    : overHero
+                      ? "text-white/80 hover:text-white"
+                      : "text-on-surface-variant hover:text-on-surface"
+                }`}
+              >
+                {link.label}
+              </a>
+            )
+          })}
         </nav>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           {loading ? (
             <div
               className={`h-9 w-20 animate-pulse rounded-full ${
                 overHero ? "bg-white/15" : "bg-surface-container-low"
               }`}
             />
-          ) : loggedIn ? (
-            <div className="hidden md:block">
-              <AccountMenu profile={profile} />
-            </div>
           ) : (
-            <Link
-              to="/auth"
-              className={`inline-flex items-center justify-center rounded-full px-6 py-2 text-body-sm font-semibold transition-all ${
-                overHero
-                  ? "border border-white/30 bg-white/15 text-white backdrop-blur-sm hover:bg-white/25"
-                  : "bg-primary text-on-primary hover:bg-inverse-surface"
-              }`}
-            >
-              Sign In
-            </Link>
+            <>
+              {!loggedIn && (
+                <Link
+                  to="/auth"
+                  className={`text-body-sm font-semibold transition-colors ${
+                    overHero
+                      ? "text-white/80 hover:text-white"
+                      : "text-on-surface-variant hover:text-on-surface"
+                  }`}
+                >
+                  Sign In
+                </Link>
+              )}
+              {loggedIn && (
+                <div className="hidden md:block">
+                  <AccountMenu profile={profile} />
+                </div>
+              )}
+              {!isPro && (
+                <button
+                  onClick={handleGoPro}
+                  disabled={goProLoading}
+                  className="hidden items-center justify-center rounded-full bg-secondary-container px-6 py-2 text-body-sm font-semibold text-on-secondary-container shadow-[0_4px_16px_rgba(255,107,53,0.4)] transition-transform hover:scale-[1.03] active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 md:inline-flex"
+                >
+                  {goProLoading ? "Loading..." : "Go Pro"}
+                </button>
+              )}
+            </>
           )}
           <button
             onClick={() => setMenuOpen((open) => !open)}
