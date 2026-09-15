@@ -39,7 +39,11 @@ from .billing import (
 )
 from .detect_bpm import warm_up
 from .email_service import send_email
-from .email_templates import password_reset_email_html, verification_email_html
+from .email_templates import (
+    new_feedback_email_html,
+    password_reset_email_html,
+    verification_email_html,
+)
 from .feedback_store import create_feedback, list_feedback, mark_feedback_read
 from .feedback_summary import generate_feedback_summary
 from .history_store import add_history_entries, clear_history, list_history
@@ -405,11 +409,22 @@ def submit_feedback(body: FeedbackCreate, request: Request):
         }
 
     try:
-        return create_feedback(
+        doc = create_feedback(
             body.category, body.message, email=body.email, subject=body.subject, uid=uid
         )
     except ValueError as e:
         raise HTTPException(400, str(e))
+
+    admin_emails = os.environ.get("ADMIN_EMAIL", "")
+    if admin_emails:
+        admin_url = f"{_frontend_base_url(request)}/admin"
+        html = new_feedback_email_html(body.category, body.subject, body.message, body.email, admin_url)
+        for admin_email in admin_emails.split(","):
+            admin_email = admin_email.strip()
+            if admin_email:
+                send_email(admin_email, f"New CratePrep {body.category}", html)
+
+    return doc
 
 
 @app.get("/profile")

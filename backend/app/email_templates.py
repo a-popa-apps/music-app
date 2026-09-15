@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import html
+
 # Colors pulled directly from the frontend's own design tokens
 # (frontend/src/index.css) so these emails actually look like CratePrep
 # rather than a generic transactional-email template.
@@ -89,6 +91,35 @@ def payment_failed_email_html(manage_billing_url: str) -> str:
         ),
         button_text="Update Payment Method",
         button_url=manage_billing_url,
+    )
+
+
+def new_feedback_email_html(
+    category: str,
+    subject: str | None,
+    message: str,
+    submitter_email: str | None,
+    admin_url: str,
+) -> str:
+    # subject/message/submitter_email are user-submitted -- escape before
+    # embedding, same reason any other app would escape untrusted input
+    # into HTML. An email client is a lower-severity target than a browser,
+    # but there's no reason to skip it: a submission is free-form text a
+    # stranger controls, up to and including a fake "unsubscribe" link or
+    # markup that breaks the layout.
+    label = "support request" if category == "support" else "feedback"
+    lines = [f"<strong>From:</strong> {html.escape(submitter_email) if submitter_email else 'anonymous'}"]
+    if subject:
+        lines.append(f"<strong>Subject:</strong> {html.escape(subject)}")
+    escaped_message = html.escape(message).replace("\n", "<br />")
+    lines.append(f"<br />{escaped_message}")
+
+    return _base_email(
+        preheader=f"New {label} submitted on CratePrep.",
+        heading=f"New {label}",
+        body_html="<br />".join(lines),
+        button_text="View in Admin",
+        button_url=admin_url,
     )
 
 
