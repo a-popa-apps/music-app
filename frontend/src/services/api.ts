@@ -376,6 +376,50 @@ export async function uploadAndProcess(files: File[], idToken?: string): Promise
   return response.blob()
 }
 
+export interface TrackCorrection {
+  artist: string | null
+  title: string | null
+  genre: string | null
+  bpm: number | null
+  camelot: string | null
+  tonality: string | null
+  energy: number | null
+  duration_seconds: number | null
+}
+
+// Re-tags an already-processed batch with corrected values -- doesn't
+// spend any more of the caller's monthly quota, matching the backend's
+// own no-quota-check-here design (this fixes what gets written, it
+// doesn't process a new batch).
+export async function retagFiles(
+  files: File[],
+  corrections: TrackCorrection[],
+  idToken?: string
+): Promise<Blob> {
+  const formData = new FormData()
+  files.forEach((file) => formData.append("files", file))
+  formData.append("corrections", JSON.stringify(corrections))
+
+  const response = await fetch(`${BACKEND_URL}/process/retag`, {
+    method: "POST",
+    headers: idToken ? { Authorization: `Bearer ${idToken}` } : undefined,
+    body: formData,
+  })
+
+  if (!response.ok) {
+    let message = `Re-tagging failed: ${response.status}`
+    try {
+      const body = await response.json()
+      if (typeof body?.detail === "string") message = body.detail
+    } catch {
+      // non-JSON error body, fall back to the generic message
+    }
+    throw new ApiError(response.status, message)
+  }
+
+  return response.blob()
+}
+
 export interface FeedbackSubmission {
   feedback_id: string
   category: "support" | "feedback"

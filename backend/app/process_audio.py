@@ -294,6 +294,93 @@ async def _analyze_one(
             gc.collect()
 
 
+async def build_corrected_zip(
+    files: list[UploadFile],
+    corrections: list[dict],
+    filename_template: str | None = None,
+) -> bytes:
+    """Re-tags an already-processed batch with user-supplied final values
+    instead of running detection again -- used when someone corrects a
+    wrong artist/title/genre/BPM in the results table before downloading.
+    `corrections` is positional (one dict per file, same order as
+    `files`), each with the same shape as a manifest entry from
+    build_zip: artist/title/genre/bpm/camelot/tonality/energy/
+    duration_seconds -- callers should pass through every field for a
+    track even if only correcting one of them, or the others silently
+    disappear from the result (energy has no detection fallback here,
+    unlike build_zip). No usage-quota check here -- these are files the
+    caller already spent their quota processing once; this only fixes
+    what gets written. One file's failure doesn't lose the rest of the
+    batch, mirroring build_zip's own resilience."""
+    buffer = io.BytesIO()
+    seen_names: set[str] = set()
+    playlist_tracks: list[tuple[str, float | None]] = []
+    manifest = {}
+
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+        for file, correction in zip(files, corrections):
+            original_name = file.filename or "track"
+            try:
+                content = await file.read()
+                stem, ext, version_tag = prepare_stem(original_name)
+
+                artist = correction.get("artist")
+                title = correction.get("title")
+                genre = correction.get("genre")
+                bpm = correction.get("bpm")
+                camelot = correction.get("camelot")
+                tonality = correction.get("tonality")
+                energy = correction.get("energy")
+                duration = correction.get("duration_seconds")
+
+                final_name = compose_name(
+                    artist,
+                    title,
+                    stem,
+                    version_tag,
+                    ext,
+                    filename_template=filename_template,
+                    bpm=bpm,
+                    key=camelot,
+                    genre=genre,
+                    duration=duration,
+                )
+                name = _dedupe(final_name, seen_names)
+
+                try:
+                    tagged_content = write_tags(
+                        content, ext, bpm=bpm, key_tag=tonality, genre=genre, artist=artist, title=title
+                    )
+                except Exception:
+                    tagged_content = content
+
+                zip_file.writestr(name, tagged_content)
+                manifest[name] = {
+                    "artist": artist,
+                    "title": title,
+                    "genre": genre,
+                    "bpm": bpm,
+                    "camelot": camelot,
+                    "tonality": tonality,
+                    "energy": energy,
+                    "duration_seconds": duration,
+                    "original_filename": original_name,
+                }
+                playlist_tracks.append((name, duration))
+            except Exception as e:
+                name = _dedupe(original_name, seen_names)
+                manifest[name] = {
+                    "error": f"Re-tagging failed: {type(e).__name__}: {e}",
+                    "original_filename": original_name,
+                }
+
+        zip_file.writestr("crateprep-manifest.json", json.dumps(manifest, indent=2))
+        zip_file.writestr("crateprep-playlist.m3u8", build_playlist(playlist_tracks))
+
+    buffer.seek(0)
+    return buffer.read()
+
+
 async def build_zip(
     files: list[UploadFile],
     filename_template: str | None = None,

@@ -1,3 +1,4 @@
+import json
 import os
 import time
 from datetime import datetime, timezone
@@ -5,7 +6,7 @@ from datetime import datetime, timezone
 import essentia.standard as es
 import mutagen
 import sentry_sdk
-from fastapi import FastAPI, File, HTTPException, Request, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from pydantic import BaseModel
@@ -51,7 +52,13 @@ from .email_templates import (
 from .feedback_store import create_feedback, list_feedback, mark_feedback_read
 from .feedback_summary import generate_feedback_summary
 from .history_store import add_history_entries, clear_history, list_history
-from .process_audio import MAX_FILES_FREE, MAX_FILES_PRO, build_zip, validate_files
+from .process_audio import (
+    MAX_FILES_FREE,
+    MAX_FILES_PRO,
+    build_corrected_zip,
+    build_zip,
+    validate_files,
+)
 from .profile_store import (
     FREE_MONTHLY_TRACK_LIMIT,
     check_and_reserve_usage,
@@ -613,6 +620,54 @@ async def process(request: Request, files: list[UploadFile] = File(...)):
     except Exception:
         pass  # don't let a history-write failure block returning the processed zip
 
+    return Response(
+        content=zip_bytes,
+        media_type="application/zip",
+        headers={"Content-Disposition": "attachment; filename=crateprep-export.zip"},
+    )
+
+
+@app.post("/process/retag")
+async def retag_process(
+    request: Request,
+    files: list[UploadFile] = File(...),
+    corrections: str = Form(...),
+):
+    """Re-tags an already-processed batch with corrected artist/title/
+    genre/BPM/key from the results table, without spending any more of
+    the caller's monthly quota -- these are files they already processed
+    once with /process; this only fixes what gets written into them.
+    `corrections` is a JSON-encoded list, one entry per file, same order
+    as `files`."""
+    uid = get_current_user(request)
+
+    filename_template = None
+    plan = "free"
+    if uid:
+        try:
+            settings = get_settings(uid)
+            plan = settings.get("plan", "free")
+            if plan == "pro":
+                filename_template = settings.get("filename_template")
+        except Exception:
+            plan = "free"
+            filename_template = None
+
+    max_requests = MAX_REQUESTS_PRO if plan == "pro" else MAX_REQUESTS_FREE
+    enforce_rate_limit(request, key=uid, max_requests=max_requests)
+
+    max_files = MAX_FILES_PRO if plan == "pro" else MAX_FILES_FREE
+    validate_files(files, max_files=max_files)
+
+    try:
+        corrections_data = json.loads(corrections)
+    except (json.JSONDecodeError, TypeError):
+        raise HTTPException(400, "Invalid corrections payload.")
+
+    if not isinstance(corrections_data, list) or len(corrections_data) != len(files):
+        raise HTTPException(400, "corrections must be a list with one entry per file.")
+
+    zip_bytes = await build_corrected_zip(files, corrections_data, filename_template=filename_template)
     return Response(
         content=zip_bytes,
         media_type="application/zip",

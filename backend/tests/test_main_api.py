@@ -1,3 +1,4 @@
+import json
 from types import SimpleNamespace
 
 import pytest
@@ -702,3 +703,127 @@ def test_password_changed_notice_always_returns_sent_true(client, monkeypatch):
     assert res.status_code == 200
     assert res.json() == {"sent": True}
     assert sent == []
+
+
+async def _fake_build_corrected_zip(files, corrections, filename_template=None):
+    return b"corrected zip bytes"
+
+
+def test_retag_requires_files_field(client):
+    res = client.post("/process/retag", data={"corrections": "[]"})
+    assert res.status_code == 422
+
+
+def test_retag_works_anonymously(client, monkeypatch):
+    monkeypatch.setattr(main, "get_current_user", lambda request: None)
+    monkeypatch.setattr(main, "build_corrected_zip", _fake_build_corrected_zip)
+
+    res = client.post(
+        "/process/retag",
+        files=[("files", ("track.mp3", b"fake audio", "audio/mpeg"))],
+        data={"corrections": json.dumps([{"artist": "A", "title": "B"}])},
+    )
+
+    assert res.status_code == 200
+    assert res.content == b"corrected zip bytes"
+
+
+def test_retag_rejects_unsupported_extension(client, monkeypatch):
+    monkeypatch.setattr(main, "get_current_user", lambda request: None)
+    res = client.post(
+        "/process/retag",
+        files=[("files", ("track.txt", b"not audio", "text/plain"))],
+        data={"corrections": json.dumps([{}])},
+    )
+    assert res.status_code == 400
+
+
+def test_retag_rejects_invalid_json_corrections(client, monkeypatch):
+    monkeypatch.setattr(main, "get_current_user", lambda request: None)
+    res = client.post(
+        "/process/retag",
+        files=[("files", ("track.mp3", b"fake audio", "audio/mpeg"))],
+        data={"corrections": "not json"},
+    )
+    assert res.status_code == 400
+
+
+def test_retag_rejects_corrections_length_mismatch(client, monkeypatch):
+    monkeypatch.setattr(main, "get_current_user", lambda request: None)
+    res = client.post(
+        "/process/retag",
+        files=[("files", ("track.mp3", b"fake audio", "audio/mpeg"))],
+        data={"corrections": json.dumps([{}, {}])},
+    )
+    assert res.status_code == 400
+
+
+def test_retag_passes_corrections_through_to_build_corrected_zip(client, monkeypatch):
+    monkeypatch.setattr(main, "get_current_user", lambda request: None)
+    captured = {}
+
+    async def fake_build(files, corrections, filename_template=None):
+        captured["corrections"] = corrections
+        captured["filename_template"] = filename_template
+        return b"zip"
+
+    monkeypatch.setattr(main, "build_corrected_zip", fake_build)
+
+    corrections = [{"artist": "Fixed Artist", "title": "Fixed Title", "bpm": 128.0}]
+    res = client.post(
+        "/process/retag",
+        files=[("files", ("track.mp3", b"fake audio", "audio/mpeg"))],
+        data={"corrections": json.dumps(corrections)},
+    )
+
+    assert res.status_code == 200
+    assert captured["corrections"] == corrections
+    assert captured["filename_template"] is None  # anonymous -- no profile to read one from
+
+
+def test_retag_uses_filename_template_for_pro_user(client, monkeypatch):
+    monkeypatch.setattr(main, "get_current_user", lambda request: "uid-1")
+    monkeypatch.setattr(
+        main, "get_settings", lambda uid: {"plan": "pro", "filename_template": "{artist} - {title}"}
+    )
+    captured = {}
+
+    async def fake_build(files, corrections, filename_template=None):
+        captured["filename_template"] = filename_template
+        return b"zip"
+
+    monkeypatch.setattr(main, "build_corrected_zip", fake_build)
+
+    res = client.post(
+        "/process/retag",
+        files=[("files", ("track.mp3", b"fake audio", "audio/mpeg"))],
+        data={"corrections": json.dumps([{"artist": "A", "title": "B"}])},
+    )
+
+    assert res.status_code == 200
+    assert captured["filename_template"] == "{artist} - {title}"
+
+
+def test_retag_ignores_filename_template_for_free_user(client, monkeypatch):
+    # Same double-gating as /process itself -- a stored template only ever
+    # applies for Pro, regardless of what's in the profile doc.
+    monkeypatch.setattr(main, "get_current_user", lambda request: "uid-1")
+    monkeypatch.setattr(
+        main, "get_settings", lambda uid: {"plan": "free", "filename_template": "{artist} - {title}"}
+    )
+    captured = {}
+
+    async def fake_build(files, corrections, filename_template=None):
+        captured["filename_template"] = filename_template
+        return b"zip"
+
+    monkeypatch.setattr(main, "build_corrected_zip", fake_build)
+
+    res = client.post(
+        "/process/retag",
+        files=[("files", ("track.mp3", b"fake audio", "audio/mpeg"))],
+        data={"corrections": json.dumps([{"artist": "A", "title": "B"}])},
+    )
+
+    assert res.status_code == 200
+    assert captured["filename_template"] is None

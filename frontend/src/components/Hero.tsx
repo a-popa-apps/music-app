@@ -5,7 +5,13 @@ import { useNavigate } from "react-router-dom"
 import heroBg from "../assets/hero-bg.jpg"
 import { useAuth } from "../hooks/useAuth"
 import { useProfile } from "../hooks/useProfile"
-import { ApiError, createCheckoutSession, uploadAndProcess } from "../services/api"
+import {
+  ApiError,
+  createCheckoutSession,
+  retagFiles,
+  uploadAndProcess,
+  type TrackCorrection,
+} from "../services/api"
 import { buildPlaylist } from "../utils/buildPlaylist"
 import { suggestSetOrder } from "../utils/suggestSetOrder"
 import { TrackWaveform } from "./TrackWaveform"
@@ -39,6 +45,11 @@ interface ProcessedTrack {
   tonality: string | null
   nameSource: string | null
   failed: boolean
+  // Stable identity based on upload position -- unlike `name`, this never
+  // changes even when a correction renames the file (a new artist/title
+  // composes a new filename), so playback/editing state keyed on this
+  // survives both a drag-reorder and a save.
+  originalIndex: number
 }
 
 // How confidently a track's artist/title (and everything built on it) was
@@ -125,7 +136,7 @@ function parseManifest(files: Unzipped): ProcessedTrack[] {
     new TextDecoder().decode(manifestBytes)
   )
 
-  return Object.entries(manifest).map(([name, entry]) => ({
+  return Object.entries(manifest).map(([name, entry], originalIndex) => ({
     name,
     originalFilename: entry.original_filename,
     bpm: entry.bpm ?? null,
@@ -138,6 +149,7 @@ function parseManifest(files: Unzipped): ProcessedTrack[] {
     tonality: entry.tonality ?? null,
     nameSource: entry.name_source ?? null,
     failed: Boolean(entry.error),
+    originalIndex,
   }))
 }
 
@@ -173,13 +185,23 @@ export function Hero() {
   const [energySort, setEnergySort] = useState<"asc" | "desc" | null>(null)
   const qualitySummary = useMemo(() => buildQualitySummary(results), [results])
 
-  // Playback keyed by track *name*, not index -- reordering (drag, Suggest
-  // Set Order, energy sort) changes index but not name, so this survives
-  // a reorder without silently swapping to the wrong track.
-  const [playingTrack, setPlayingTrack] = useState<string | null>(null)
+  // Playback and editing are keyed by originalIndex, not name -- name
+  // changes when a correction renames the file (new artist/title compose
+  // a new filename), so either survives a reorder *and* a save without
+  // silently pointing at the wrong track.
+  const [playingTrack, setPlayingTrack] = useState<number | null>(null)
   const [playbackProgress, setPlaybackProgress] = useState(0)
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const audioUrlRef = useRef<string | null>(null)
+
+  // The raw uploads, kept around (not just the processed zip) so a
+  // correction can be re-sent through /process/retag without asking the
+  // user to re-drop their files.
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
+  const [editingTrack, setEditingTrack] = useState<number | null>(null)
+  const [editDraft, setEditDraft] = useState({ artist: "", title: "", genre: "", bpm: "" })
+  const [retagging, setRetagging] = useState(false)
+  const [retagError, setRetagError] = useState<string | null>(null)
 
   function revokeAudioUrl() {
     if (audioUrlRef.current) {
@@ -195,7 +217,7 @@ export function Hero() {
     const bytes = zipFiles?.[track.name]
     if (!audio || !bytes) return
 
-    if (playingTrack === track.name) {
+    if (playingTrack === track.originalIndex) {
       audio.pause()
       setPlayingTrack(null)
       return
@@ -206,7 +228,7 @@ export function Hero() {
     audioUrlRef.current = url
     audio.src = url
     setPlaybackProgress(0)
-    setPlayingTrack(track.name)
+    setPlayingTrack(track.originalIndex)
     void audio.play()
   }
 
@@ -259,6 +281,7 @@ export function Hero() {
         parsed = sortByEnergy(parsed, "asc")
         setEnergySort("asc")
       }
+      setUploadedFiles(files)
       setZipFiles(unzipped)
       setResults(parsed)
       setOriginalResults(parsed)
@@ -325,9 +348,81 @@ export function Hero() {
     setResults([])
     setOriginalResults([])
     setZipFiles(null)
+    setUploadedFiles([])
     setAiSummary(null)
     setErrorMessage(null)
     setShowUpgradeModal(false)
+    setEditingTrack(null)
+    setRetagError(null)
+  }
+
+  function startEdit(track: ProcessedTrack) {
+    setEditingTrack(track.originalIndex)
+    setRetagError(null)
+    setEditDraft({
+      artist: track.artist ?? "",
+      title: track.title ?? "",
+      genre: track.genre ?? "",
+      bpm: track.bpm !== null ? String(track.bpm) : "",
+    })
+  }
+
+  function cancelEdit() {
+    setEditingTrack(null)
+    setRetagError(null)
+  }
+
+  async function saveEdit(track: ProcessedTrack) {
+    const bpm = editDraft.bpm.trim() === "" ? null : Number(editDraft.bpm)
+    if (bpm !== null && !Number.isFinite(bpm)) {
+      setRetagError("BPM must be a number.")
+      return
+    }
+
+    const updates = {
+      artist: editDraft.artist.trim() || null,
+      title: editDraft.title.trim() || null,
+      genre: editDraft.genre.trim() || null,
+      bpm,
+    }
+
+    setRetagging(true)
+    setRetagError(null)
+    try {
+      // Corrections are positional, matching uploadedFiles' fixed upload
+      // order (originalResults never gets reordered, only `results`
+      // does) -- one entry per file, with the edited track's fields
+      // overridden and everyone else's carried through unchanged.
+      const corrections: TrackCorrection[] = originalResults.map((t) => {
+        const values = t.originalIndex === track.originalIndex ? { ...t, ...updates } : t
+        return {
+          artist: values.artist,
+          title: values.title,
+          genre: values.genre,
+          bpm: values.bpm,
+          camelot: values.key,
+          tonality: values.tonality,
+          energy: values.energy,
+          duration_seconds: values.duration,
+        }
+      })
+
+      const idToken = user ? await user.getIdToken() : undefined
+      const blob = await retagFiles(uploadedFiles, corrections, idToken)
+      const bytes = new Uint8Array(await blob.arrayBuffer())
+      const unzipped = unzipSync(bytes)
+      const fresh = parseManifest(unzipped)
+      const freshByIndex = new Map(fresh.map((t) => [t.originalIndex, t]))
+
+      setZipFiles(unzipped)
+      setResults((prev) => prev.map((t) => freshByIndex.get(t.originalIndex) ?? t))
+      setOriginalResults((prev) => prev.map((t) => freshByIndex.get(t.originalIndex) ?? t))
+      setEditingTrack(null)
+    } catch {
+      setRetagError("Couldn't save that correction. Try again.")
+    } finally {
+      setRetagging(false)
+    }
   }
 
   function handleRowDragStart(index: number) {
@@ -604,8 +699,8 @@ export function Hero() {
               </div>
 
               {results.map((track, i) => (
+                <div key={track.originalIndex}>
                 <div
-                  key={track.name + i}
                   draggable
                   onDragStart={() => handleRowDragStart(i)}
                   onDragOver={(e) => handleRowDragOver(e, i)}
@@ -624,11 +719,11 @@ export function Hero() {
                     {!track.failed && zipFiles?.[track.name] && (
                       <button
                         onClick={() => togglePlay(track)}
-                        aria-label={playingTrack === track.name ? "Pause" : "Play"}
+                        aria-label={playingTrack === track.originalIndex ? "Pause" : "Play"}
                         className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
                       >
                         <span className="material-symbols-outlined text-[16px]">
-                          {playingTrack === track.name ? "pause" : "play_arrow"}
+                          {playingTrack === track.originalIndex ? "pause" : "play_arrow"}
                         </span>
                       </button>
                     )}
@@ -644,7 +739,7 @@ export function Hero() {
                       {!track.failed && zipFiles?.[track.name] && (
                         <TrackWaveform
                           bytes={zipFiles[track.name]}
-                          progress={playingTrack === track.name ? playbackProgress : 0}
+                          progress={playingTrack === track.originalIndex ? playbackProgress : 0}
                           className="h-4"
                         />
                       )}
@@ -672,7 +767,7 @@ export function Hero() {
                       </span>
                     )}
                   </div>
-                  <div className="col-span-3 text-right lg:col-span-2">
+                  <div className="col-span-3 flex items-center justify-end gap-2 lg:col-span-2">
                     <span
                       className={`inline-flex items-center gap-1 font-mono text-meta-badge font-bold uppercase ${
                         track.failed ? "text-red-300" : "text-secondary-container"
@@ -685,7 +780,77 @@ export function Hero() {
                       />
                       {track.failed ? "Error" : "Done"}
                     </span>
+                    {!track.failed && (
+                      <button
+                        onClick={() =>
+                          editingTrack === track.originalIndex ? cancelEdit() : startEdit(track)
+                        }
+                        aria-label="Correct this track's tags"
+                        className="flex h-6 w-6 items-center justify-center rounded-full text-white/50 transition-colors hover:bg-white/10 hover:text-white"
+                      >
+                        <span className="material-symbols-outlined text-[15px]">edit</span>
+                      </button>
+                    )}
                   </div>
+                </div>
+
+                {editingTrack === track.originalIndex && (
+                  <div className="border-t border-white/10 bg-white/5 px-6 py-4">
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                      <label className="flex flex-col gap-1">
+                        <span className="text-body-sm text-white/60">Artist</span>
+                        <input
+                          value={editDraft.artist}
+                          onChange={(e) => setEditDraft((d) => ({ ...d, artist: e.target.value }))}
+                          className="rounded border border-white/20 bg-black/30 px-3 py-1.5 text-body-sm text-white outline-none focus:border-secondary-container"
+                        />
+                      </label>
+                      <label className="flex flex-col gap-1">
+                        <span className="text-body-sm text-white/60">Title</span>
+                        <input
+                          value={editDraft.title}
+                          onChange={(e) => setEditDraft((d) => ({ ...d, title: e.target.value }))}
+                          className="rounded border border-white/20 bg-black/30 px-3 py-1.5 text-body-sm text-white outline-none focus:border-secondary-container"
+                        />
+                      </label>
+                      <label className="flex flex-col gap-1">
+                        <span className="text-body-sm text-white/60">Genre</span>
+                        <input
+                          value={editDraft.genre}
+                          onChange={(e) => setEditDraft((d) => ({ ...d, genre: e.target.value }))}
+                          className="rounded border border-white/20 bg-black/30 px-3 py-1.5 text-body-sm text-white outline-none focus:border-secondary-container"
+                        />
+                      </label>
+                      <label className="flex flex-col gap-1">
+                        <span className="text-body-sm text-white/60">BPM</span>
+                        <input
+                          type="number"
+                          inputMode="decimal"
+                          value={editDraft.bpm}
+                          onChange={(e) => setEditDraft((d) => ({ ...d, bpm: e.target.value }))}
+                          className="rounded border border-white/20 bg-black/30 px-3 py-1.5 text-body-sm text-white outline-none focus:border-secondary-container"
+                        />
+                      </label>
+                    </div>
+                    {retagError && <p className="mt-2 text-body-sm text-red-400">{retagError}</p>}
+                    <div className="mt-3 flex items-center gap-2">
+                      <button
+                        onClick={() => saveEdit(track)}
+                        disabled={retagging}
+                        className="rounded-full bg-secondary-container px-4 py-1.5 text-body-sm font-semibold text-on-primary transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {retagging ? "Saving..." : "Save"}
+                      </button>
+                      <button
+                        onClick={cancelEdit}
+                        disabled={retagging}
+                        className="text-body-sm font-semibold text-white/70 underline hover:text-white disabled:opacity-50"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
                 </div>
               ))}
 

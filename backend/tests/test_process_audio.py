@@ -3,6 +3,7 @@ import io
 import json
 import math
 import struct
+import tempfile
 import wave
 import zipfile
 
@@ -269,3 +270,101 @@ def test_resolve_artist_title_trusts_tags_when_filename_has_no_dash_split(monkey
 
     assert (artist, title) == ("Real Artist", "Real Title")
     assert debug["name_source"] == "embedded_tags"
+
+
+def test_build_corrected_zip_writes_supplied_values_not_detected_ones():
+    # No detection at all should run here -- these values are exactly what
+    # should land in the output, whether or not they'd match what
+    # detection would have guessed for this audio.
+    files = [_upload("track.wav", _make_wav(200))]
+    corrections = [
+        {
+            "artist": "Corrected Artist",
+            "title": "Corrected Title",
+            "genre": "Corrected Genre",
+            "bpm": 128.0,
+            "camelot": "8A",
+            "tonality": "Am",
+            "duration_seconds": 12.3,
+        }
+    ]
+
+    zip_bytes = asyncio.run(process_audio.build_corrected_zip(files, corrections))
+
+    with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
+        manifest = json.loads(zf.read("crateprep-manifest.json"))
+        [name] = [n for n in zf.namelist() if n.endswith(".wav")]
+        tagged_content = zf.read(name)
+
+    assert "Corrected Artist" in name
+    assert "Corrected Title" in name
+    entry = manifest[name]
+    assert entry["artist"] == "Corrected Artist"
+    assert entry["title"] == "Corrected Title"
+    assert entry["genre"] == "Corrected Genre"
+    assert entry["bpm"] == 128.0
+    assert entry["camelot"] == "8A"
+    assert entry["original_filename"] == "track.wav"
+
+    from mutagen.wave import WAVE
+
+    with tempfile.NamedTemporaryFile(suffix=".wav") as tmp:
+        tmp.write(tagged_content)
+        tmp.flush()
+        audio = WAVE(tmp.name)
+        assert str(audio.tags["TPE1"]) == "Corrected Artist"
+        assert str(audio.tags["TIT2"]) == "Corrected Title"
+        assert str(audio.tags["TCON"]) == "Corrected Genre"
+        assert str(audio.tags["TBPM"]) == "128"
+        assert str(audio.tags["TKEY"]) == "Am"
+
+
+def test_build_corrected_zip_matches_files_to_corrections_positionally():
+    files = [_upload("a.wav", _make_wav(200)), _upload("b.wav", _make_wav(210))]
+    corrections = [
+        {"artist": "Artist A", "title": "Title A"},
+        {"artist": "Artist B", "title": "Title B"},
+    ]
+
+    zip_bytes = asyncio.run(process_audio.build_corrected_zip(files, corrections))
+
+    with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
+        manifest = json.loads(zf.read("crateprep-manifest.json"))
+
+    original_filenames = {entry["original_filename"] for entry in manifest.values()}
+    assert original_filenames == {"a.wav", "b.wav"}
+    by_original = {entry["original_filename"]: entry for entry in manifest.values()}
+    assert by_original["a.wav"]["artist"] == "Artist A"
+    assert by_original["b.wav"]["artist"] == "Artist B"
+
+
+def test_build_corrected_zip_applies_filename_template():
+    files = [_upload("track.wav", _make_wav(200))]
+    corrections = [{"artist": "The Artist", "title": "The Title", "bpm": 128.0, "camelot": "8A"}]
+
+    zip_bytes = asyncio.run(
+        process_audio.build_corrected_zip(
+            files, corrections, filename_template="{bpm} - {artist} - {title}"
+        )
+    )
+
+    with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
+        [name] = [n for n in zf.namelist() if n.endswith(".wav")]
+
+    assert name.startswith("128 - The Artist - The Title")
+
+
+def test_build_corrected_zip_dedupes_names_that_collide():
+    files = [_upload("a.wav", _make_wav(200)), _upload("b.wav", _make_wav(210))]
+    corrections = [
+        {"artist": "Same Artist", "title": "Same Title"},
+        {"artist": "Same Artist", "title": "Same Title"},
+    ]
+
+    zip_bytes = asyncio.run(process_audio.build_corrected_zip(files, corrections))
+
+    with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
+        names = [n for n in zf.namelist() if n.endswith(".wav")]
+
+    assert len(names) == 2
+    assert len(set(names)) == 2
