@@ -134,7 +134,25 @@ def _monthly_equivalent_cents(price: dict) -> int:
     return amount  # unknown interval -- best effort, don't crash
 
 
+# The admin dashboard's Stats tab hits this on every page load, and it was
+# re-listing *all* subscriptions and *all* paid invoices from Stripe (one API
+# call per page of 100) every single time -- wasteful today, and scales
+# linearly with total subscriber/invoice count as the business grows. A
+# short TTL cache means at most one real Stripe scan every 5 minutes,
+# regardless of how often the dashboard is reloaded.
+BILLING_STATS_CACHE_SECONDS = 300
+
+_billing_stats_cache: dict | None = None
+_billing_stats_cache_time: float = 0.0
+
+
 def get_billing_stats() -> dict:
+    global _billing_stats_cache, _billing_stats_cache_time
+
+    now = time.time()
+    if _billing_stats_cache is not None and now - _billing_stats_cache_time < BILLING_STATS_CACHE_SECONDS:
+        return _billing_stats_cache
+
     client = get_stripe()
     if client is None:
         raise RuntimeError("Stripe is not configured")
@@ -167,13 +185,16 @@ def get_billing_stats() -> dict:
     for invoice in invoices.auto_paging_iter():
         revenue_last_30_days_cents += invoice.to_dict().get("amount_paid") or 0
 
-    return {
+    stats = {
         "mrr_cents": mrr_cents,
         "active_subscribers": active_subscribers,
         "trialing_subscribers": trialing_subscribers,
         "canceled_last_30_days": canceled_last_30_days,
         "revenue_last_30_days_cents": revenue_last_30_days_cents,
     }
+    _billing_stats_cache = stats
+    _billing_stats_cache_time = now
+    return stats
 
 
 def _safe_get(obj, key: str, default=None):

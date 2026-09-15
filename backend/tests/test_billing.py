@@ -20,6 +20,16 @@ def _stripe_obj(data: dict) -> MagicMock:
     return obj
 
 
+@pytest.fixture(autouse=True)
+def _reset_billing_stats_cache():
+    # get_billing_stats caches its result for BILLING_STATS_CACHE_SECONDS --
+    # without resetting it, one test's cached stats could leak into the
+    # next test's assertions regardless of what that test's own Stripe
+    # mock returns.
+    billing._billing_stats_cache = None
+    billing._billing_stats_cache_time = 0.0
+
+
 @pytest.fixture
 def fake_users(monkeypatch):
     collection = FakeCollection()
@@ -408,6 +418,33 @@ def test_get_billing_stats_sums_mrr_and_counts(fake_stripe):
     assert stats["trialing_subscribers"] == 1
     assert stats["canceled_last_30_days"] == 1
     assert stats["revenue_last_30_days_cents"] == 1300
+
+
+def test_get_billing_stats_is_cached_across_calls(fake_stripe, monkeypatch):
+    fake_stripe.Subscription.list.return_value.auto_paging_iter.return_value = []
+    fake_stripe.Invoice.list.return_value.auto_paging_iter.return_value = []
+
+    first = billing.get_billing_stats()
+    second = billing.get_billing_stats()
+
+    assert first == second
+    # A cache hit shouldn't re-list from Stripe at all.
+    assert fake_stripe.Subscription.list.call_count == 1
+    assert fake_stripe.Invoice.list.call_count == 1
+
+
+def test_get_billing_stats_recomputes_after_cache_expires(fake_stripe, monkeypatch):
+    fake_stripe.Subscription.list.return_value.auto_paging_iter.return_value = []
+    fake_stripe.Invoice.list.return_value.auto_paging_iter.return_value = []
+
+    billing.get_billing_stats()
+
+    monkeypatch.setattr(
+        billing, "_billing_stats_cache_time", time.time() - billing.BILLING_STATS_CACHE_SECONDS - 1
+    )
+    billing.get_billing_stats()
+
+    assert fake_stripe.Subscription.list.call_count == 2
 
 
 def test_monthly_equivalent_cents_handles_all_intervals():
