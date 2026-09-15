@@ -1,0 +1,92 @@
+from __future__ import annotations
+
+# Colors pulled directly from the frontend's own design tokens
+# (frontend/src/index.css) so these emails actually look like CratePrep
+# rather than a generic transactional-email template.
+_ACCENT = "#ff6b35"
+_ACCENT_2 = "#ff3d78"
+_BG = "#000000"
+_CARD_BG = "#17171a"
+_BORDER = "rgba(255,255,255,0.1)"
+_TEXT = "#ffffff"
+_TEXT_MUTED = "rgba(255,255,255,0.7)"
+
+
+def _base_email(preheader: str, heading: str, body_html: str, button_text: str, button_url: str) -> str:
+    return f"""\
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  </head>
+  <body style="margin:0; padding:0; background:{_BG}; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+    <div style="display:none; max-height:0; overflow:hidden; opacity:0;">{preheader}</div>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:{_BG};">
+      <tr>
+        <td align="center" style="padding:40px 16px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;">
+            <tr>
+              <td style="padding-bottom:28px;">
+                <span style="font-family:ui-monospace,'JetBrains Mono',monospace; font-weight:700; font-size:18px; letter-spacing:-0.02em; color:{_TEXT};">crateprep.</span>
+              </td>
+            </tr>
+            <tr>
+              <td style="background:{_CARD_BG}; border:1px solid {_BORDER}; border-radius:16px; padding:36px 32px;">
+                <h1 style="margin:0 0 16px; font-size:22px; line-height:1.3; color:{_TEXT};">{heading}</h1>
+                <div style="font-size:15px; line-height:1.6; color:{_TEXT_MUTED};">
+                  {body_html}
+                </div>
+                <table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:28px;">
+                  <tr>
+                    <td style="border-radius:999px; background:linear-gradient(90deg,{_ACCENT},{_ACCENT_2});">
+                      <a href="{button_url}" style="display:inline-block; padding:14px 28px; font-size:15px; font-weight:600; color:#ffffff; text-decoration:none; border-radius:999px;">{button_text}</a>
+                    </td>
+                  </tr>
+                </table>
+                <p style="margin:24px 0 0; font-size:12.5px; line-height:1.6; color:rgba(255,255,255,0.4); word-break:break-all;">
+                  Or paste this link into your browser:<br />
+                  <a href="{button_url}" style="color:{_ACCENT}; text-decoration:none;">{button_url}</a>
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding-top:24px; font-size:12.5px; color:rgba(255,255,255,0.35); text-align:center;">
+                CratePrep &middot; Surgical track organization for precision DJs
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+"""
+
+
+def verification_email_html(action_link: str) -> str:
+    return _base_email(
+        preheader="Confirm your email to start using CratePrep.",
+        heading="Confirm your email",
+        body_html=(
+            "One click and you're in — verifying your email unlocks your "
+            "10 free tracks a month, saved history, and drag-to-reorder."
+        ),
+        button_text="Verify Email",
+        button_url=action_link,
+    )
+
+
+def password_reset_email_html(action_link: str) -> str:
+    return _base_email(
+        preheader="Reset your CratePrep password.",
+        heading="Reset your password",
+        body_html=(
+            "Someone (hopefully you) asked to reset the password on this "
+            "account. Click below to choose a new one — this link expires "
+            "soon and can only be used once. If you didn't request this, "
+            "you can safely ignore this email."
+        ),
+        button_text="Reset Password",
+        button_url=action_link,
+    )

@@ -3,8 +3,6 @@ import {
   getAdditionalUserInfo,
   GoogleAuthProvider,
   onAuthStateChanged,
-  sendEmailVerification,
-  sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signInWithPopup,
   signOut,
@@ -12,14 +10,7 @@ import {
 } from "firebase/auth"
 import { useEffect, useState } from "react"
 import { auth } from "../firebase"
-
-// Firebase's default verification/reset links land on a generic
-// Firebase-hosted page with no way back to the app. Pointing them at our
-// own /auth/action route instead lets us show a branded confirmation (or
-// a proper "set new password" form) and redirect back here.
-const authActionSettings = {
-  url: `${window.location.origin}/auth/action`,
-}
+import { forgotPassword, sendVerificationEmail } from "../services/api"
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null)
@@ -39,7 +30,7 @@ export function useAuth() {
 
     async signUp(email: string, password: string) {
       const credential = await createUserWithEmailAndPassword(auth, email, password)
-      await sendEmailVerification(credential.user, authActionSettings)
+      await sendVerificationEmail(await credential.user.getIdToken())
       return credential.user
     },
 
@@ -56,12 +47,12 @@ export function useAuth() {
 
     async resendVerification() {
       if (auth.currentUser) {
-        await sendEmailVerification(auth.currentUser, authActionSettings)
+        await sendVerificationEmail(await auth.currentUser.getIdToken())
       }
     },
 
     async resetPassword(email: string) {
-      await sendPasswordResetEmail(auth, email, authActionSettings)
+      await forgotPassword(email)
     },
 
     async logOut() {

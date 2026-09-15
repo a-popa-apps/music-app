@@ -23,7 +23,14 @@ from .admin_store import (
     set_user_plan,
 )
 from .anon_trial_store import ANON_TRIAL_LIMIT, check_and_reserve_trial
-from .auth import delete_user, get_app, get_current_user
+from .auth import (
+    delete_user,
+    generate_password_reset_link,
+    generate_verification_link,
+    get_app,
+    get_current_user,
+    get_user_record,
+)
 from .billing import (
     create_billing_portal_session,
     create_checkout_session,
@@ -31,6 +38,8 @@ from .billing import (
     handle_webhook_event,
 )
 from .detect_bpm import warm_up
+from .email_service import send_email
+from .email_templates import password_reset_email_html, verification_email_html
 from .feedback_store import create_feedback, list_feedback, mark_feedback_read
 from .feedback_summary import generate_feedback_summary
 from .history_store import add_history_entries, clear_history, list_history
@@ -84,6 +93,7 @@ def health():
         "ai_calls_today": ai_budget.calls_used_today(),
         "ai_daily_limit": ai_budget.DAILY_AI_CALL_LIMIT,
         "sentry_configured": bool(os.environ.get("SENTRY_DSN")),
+        "email_configured": bool(os.environ.get("RESEND_API_KEY")),
     }
 
 
@@ -265,6 +275,45 @@ def _frontend_base_url(request: Request) -> str:
     if origin in ALLOWED_ORIGINS:
         return origin
     return ALLOWED_ORIGINS[0]
+
+
+@app.post("/auth/send-verification-email")
+def send_verification_email(request: Request):
+    """Sends CratePrep's own branded verification email instead of relying
+    on Firebase's default one -- same account only (the caller's own uid),
+    since there's no reason this endpoint should ever email someone else."""
+    uid = _require_user(request)
+    enforce_rate_limit(request, key=uid, max_requests=MAX_REQUESTS_FREE)
+
+    user = get_user_record(uid)
+    if user is None or user.email_verified:
+        return {"sent": False}
+
+    link = generate_verification_link(user.email, f"{_frontend_base_url(request)}/auth/action")
+    if link is None:
+        return {"sent": False}
+
+    sent = send_email(user.email, "Verify your email for CratePrep", verification_email_html(link))
+    return {"sent": sent}
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+
+@app.post("/auth/forgot-password")
+def forgot_password(body: ForgotPasswordRequest, request: Request):
+    """Unauthenticated by nature (the whole point is the caller is locked
+    out) -- rate-limited by IP, and always returns the same response
+    whether or not the email is registered, so this can't be used to probe
+    which emails have CratePrep accounts."""
+    enforce_rate_limit(request, max_requests=MAX_REQUESTS_FREE)
+
+    link = generate_password_reset_link(body.email, f"{_frontend_base_url(request)}/auth/action")
+    if link is not None:
+        send_email(body.email, "Reset your CratePrep password", password_reset_email_html(link))
+
+    return {"sent": True}
 
 
 class CheckoutRequest(BaseModel):

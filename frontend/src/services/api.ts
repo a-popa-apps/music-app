@@ -12,6 +12,23 @@ export async function checkBackendHealth(): Promise<boolean> {
   }
 }
 
+export async function sendVerificationEmail(idToken: string): Promise<void> {
+  const res = await fetch(`${BACKEND_URL}/auth/send-verification-email`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${idToken}` },
+  })
+  if (!res.ok) throw new Error(`Failed to send verification email: ${res.status}`)
+}
+
+export async function forgotPassword(email: string): Promise<void> {
+  const res = await fetch(`${BACKEND_URL}/auth/forgot-password`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  })
+  if (!res.ok) throw new Error(`Failed to request password reset: ${res.status}`)
+}
+
 export interface ProfileSettings {
   name: string
   country: string

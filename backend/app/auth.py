@@ -57,3 +57,49 @@ def delete_user(uid: str) -> None:
     if app is None:
         raise RuntimeError("Firebase is not configured")
     firebase_auth.delete_user(uid, app=app)
+
+
+def get_user_record(uid: str) -> firebase_auth.UserRecord | None:
+    app = get_app()
+    if app is None:
+        return None
+    try:
+        return firebase_auth.get_user(uid, app=app)
+    except firebase_auth.UserNotFoundError:
+        return None
+
+
+def _action_code_settings(continue_url: str) -> firebase_auth.ActionCodeSettings:
+    # handle_code_in_app=True makes the generated link point directly at
+    # continue_url with mode/oobCode as query params, instead of at
+    # Firebase's own hosted action page -- AuthActionPage.tsx already reads
+    # mode/oobCode itself and calls the client SDK to complete the action,
+    # so this is required for that page to ever receive them.
+    return firebase_auth.ActionCodeSettings(url=continue_url, handle_code_in_app=True)
+
+
+def generate_verification_link(email: str, continue_url: str) -> str | None:
+    """None if Firebase isn't configured. Doesn't send anything itself --
+    just mints the one-time link; the caller decides how to deliver it."""
+    app = get_app()
+    if app is None:
+        return None
+    return firebase_auth.generate_email_verification_link(
+        email, action_code_settings=_action_code_settings(continue_url), app=app
+    )
+
+
+def generate_password_reset_link(email: str, continue_url: str) -> str | None:
+    """None if Firebase isn't configured *or* no account has this email --
+    the two look identical to the caller on purpose, so a public "forgot
+    password" endpoint built on this can't be used to enumerate which
+    emails are registered."""
+    app = get_app()
+    if app is None:
+        return None
+    try:
+        return firebase_auth.generate_password_reset_link(
+            email, action_code_settings=_action_code_settings(continue_url), app=app
+        )
+    except firebase_auth.UserNotFoundError:
+        return None

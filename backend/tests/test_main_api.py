@@ -409,3 +409,84 @@ def test_validate_files_pro_tier_rejects_over_50():
     with pytest.raises(HTTPException) as exc_info:
         validate_files(files, max_files=MAX_FILES_PRO)
     assert exc_info.value.status_code == 400
+
+
+def test_send_verification_email_requires_auth(client):
+    res = client.post("/auth/send-verification-email")
+    assert res.status_code == 401
+
+
+def test_send_verification_email_no_ops_when_already_verified(client, monkeypatch):
+    monkeypatch.setattr(main, "get_current_user", lambda request: "uid-1")
+    monkeypatch.setattr(
+        main,
+        "get_user_record",
+        lambda uid: SimpleNamespace(email="dj@example.com", email_verified=True),
+    )
+    called = []
+    monkeypatch.setattr(main, "send_email", lambda *a, **k: called.append(1) or True)
+
+    res = client.post("/auth/send-verification-email")
+
+    assert res.status_code == 200
+    assert res.json() == {"sent": False}
+    assert called == []
+
+
+def test_send_verification_email_sends_when_unverified(client, monkeypatch):
+    monkeypatch.setattr(main, "get_current_user", lambda request: "uid-1")
+    monkeypatch.setattr(
+        main,
+        "get_user_record",
+        lambda uid: SimpleNamespace(email="dj@example.com", email_verified=False),
+    )
+    monkeypatch.setattr(
+        main, "generate_verification_link", lambda email, continue_url: "https://crateprep.app/verify"
+    )
+    captured = {}
+
+    def fake_send_email(to, subject, html):
+        captured["to"] = to
+        captured["subject"] = subject
+        return True
+
+    monkeypatch.setattr(main, "send_email", fake_send_email)
+
+    res = client.post("/auth/send-verification-email")
+
+    assert res.status_code == 200
+    assert res.json() == {"sent": True}
+    assert captured["to"] == "dj@example.com"
+
+
+def test_forgot_password_always_returns_sent_true(client, monkeypatch):
+    # The enumeration-safety guarantee: whether or not the email is
+    # registered, the response must look identical.
+    monkeypatch.setattr(main, "generate_password_reset_link", lambda email, continue_url: None)
+    called = []
+    monkeypatch.setattr(main, "send_email", lambda *a, **k: called.append(1) or True)
+
+    res = client.post("/auth/forgot-password", json={"email": "nobody@example.com"})
+
+    assert res.status_code == 200
+    assert res.json() == {"sent": True}
+    assert called == []  # no link generated -- nothing was sent, but the response doesn't reveal that
+
+
+def test_forgot_password_sends_email_when_account_exists(client, monkeypatch):
+    monkeypatch.setattr(
+        main, "generate_password_reset_link", lambda email, continue_url: "https://crateprep.app/reset"
+    )
+    captured = {}
+
+    def fake_send_email(to, subject, html):
+        captured["to"] = to
+        return True
+
+    monkeypatch.setattr(main, "send_email", fake_send_email)
+
+    res = client.post("/auth/forgot-password", json={"email": "dj@example.com"})
+
+    assert res.status_code == 200
+    assert res.json() == {"sent": True}
+    assert captured["to"] == "dj@example.com"
