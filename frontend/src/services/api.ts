@@ -183,6 +183,8 @@ export interface AdminStats {
   by_plan: Record<string, number>
   admin_count: number
   recent_signups: AdminUser[]
+  ai_calls_today: number
+  ai_daily_limit: number
 }
 
 export interface DiscountCode {

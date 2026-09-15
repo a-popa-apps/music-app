@@ -46,6 +46,45 @@ def test_a_new_day_gets_a_fresh_budget(monkeypatch):
     assert ai_budget.allow_ai_call() is True
 
 
+def test_alerts_admins_once_budget_is_exhausted(monkeypatch):
+    monkeypatch.setattr(ai_budget, "DAILY_AI_CALL_LIMIT", 1)
+    alerts = []
+    monkeypatch.setattr(ai_budget, "notify_admins", lambda subject, html: alerts.append(subject))
+
+    assert ai_budget.allow_ai_call() is True
+    assert alerts == []  # still under the limit -- no alert yet
+
+    assert ai_budget.allow_ai_call() is False
+    assert len(alerts) == 1
+    assert "budget" in alerts[0].lower()
+
+
+def test_does_not_alert_twice_for_the_same_day(monkeypatch):
+    monkeypatch.setattr(ai_budget, "DAILY_AI_CALL_LIMIT", 0)
+    alerts = []
+    monkeypatch.setattr(ai_budget, "notify_admins", lambda subject, html: alerts.append(subject))
+
+    ai_budget.allow_ai_call()
+    ai_budget.allow_ai_call()
+    ai_budget.allow_ai_call()
+
+    assert len(alerts) == 1
+
+
+def test_alerts_again_on_a_new_day(monkeypatch):
+    monkeypatch.setattr(ai_budget, "DAILY_AI_CALL_LIMIT", 0)
+    alerts = []
+    monkeypatch.setattr(ai_budget, "notify_admins", lambda subject, html: alerts.append(subject))
+
+    monkeypatch.setattr(ai_budget, "_today_key", lambda: "2026-01-01")
+    ai_budget.allow_ai_call()
+    assert len(alerts) == 1
+
+    monkeypatch.setattr(ai_budget, "_today_key", lambda: "2026-01-02")
+    ai_budget.allow_ai_call()
+    assert len(alerts) == 2
+
+
 def test_limit_is_configurable_via_env_var(monkeypatch):
     monkeypatch.setenv("DAILY_AI_CALL_LIMIT", "42")
     import importlib

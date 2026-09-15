@@ -1,21 +1,15 @@
 from __future__ import annotations
 
 import json
-import os
 
-import anthropic
-
-from .ai_budget import allow_ai_call
-
-MODEL = "claude-opus-5"
+from .ai_client import generate_json
 
 SCHEMA = {
-    "type": "object",
+    "type": "OBJECT",
     "properties": {
-        "summary": {"type": "string"},
+        "summary": {"type": "STRING"},
     },
     "required": ["summary"],
-    "additionalProperties": False,
 }
 
 SYSTEM_PROMPT = (
@@ -31,25 +25,13 @@ SYSTEM_PROMPT = (
     "pattern that isn't there."
 )
 
-_client: anthropic.Anthropic | None = None
-
-
-def _get_client() -> anthropic.Anthropic | None:
-    global _client
-    if not os.environ.get("ANTHROPIC_API_KEY"):
-        return None
-    if _client is None:
-        _client = anthropic.Anthropic()
-    return _client
-
 
 def generate_feedback_summary(entries: list[dict]) -> str | None:
     """Triage summary of a list of feedback/support submissions (each with
-    category/subject/message). Requires ANTHROPIC_API_KEY; returns None
+    category/subject/message). Requires GEMINI_API_KEY; returns None
     (never raises) if that's unset, on any API error, or if there's
     nothing to summarize."""
-    client = _get_client()
-    if client is None or not entries or not allow_ai_call():
+    if not entries:
         return None
 
     payload = [
@@ -61,20 +43,8 @@ def generate_feedback_summary(entries: list[dict]) -> str | None:
         for entry in entries
     ]
 
-    try:
-        response = client.messages.create(
-            model=MODEL,
-            max_tokens=1024,
-            system=SYSTEM_PROMPT,
-            output_config={
-                "effort": "low",
-                "format": {"type": "json_schema", "schema": SCHEMA},
-            },
-            messages=[{"role": "user", "content": json.dumps(payload)}],
-        )
-        text = next(b.text for b in response.content if b.type == "text")
-        data = json.loads(text)
-    except Exception:
+    data = generate_json(SYSTEM_PROMPT, json.dumps(payload), SCHEMA)
+    if data is None:
         return None
 
     summary = data.get("summary")

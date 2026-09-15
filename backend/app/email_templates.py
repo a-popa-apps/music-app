@@ -160,6 +160,16 @@ def password_changed_email_html(reset_url: str) -> str:
     )
 
 
+def ai_limit_alert_email_html(heading: str, detail: str, admin_url: str) -> str:
+    return _base_email(
+        preheader=heading,
+        heading=heading,
+        body_html=detail,
+        button_text="View Admin Dashboard",
+        button_url=admin_url,
+    )
+
+
 def payment_failed_email_html(manage_billing_url: str) -> str:
     return _base_email(
         preheader="We couldn't process your CratePrep Pro payment.",

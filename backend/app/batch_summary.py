@@ -1,21 +1,15 @@
 from __future__ import annotations
 
 import json
-import os
 
-import anthropic
-
-from .ai_budget import allow_ai_call
-
-MODEL = "claude-opus-5"
+from .ai_client import generate_json
 
 SCHEMA = {
-    "type": "object",
+    "type": "OBJECT",
     "properties": {
-        "summary": {"type": "string"},
+        "summary": {"type": "STRING"},
     },
     "required": ["summary"],
-    "additionalProperties": False,
 }
 
 SYSTEM_PROMPT = (
@@ -31,17 +25,6 @@ SYSTEM_PROMPT = (
 )
 
 MIN_TRACKS_FOR_SUMMARY = 2
-
-_client: anthropic.Anthropic | None = None
-
-
-def _get_client() -> anthropic.Anthropic | None:
-    global _client
-    if not os.environ.get("ANTHROPIC_API_KEY"):
-        return None
-    if _client is None:
-        _client = anthropic.Anthropic()
-    return _client
 
 
 def _track_facts(manifest: dict) -> list[dict]:
@@ -65,28 +48,15 @@ def _track_facts(manifest: dict) -> list[dict]:
 def generate_batch_summary(manifest: dict) -> str | None:
     """One-shot, per-batch (not per-track) natural-language summary of the
     batch's musical shape -- genre mix, BPM range, energy arc. Requires
-    ANTHROPIC_API_KEY; returns None (never raises) if unset, on any API
+    GEMINI_API_KEY; returns None (never raises) if unset, on any API
     error, or if too few tracks processed successfully to say anything
     meaningful about the batch as a whole."""
-    client = _get_client()
     facts = _track_facts(manifest)
-    if client is None or len(facts) < MIN_TRACKS_FOR_SUMMARY or not allow_ai_call():
+    if len(facts) < MIN_TRACKS_FOR_SUMMARY:
         return None
 
-    try:
-        response = client.messages.create(
-            model=MODEL,
-            max_tokens=1024,
-            system=SYSTEM_PROMPT,
-            output_config={
-                "effort": "low",
-                "format": {"type": "json_schema", "schema": SCHEMA},
-            },
-            messages=[{"role": "user", "content": json.dumps(facts)}],
-        )
-        text = next(b.text for b in response.content if b.type == "text")
-        data = json.loads(text)
-    except Exception:
+    data = generate_json(SYSTEM_PROMPT, json.dumps(facts), SCHEMA)
+    if data is None:
         return None
 
     summary = data.get("summary")

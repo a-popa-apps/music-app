@@ -39,7 +39,7 @@ from .billing import (
     handle_webhook_event,
 )
 from .detect_bpm import warm_up
-from .email_service import send_email
+from .email_service import notify_admins, send_email
 from .email_templates import (
     new_feedback_email_html,
     password_changed_email_html,
@@ -63,7 +63,7 @@ from .profile_store import (
 from .rate_limit import MAX_REQUESTS_FREE, MAX_REQUESTS_PRO, _client_ip, enforce_rate_limit
 
 # Optional -- no-op if SENTRY_DSN isn't set, same pattern as every other
-# integration in this codebase (Firebase, Spotify, Anthropic). Reports
+# integration in this codebase (Firebase, Spotify, Gemini). Reports
 # unhandled exceptions from the FastAPI app so a silent 500 in production
 # actually surfaces somewhere instead of just failing a request unnoticed.
 if os.environ.get("SENTRY_DSN"):
@@ -104,7 +104,7 @@ def health():
         "spotify_configured": bool(
             os.environ.get("SPOTIFY_CLIENT_ID") and os.environ.get("SPOTIFY_CLIENT_SECRET")
         ),
-        "ai_cleanup_configured": bool(os.environ.get("ANTHROPIC_API_KEY")),
+        "ai_cleanup_configured": bool(os.environ.get("GEMINI_API_KEY")),
         "ai_calls_today": ai_budget.calls_used_today(),
         "ai_daily_limit": ai_budget.DAILY_AI_CALL_LIMIT,
         "sentry_configured": bool(os.environ.get("SENTRY_DSN")),
@@ -480,14 +480,9 @@ def submit_feedback(body: FeedbackCreate, request: Request):
     except ValueError as e:
         raise HTTPException(400, str(e))
 
-    admin_emails = os.environ.get("ADMIN_EMAIL", "")
-    if admin_emails:
-        admin_url = f"{_frontend_base_url(request)}/admin"
-        html = new_feedback_email_html(body.category, body.subject, body.message, body.email, admin_url)
-        for admin_email in admin_emails.split(","):
-            admin_email = admin_email.strip()
-            if admin_email:
-                send_email(admin_email, f"New CratePrep {body.category}", html)
+    admin_url = f"{_frontend_base_url(request)}/admin"
+    html = new_feedback_email_html(body.category, body.subject, body.message, body.email, admin_url)
+    notify_admins(f"New CratePrep {body.category}", html)
 
     return doc
 

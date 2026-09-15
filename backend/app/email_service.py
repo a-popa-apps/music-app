@@ -7,6 +7,7 @@ import urllib.request
 
 RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
 EMAIL_FROM = os.environ.get("EMAIL_FROM", "CratePrep <onboarding@resend.dev>")
+ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "")
 
 
 def send_email(to: str, subject: str, html: str) -> bool:
@@ -37,3 +38,15 @@ def send_email(to: str, subject: str, html: str) -> bool:
             return 200 <= resp.status < 300
     except Exception:
         return False
+
+
+def notify_admins(subject: str, html: str) -> None:
+    """Sends the same email to every address in ADMIN_EMAIL (comma-
+    separated). No-op if unset. Never raises, and doesn't report
+    per-recipient success -- same fire-and-forget spirit as send_email
+    itself; a failed admin notification should never break whatever
+    triggered it."""
+    for email in ADMIN_EMAIL.split(","):
+        email = email.strip()
+        if email:
+            send_email(email, subject, html)

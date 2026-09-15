@@ -6,6 +6,7 @@ import string
 from firebase_admin import auth as firebase_auth
 from firebase_admin import firestore
 
+from . import ai_budget
 from .auth import get_app
 from .billing import get_stripe
 from .profile_store import _users_collection, delete_settings, get_settings
@@ -82,6 +83,8 @@ def get_stats() -> dict:
         "by_plan": by_plan,
         "admin_count": sum(1 for u in users if u["is_admin"]),
         "recent_signups": recent,
+        "ai_calls_today": ai_budget.calls_used_today(),
+        "ai_daily_limit": ai_budget.DAILY_AI_CALL_LIMIT,
     }
 
 

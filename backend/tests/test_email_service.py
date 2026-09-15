@@ -71,3 +71,37 @@ def test_send_email_returns_false_on_non_2xx_status(monkeypatch):
     monkeypatch.setattr(email_service.urllib.request, "urlopen", lambda req, timeout=None: FakeResponse())
 
     assert email_service.send_email("dj@example.com", "Subject", "<p>Hi</p>") is False
+
+
+def test_notify_admins_does_nothing_when_unset(monkeypatch):
+    monkeypatch.setattr(email_service, "ADMIN_EMAIL", "")
+    sent = []
+    monkeypatch.setattr(email_service, "send_email", lambda *a, **k: sent.append(1) or True)
+
+    email_service.notify_admins("Subject", "<p>Hi</p>")
+
+    assert sent == []
+
+
+def test_notify_admins_sends_to_every_comma_separated_address(monkeypatch):
+    monkeypatch.setattr(email_service, "ADMIN_EMAIL", "one@crateprep.app, two@crateprep.app")
+    sent = []
+    monkeypatch.setattr(email_service, "send_email", lambda to, subject, html: sent.append(to) or True)
+
+    email_service.notify_admins("Subject", "<p>Hi</p>")
+
+    assert sent == ["one@crateprep.app", "two@crateprep.app"]
+
+
+def test_notify_admins_passes_subject_and_html_through(monkeypatch):
+    monkeypatch.setattr(email_service, "ADMIN_EMAIL", "admin@crateprep.app")
+    captured = {}
+    monkeypatch.setattr(
+        email_service,
+        "send_email",
+        lambda to, subject, html: captured.update(to=to, subject=subject, html=html) or True,
+    )
+
+    email_service.notify_admins("Alert!", "<p>Details</p>")
+
+    assert captured == {"to": "admin@crateprep.app", "subject": "Alert!", "html": "<p>Details</p>"}

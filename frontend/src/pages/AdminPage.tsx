@@ -186,6 +186,44 @@ function UsersTab({
   )
 }
 
+function AiUsageCard({ callsToday, dailyLimit }: { callsToday: number; dailyLimit: number }) {
+  const ratio = dailyLimit > 0 ? callsToday / dailyLimit : 0
+  const exhausted = ratio >= 1
+  const nearLimit = !exhausted && ratio >= 0.8
+
+  const barColor = exhausted ? "bg-red-500" : nearLimit ? "bg-amber-400" : "bg-secondary-container"
+  const textColor = exhausted ? "text-red-400" : nearLimit ? "text-amber-400" : "text-white"
+
+  return (
+    <Card>
+      <div className="flex items-center justify-between">
+        <h3 className="text-headline-sm text-white">AI calls today</h3>
+        <span className={`text-body-sm font-semibold ${textColor}`}>
+          {exhausted ? "Budget exhausted" : nearLimit ? "Approaching limit" : "Healthy"}
+        </span>
+      </div>
+      <div className="flex items-baseline gap-2">
+        <span className={`text-headline-lg ${textColor}`}>{callsToday}</span>
+        <span className="text-body-sm text-white/60">/ {dailyLimit} today</span>
+      </div>
+      <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
+        <div
+          className={`h-full rounded-full ${barColor}`}
+          style={{ width: `${Math.min(ratio, 1) * 100}%` }}
+        />
+      </div>
+      {(exhausted || nearLimit) && (
+        <p className="text-body-sm text-white/60">
+          Filename cleanup, batch summaries, and feedback triage share this cap.
+          {exhausted
+            ? " They're sitting out for the rest of the day; an alert email has been sent."
+            : " Getting close to today's cap."}
+        </p>
+      )}
+    </Card>
+  )
+}
+
 function StatsTab({ stats, error }: { stats: AdminStats | null; error: string | null }) {
   if (error) return <p className="text-body-sm text-red-400">{error}</p>
   if (!stats) return <p className="text-body-md text-white/60">Loading...</p>
@@ -210,6 +248,8 @@ function StatsTab({ stats, error }: { stats: AdminStats | null; error: string | 
           <span className="text-headline-lg text-white">{stats.admin_count}</span>
         </Card>
       </div>
+
+      <AiUsageCard callsToday={stats.ai_calls_today} dailyLimit={stats.ai_daily_limit} />
 
       <Card>
         <h3 className="text-headline-sm text-white">Recent signups</h3>

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from app import ai_budget, rate_limit
+from app import ai_budget, ai_client, rate_limit
 
 
 @pytest.fixture(autouse=True)
@@ -25,5 +25,9 @@ def _reset_ai_budget_state():
     feature (ai_cleanup/batch_summary/feedback_summary) consumes from the
     same global counter unless this resets between every test."""
     ai_budget._calls.clear()
+    ai_budget._alerted_day = None
+    ai_client._rate_limit_alerted_day = None
     yield
     ai_budget._calls.clear()
+    ai_budget._alerted_day = None
+    ai_client._rate_limit_alerted_day = None

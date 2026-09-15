@@ -15,7 +15,7 @@ export function PrivacyPage() {
         },
         {
           heading: "3. Third-Party Services",
-          body: "We use Firebase (Google) for account authentication and to store your profile settings. To help detect a track's genre, we send the cleaned artist/title text (never the audio file itself) to Spotify's and Discogs' public APIs. If you opt in via our cookie consent banner, we use Google Analytics to understand overall usage (pages visited, features used) — it doesn't run unless you accept, and never sees your audio files or filenames. If you enable AI-assisted features (filename cleanup, batch summaries, feedback triage), the relevant text is sent to Anthropic's Claude API to generate that feature's output. Stripe processes payments for Pro subscriptions and never sees your audio files.",
+          body: "We use Firebase (Google) for account authentication and to store your profile settings. To help detect a track's genre, we send the cleaned artist/title text (never the audio file itself) to Spotify's and Discogs' public APIs. If you opt in via our cookie consent banner, we use Google Analytics to understand overall usage (pages visited, features used) — it doesn't run unless you accept, and never sees your audio files or filenames. If you enable AI-assisted features (filename cleanup, batch summaries, feedback triage), the relevant text is sent to Google's Gemini API to generate that feature's output. Stripe processes payments for Pro subscriptions and never sees your audio files.",
         },
         {
           heading: "4. Data Retention",

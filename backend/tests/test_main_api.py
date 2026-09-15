@@ -223,58 +223,30 @@ def test_submit_feedback_rejects_invalid_category(client):
     assert res.status_code == 400
 
 
-def test_submit_feedback_sends_admin_alert_when_configured(client, monkeypatch):
-    monkeypatch.setenv("ADMIN_EMAIL", "admin@crateprep.app")
+def test_submit_feedback_sends_admin_alert(client, monkeypatch):
     monkeypatch.setattr(
         main,
         "create_feedback",
         lambda *a, **k: {"feedback_id": "f1", "category": "support", "read": False},
     )
-    sent = []
-    monkeypatch.setattr(main, "send_email", lambda to, subject, html: sent.append((to, subject, html)) or True)
+    captured = {}
+    monkeypatch.setattr(
+        main, "notify_admins", lambda subject, html: captured.update(subject=subject, html=html)
+    )
 
     res = client.post("/feedback", json={"category": "support", "message": "it's broken"})
 
     assert res.status_code == 200
-    assert len(sent) == 1
-    assert sent[0][0] == "admin@crateprep.app"
-    assert "support" in sent[0][1].lower()
-    assert "it&#x27;s broken" in sent[0][2]
-
-
-def test_submit_feedback_admin_alert_supports_multiple_recipients(client, monkeypatch):
-    monkeypatch.setenv("ADMIN_EMAIL", "one@crateprep.app, two@crateprep.app")
-    monkeypatch.setattr(
-        main, "create_feedback", lambda *a, **k: {"feedback_id": "f1", "read": False}
-    )
-    sent = []
-    monkeypatch.setattr(main, "send_email", lambda to, subject, html: sent.append(to) or True)
-
-    res = client.post("/feedback", json={"category": "feedback", "message": "hi"})
-
-    assert res.status_code == 200
-    assert sent == ["one@crateprep.app", "two@crateprep.app"]
-
-
-def test_submit_feedback_skips_admin_alert_when_not_configured(client, monkeypatch):
-    monkeypatch.delenv("ADMIN_EMAIL", raising=False)
-    monkeypatch.setattr(
-        main, "create_feedback", lambda *a, **k: {"feedback_id": "f1", "read": False}
-    )
-    sent = []
-    monkeypatch.setattr(main, "send_email", lambda *a, **k: sent.append(1) or True)
-
-    res = client.post("/feedback", json={"category": "feedback", "message": "hi"})
-
-    assert res.status_code == 200
-    assert sent == []
+    assert "support" in captured["subject"].lower()
+    assert "it&#x27;s broken" in captured["html"]
 
 
 def test_submit_feedback_admin_alert_not_sent_when_discarded_as_spam(client, monkeypatch):
-    monkeypatch.setenv("ADMIN_EMAIL", "admin@crateprep.app")
-    monkeypatch.setattr(main, "create_feedback", lambda *a, **k: (_ for _ in ()).throw(AssertionError("should not persist")))
-    sent = []
-    monkeypatch.setattr(main, "send_email", lambda *a, **k: sent.append(1) or True)
+    monkeypatch.setattr(
+        main, "create_feedback", lambda *a, **k: (_ for _ in ()).throw(AssertionError("should not persist"))
+    )
+    called = []
+    monkeypatch.setattr(main, "notify_admins", lambda *a, **k: called.append(1))
 
     res = client.post(
         "/feedback",
@@ -282,7 +254,7 @@ def test_submit_feedback_admin_alert_not_sent_when_discarded_as_spam(client, mon
     )
 
     assert res.status_code == 200
-    assert sent == []
+    assert called == []
 
 
 def test_admin_feedback_requires_auth(client):

@@ -196,3 +196,14 @@ def test_list_discount_codes_falls_back_for_legacy_code_without_promo_id(
 
     assert codes[0]["used_count"] == 0
     fake_stripe.PromotionCode.retrieve.assert_not_called()
+
+
+def test_get_stats_includes_ai_budget_status(monkeypatch):
+    monkeypatch.setattr(admin_store, "list_users", lambda: [])
+    monkeypatch.setattr(admin_store.ai_budget, "calls_used_today", lambda: 7)
+    monkeypatch.setattr(admin_store.ai_budget, "DAILY_AI_CALL_LIMIT", 500)
+
+    stats = admin_store.get_stats()
+
+    assert stats["ai_calls_today"] == 7
+    assert stats["ai_daily_limit"] == 500
