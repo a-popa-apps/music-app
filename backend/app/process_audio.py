@@ -17,7 +17,7 @@ from .batch_summary import generate_batch_summary
 from .clean_filename import compose_name, guess_split, local_dash_split, prepare_stem
 from .detect_bpm import ANALYSIS_SECONDS, detect_bpm
 from .detect_energy import detect_energy
-from .detect_genre import detect_genre, lookup_track
+from .detect_genre import detect_genre, fetch_artwork, lookup_track
 from .detect_key import detect_key
 from .playlist import build_playlist
 from .read_tags import read_embedded_tags
@@ -111,35 +111,44 @@ def _resolve_artist_title_genre(
 
     if embedded_tags and not tag_conflicts_with_filename:
         artist, title = embedded_tags["artist"], embedded_tags["title"]
-        genre = embedded_tags["genre"] or detect_genre(artist, title, deep_search=deep_search)
+        if embedded_tags["genre"]:
+            genre = embedded_tags["genre"]
+        else:
+            lookup = detect_genre(artist, title, deep_search=deep_search)
+            genre = lookup["genre"]
+            debug["artwork_url"] = lookup["artwork_url"]
         debug["name_source"] = "embedded_tags"
         return artist, title, genre, debug
 
     if dash_split:
         artist, title = dash_split
-        genre = detect_genre(artist, title, deep_search=deep_search)
+        lookup = detect_genre(artist, title, deep_search=deep_search)
         debug["name_source"] = "local_dash_split"
-        return artist, title, genre, debug
+        debug["artwork_url"] = lookup["artwork_url"]
+        return artist, title, lookup["genre"], debug
 
     match = lookup_track(stem)
     if match:
         debug["name_source"] = "catalog_match"
+        debug["artwork_url"] = match.get("artwork_url")
         return match["artist"], match["title"], match["genre"], debug
 
     if ai_cleanup:
         split = ai_split_artist_title(stem)
         if split:
             artist, title = split
-            genre = detect_genre(artist, title, deep_search=deep_search)
+            lookup = detect_genre(artist, title, deep_search=deep_search)
             debug["name_source"] = "ai_cleanup"
-            return artist, title, genre, debug
+            debug["artwork_url"] = lookup["artwork_url"]
+            return artist, title, lookup["genre"], debug
 
     split = guess_split(stem)
     if split:
         artist, title = split
         debug["name_source"] = "guessed"
-        genre = detect_genre(artist, title, deep_search=deep_search)
-        return artist, title, genre, debug
+        lookup = detect_genre(artist, title, deep_search=deep_search)
+        debug["artwork_url"] = lookup["artwork_url"]
+        return artist, title, lookup["genre"], debug
 
     return None, None, None, debug
 
@@ -158,6 +167,9 @@ def _analyze_and_tag(
     artist, title, genre, name_debug = _resolve_artist_title_genre(
         stem, deep_search, embedded_tags=embedded_tags, ai_cleanup=ai_cleanup
     )
+    # Internal-only -- used below to fetch and embed cover art, not meant
+    # for the manifest/results table, so it doesn't ride along in name_debug.
+    artwork_url = name_debug.pop("artwork_url", None)
     if embedded_tags and not version_tag:
         version_tag = embedded_tags["version_tag"]
 
@@ -236,9 +248,19 @@ def _analyze_and_tag(
         duration=entry["duration_seconds"],
     )
 
+    artwork = fetch_artwork(artwork_url)
+
     try:
         tagged_content = write_tags(
-            content, ext, bpm=bpm, key_tag=tonality, genre=genre, artist=artist, title=title
+            content,
+            ext,
+            bpm=bpm,
+            key_tag=tonality,
+            genre=genre,
+            artist=artist,
+            title=title,
+            artwork=artwork[0] if artwork else None,
+            artwork_mime=artwork[1] if artwork else "image/jpeg",
         )
     except Exception as e:
         tagged_content = content

@@ -98,3 +98,115 @@ def test_no_values_leaves_no_tags_but_still_returns_valid_file():
     content = _make_wav_bytes()
     tagged = write_tags(content, ".wav")
     assert len(tagged) > 0
+
+
+_FAKE_JPEG = b"\xff\xd8\xff\xe0" + b"\x00" * 32 + b"\xff\xd9"
+
+
+def test_write_and_read_back_wav_artwork():
+    content = _make_wav_bytes()
+    tagged = write_tags(content, ".wav", artwork=_FAKE_JPEG, artwork_mime="image/jpeg")
+
+    from mutagen.wave import WAVE
+
+    with tempfile.NamedTemporaryFile(suffix=".wav") as tmp:
+        tmp.write(tagged)
+        tmp.flush()
+        audio = WAVE(tmp.name)
+        apic = audio.tags["APIC:Cover"]
+        assert apic.data == _FAKE_JPEG
+        assert apic.mime == "image/jpeg"
+
+
+def test_write_and_read_back_flac_artwork():
+    content = _make_flac_bytes()
+    tagged = write_tags(content, ".flac", artwork=_FAKE_JPEG, artwork_mime="image/jpeg")
+
+    from mutagen.flac import FLAC
+
+    with tempfile.NamedTemporaryFile(suffix=".flac") as tmp:
+        tmp.write(tagged)
+        tmp.flush()
+        audio = FLAC(tmp.name)
+        assert len(audio.pictures) == 1
+        assert audio.pictures[0].data == _FAKE_JPEG
+        assert audio.pictures[0].mime == "image/jpeg"
+
+
+def _make_ogg_bytes() -> bytes:
+    """essentia's MonoWriter doesn't produce a valid Ogg Vorbis stream for
+    format="ogg" (fails to even load back with mutagen) -- ffmpeg does."""
+    import shutil
+    import subprocess
+
+    if shutil.which("ffmpeg") is None:
+        pytest.skip("ffmpeg not available")
+
+    wav_path = None
+    ogg_path = None
+    try:
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+            tmp.write(_make_wav_bytes())
+            wav_path = tmp.name
+        ogg_path = wav_path.replace(".wav", ".ogg")
+        subprocess.run(
+            ["ffmpeg", "-y", "-i", wav_path, ogg_path, "-loglevel", "error"],
+            check=True,
+        )
+        with open(ogg_path, "rb") as f:
+            return f.read()
+    finally:
+        import os
+
+        for path in (wav_path, ogg_path):
+            if path and os.path.exists(path):
+                os.unlink(path)
+
+
+def test_write_and_read_back_ogg_artwork():
+    content = _make_ogg_bytes()
+    tagged = write_tags(content, ".ogg", artwork=_FAKE_JPEG, artwork_mime="image/jpeg")
+
+    import base64
+
+    from mutagen.flac import Picture
+    from mutagen.oggvorbis import OggVorbis
+
+    with tempfile.NamedTemporaryFile(suffix=".ogg") as tmp:
+        tmp.write(tagged)
+        tmp.flush()
+        audio = OggVorbis(tmp.name)
+        encoded = audio["metadata_block_picture"][0]
+        pic = Picture(base64.b64decode(encoded))
+        assert pic.data == _FAKE_JPEG
+        assert pic.mime == "image/jpeg"
+
+
+def test_artwork_omitted_when_not_provided():
+    content = _make_wav_bytes()
+    tagged = write_tags(content, ".wav", bpm=128)
+
+    from mutagen.wave import WAVE
+
+    with tempfile.NamedTemporaryFile(suffix=".wav") as tmp:
+        tmp.write(tagged)
+        tmp.flush()
+        audio = WAVE(tmp.name)
+        assert "APIC:Cover" not in audio.tags
+
+
+def test_artwork_replaces_any_existing_cover_art():
+    content = _make_wav_bytes()
+    first_pass = write_tags(content, ".wav", artwork=_FAKE_JPEG)
+    second_jpeg = b"\xff\xd8\xff\xe0" + b"\x11" * 32 + b"\xff\xd9"
+    second_pass = write_tags(first_pass, ".wav", artwork=second_jpeg)
+
+    from mutagen.wave import WAVE
+
+    with tempfile.NamedTemporaryFile(suffix=".wav") as tmp:
+        tmp.write(second_pass)
+        tmp.flush()
+        audio = WAVE(tmp.name)
+        pictures = audio.tags.getall("APIC")
+        assert len(pictures) == 1
+        assert pictures[0].data == second_jpeg

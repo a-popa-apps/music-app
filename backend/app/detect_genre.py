@@ -11,8 +11,17 @@ import urllib.request
 SPOTIFY_CLIENT_ID = os.environ.get("SPOTIFY_CLIENT_ID")
 SPOTIFY_CLIENT_SECRET = os.environ.get("SPOTIFY_CLIENT_SECRET")
 DISCOGS_TOKEN = os.environ.get("DISCOGS_TOKEN")  # optional, raises the rate limit
+LASTFM_API_KEY = os.environ.get("LASTFM_API_KEY")  # required -- no-ops if unset
+
+# Shared public test key, same one TheAudioDB's own docs use for the free
+# tier -- there's no per-app registration for the free API.
+THEAUDIODB_API_KEY = os.environ.get("THEAUDIODB_API_KEY", "123")
 
 _spotify_token_cache = {"token": None, "expires_at": 0.0}
+
+# Cover art is typically 100KB-2MB even at 1000x1000 -- this is a sanity
+# ceiling against a misbehaving/unexpected response, not a real limit.
+MAX_ARTWORK_BYTES = 8 * 1024 * 1024
 
 
 def _get_json(url: str, headers: dict) -> dict:
@@ -25,6 +34,26 @@ def _post_json(url: str, data: bytes, headers: dict) -> dict:
     req = urllib.request.Request(url, data=data, headers=headers, method="POST")
     with urllib.request.urlopen(req, timeout=10) as resp:
         return json.loads(resp.read().decode("utf-8"))
+
+
+def fetch_artwork(url: str | None) -> tuple[bytes, str] | None:
+    """Downloads a catalog-supplied cover art URL, returning (bytes, mime)
+    or None on any failure -- artwork is a nice-to-have, never worth
+    failing a whole track's processing over."""
+    if not url:
+        return None
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "CratePrepApp/1.0"})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            content_type = resp.headers.get_content_type() or "image/jpeg"
+            if not content_type.startswith("image/"):
+                return None
+            data = resp.read(MAX_ARTWORK_BYTES + 1)
+            if len(data) > MAX_ARTWORK_BYTES:
+                return None
+            return data, content_type
+    except Exception:
+        return None
 
 
 def _get_spotify_token() -> str | None:
@@ -108,7 +137,10 @@ def _spotify_track_lookup(query: str) -> dict | None:
             except Exception:
                 pass
 
-            return {"artist": artist_name, "title": title, "genre": genre}
+            images = (item.get("album") or {}).get("images") or []
+            artwork_url = images[0]["url"] if images else None  # largest first, per Spotify's API
+
+            return {"artist": artist_name, "title": title, "genre": genre, "artwork_url": artwork_url}
         return None
     except Exception:
         return None
@@ -134,18 +166,90 @@ def _discogs_track_lookup(query: str) -> dict | None:
             styles = entry.get("style") or []
             genres = entry.get("genre") or []
             genre = styles[0] if styles else (genres[0] if genres else None)
-            return {"artist": artist, "title": title, "genre": genre}
+            # Discogs only returns a real cover_image (vs. an empty string)
+            # for token-authenticated requests -- harmless no-op without one.
+            artwork_url = entry.get("cover_image") or None
+            return {"artist": artist, "title": title, "genre": genre, "artwork_url": artwork_url}
+        return None
+    except Exception:
+        return None
+
+
+def _itunes_track_lookup(query: str) -> dict | None:
+    url = f"https://itunes.apple.com/search?term={urllib.parse.quote(query)}&media=music&entity=song&limit=5"
+    try:
+        result = _get_json(url, headers={"User-Agent": "CratePrepApp/1.0"})
+        for entry in result.get("results", []):
+            artist = entry.get("artistName")
+            title = entry.get("trackName")
+            if not artist or not title or not _is_plausible_match(query, artist, title):
+                continue
+
+            genre = entry.get("primaryGenreName")
+            # Comes back as a 100x100 thumbnail -- iTunes serves any size at
+            # the same path, so upsize it rather than embedding a postage stamp.
+            artwork_url = entry.get("artworkUrl100")
+            if artwork_url:
+                artwork_url = artwork_url.replace("100x100bb", "600x600bb")
+            return {"artist": artist, "title": title, "genre": genre, "artwork_url": artwork_url}
+        return None
+    except Exception:
+        return None
+
+
+def _deezer_track_lookup(query: str) -> dict | None:
+    url = f"https://api.deezer.com/search/track?q={urllib.parse.quote(query)}&limit=5"
+    try:
+        result = _get_json(url, headers={"User-Agent": "CratePrepApp/1.0"})
+        for entry in result.get("data", []):
+            artist = (entry.get("artist") or {}).get("name")
+            title = entry.get("title")
+            if not artist or not title or not _is_plausible_match(query, artist, title):
+                continue
+
+            # Deezer's search results don't include genre on the track
+            # itself -- it lives on the album, one more call away. Skipped
+            # here to keep this a single request; artwork is still useful
+            # on its own even without genre from this particular source.
+            album = entry.get("album") or {}
+            artwork_url = album.get("cover_xl") or album.get("cover_big") or album.get("cover_medium")
+            return {"artist": artist, "title": title, "genre": None, "artwork_url": artwork_url}
         return None
     except Exception:
         return None
 
 
 def lookup_track(query: str) -> dict | None:
-    """Search Spotify then Discogs for a dash-less filename, returning the
-    catalog's own artist/title split (and genre) instead of guessing."""
+    """Search a chain of catalogs for a dash-less filename, returning the
+    first plausible artist/title split (genre and artwork when available)
+    instead of guessing. Spotify and Discogs first (best genre data); iTunes
+    and Deezer as free, keyless fallbacks -- both handle a combined,
+    not-yet-split "artist title" query well. (MusicBrainz/TheAudioDB/Last.fm
+    need artist and title as separate, already-known fields to search
+    reliably, so they live in detect_genre's genre-only fallback chain
+    instead, not here.)
+
+    Keeps trying later sources for artwork alone once artist/title/genre are
+    already resolved -- Discogs without an API token (or a release Discogs
+    simply has no cover scanned for) returns no cover_image at all, and
+    stopping at the first plausible match would otherwise throw away decent
+    artwork iTunes or Deezer had for the same track."""
     if not query:
         return None
-    return _spotify_track_lookup(query) or _discogs_track_lookup(query)
+
+    match = None
+    for source in (_spotify_track_lookup, _discogs_track_lookup, _itunes_track_lookup, _deezer_track_lookup):
+        result = source(query)
+        if result is None:
+            continue
+        if match is None:
+            match = result
+        elif not match.get("artwork_url") and result.get("artwork_url"):
+            match["artwork_url"] = result["artwork_url"]
+        if match.get("artwork_url"):
+            break
+
+    return match
 
 
 DEEP_SEARCH_MAX_RELEASES = 10
@@ -245,22 +349,124 @@ def deep_discogs_lookup(artist: str, title: str) -> dict | None:
         return None
 
 
-def detect_genre(artist: str | None, title: str | None, deep_search: bool = False) -> str | None:
-    """Genre-only lookup for when artist/title are already known (e.g. from
-    a local dash split). Reuses lookup_track's plausibility-checked search
-    rather than trusting a single top result; falls back to the slower
-    deep_discogs_lookup when deep_search is enabled and the basic search
-    finds nothing."""
-    if not artist or not title:
+def _musicbrainz_genre_lookup(artist: str, title: str) -> dict | None:
+    """MusicBrainz's plain-text search ranks loosely enough that a query
+    like "daft punk one more time" can surface an unrelated track whose
+    *title* happens to contain those words (a cover/tribute recording,
+    for instance) ahead of the real one -- unlike Spotify/Discogs/iTunes/
+    Deezer's search, it isn't reliable for combined artist+title queries.
+    With artist and title already known and passed as separate structured
+    fields, it's a solid fallback purely for genre/tag data. Genre isn't on
+    the recording-search response itself -- needs a second call to fetch
+    the matched recording's own genre/tag list."""
+    query = f'artist:"{artist}" AND recording:"{title}"'
+    try:
+        search = _get_json(
+            f"https://musicbrainz.org/ws/2/recording?query={urllib.parse.quote(query)}&fmt=json&limit=5",
+            headers={"User-Agent": "CratePrepApp/1.0 ( https://crateprep.app )"},
+        )
+        for recording in search.get("recordings", []):
+            credit = recording.get("artist-credit") or [{}]
+            candidate_artist = credit[0].get("name", "")
+            candidate_title = recording.get("title", "")
+            if not _is_plausible_match(f"{artist} {title}", candidate_artist, candidate_title):
+                continue
+
+            genres = recording.get("genres") or []
+            if not genres:
+                detail = _get_json(
+                    f"https://musicbrainz.org/ws/2/recording/{recording['id']}?inc=genres&fmt=json",
+                    headers={"User-Agent": "CratePrepApp/1.0 ( https://crateprep.app )"},
+                )
+                genres = detail.get("genres") or []
+
+            top_genre = max(genres, key=lambda g: g.get("count", 0))["name"] if genres else None
+            return {"genre": top_genre, "artwork_url": None}
         return None
+    except Exception:
+        return None
+
+
+def _theaudiodb_genre_lookup(artist: str, title: str) -> dict | None:
+    url = (
+        "https://www.theaudiodb.com/api/v1/json/"
+        f"{THEAUDIODB_API_KEY}/searchtrack.php?s={urllib.parse.quote(artist)}&t={urllib.parse.quote(title)}"
+    )
+    try:
+        result = _get_json(url, headers={"User-Agent": "CratePrepApp/1.0"})
+        tracks = result.get("track") or []
+        for entry in tracks:
+            candidate_artist = entry.get("strArtist", "")
+            candidate_title = entry.get("strTrack", "")
+            if not _is_plausible_match(f"{artist} {title}", candidate_artist, candidate_title):
+                continue
+            return {
+                "genre": entry.get("strGenre") or None,
+                "artwork_url": entry.get("strTrackThumb") or None,
+            }
+        return None
+    except Exception:
+        return None
+
+
+def _lastfm_genre_lookup(artist: str, title: str) -> dict | None:
+    """No-op until LASTFM_API_KEY is set (free key, registered at
+    last.fm/api/account/create) -- same optional-integration pattern as
+    every other credential in this app. Tags are crowd-sourced, not a
+    strict genre taxonomy, so noisier than Spotify/Discogs -- last resort,
+    not tried first."""
+    if not LASTFM_API_KEY:
+        return None
+
+    url = (
+        "https://ws.audioscrobbler.com/2.0/?method=track.gettoptags"
+        f"&artist={urllib.parse.quote(artist)}&track={urllib.parse.quote(title)}"
+        f"&api_key={LASTFM_API_KEY}&format=json"
+    )
+    try:
+        result = _get_json(url, headers={"User-Agent": "CratePrepApp/1.0"})
+        tags = (result.get("toptags") or {}).get("tag") or []
+        if not tags:
+            return None
+        # Tags are freeform ("banger", "2020s") as often as they're genres --
+        # take the top one anyway, same trust level as Discogs' style field.
+        return {"genre": tags[0].get("name"), "artwork_url": None}
+    except Exception:
+        return None
+
+
+def detect_genre(artist: str | None, title: str | None, deep_search: bool = False) -> dict:
+    """Genre (and artwork, when found) lookup for when artist/title are
+    already known (e.g. from a local dash split). Reuses lookup_track's
+    plausibility-checked search first (Spotify/Discogs/iTunes/Deezer),
+    then MusicBrainz/TheAudioDB/Last.fm (cheap, single-call fallbacks) if
+    still no genre, then the slower deep_discogs_lookup last, only when
+    deep_search is enabled and everything else found nothing.
+
+    Returns {"genre": str | None, "artwork_url": str | None} -- artwork
+    is kept from the first source that had it even if a later source ends
+    up supplying the genre instead."""
+    if not artist or not title:
+        return {"genre": None, "artwork_url": None}
+
+    artwork_url = None
 
     match = lookup_track(f"{artist} {title}")
     if match:
-        return match["genre"]
+        artwork_url = match.get("artwork_url")
+        if match.get("genre"):
+            return {"genre": match["genre"], "artwork_url": artwork_url}
+
+    for fallback in (_musicbrainz_genre_lookup, _theaudiodb_genre_lookup, _lastfm_genre_lookup):
+        result = fallback(artist, title)
+        if result:
+            artwork_url = artwork_url or result.get("artwork_url")
+            if result.get("genre"):
+                return {"genre": result["genre"], "artwork_url": artwork_url}
 
     if deep_search:
         deep_match = deep_discogs_lookup(artist, title)
         if deep_match:
-            return deep_match["genre"]
+            return {"genre": deep_match["genre"], "artwork_url": artwork_url}
 
-    return None
+    return {"genre": None, "artwork_url": artwork_url}

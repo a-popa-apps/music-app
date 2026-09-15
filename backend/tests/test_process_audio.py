@@ -210,7 +210,11 @@ def test_resolve_artist_title_prefers_filename_when_tags_conflict(monkeypatch):
     # unambiguous "Artist - Title" split naming the real artist -- the
     # filename should win rather than silently propagating a mistagged
     # artist (e.g. from a re-rip or a bad auto-tagger).
-    monkeypatch.setattr(process_audio, "detect_genre", lambda artist, title, deep_search=False: None)
+    monkeypatch.setattr(
+        process_audio,
+        "detect_genre",
+        lambda artist, title, deep_search=False: {"genre": None, "artwork_url": None},
+    )
 
     artist, title, genre, debug = process_audio._resolve_artist_title_genre(
         "Real Artist - Real Title",
@@ -222,7 +226,11 @@ def test_resolve_artist_title_prefers_filename_when_tags_conflict(monkeypatch):
 
 
 def test_resolve_artist_title_trusts_tags_when_they_agree_with_filename(monkeypatch):
-    monkeypatch.setattr(process_audio, "detect_genre", lambda artist, title, deep_search=False: None)
+    monkeypatch.setattr(
+        process_audio,
+        "detect_genre",
+        lambda artist, title, deep_search=False: {"genre": None, "artwork_url": None},
+    )
 
     artist, title, genre, debug = process_audio._resolve_artist_title_genre(
         "real artist - Real Title",
@@ -240,7 +248,11 @@ def test_resolve_artist_title_prefers_filename_with_comma_separator_and_track_nu
     # The exact real-world case this was reported from: a ripped-CD-style
     # filename with a leading zero-padded track number and a comma
     # separator, plus tags mistagged with the wrong artist.
-    monkeypatch.setattr(process_audio, "detect_genre", lambda artist, title, deep_search=False: None)
+    monkeypatch.setattr(
+        process_audio,
+        "detect_genre",
+        lambda artist, title, deep_search=False: {"genre": None, "artwork_url": None},
+    )
 
     stem, _, _ = process_audio.prepare_stem("09 Slam , Life Between Life.mp3")
     artist, title, genre, debug = process_audio._resolve_artist_title_genre(
@@ -261,7 +273,11 @@ def test_resolve_artist_title_trusts_tags_when_filename_has_no_dash_split(monkey
     # No explicit "Artist - Title" filename to compare against -- tags stay
     # authoritative, matching the app's primary use case (messy filename,
     # trustworthy tags).
-    monkeypatch.setattr(process_audio, "detect_genre", lambda artist, title, deep_search=False: None)
+    monkeypatch.setattr(
+        process_audio,
+        "detect_genre",
+        lambda artist, title, deep_search=False: {"genre": None, "artwork_url": None},
+    )
 
     artist, title, genre, debug = process_audio._resolve_artist_title_genre(
         "messydownloadfilenamev2final",
@@ -368,3 +384,64 @@ def test_build_corrected_zip_dedupes_names_that_collide():
 
     assert len(names) == 2
     assert len(set(names)) == 2
+
+
+_FAKE_ARTWORK = (b"\xff\xd8\xff\xe0" + b"\x00" * 32 + b"\xff\xd9", "image/jpeg")
+
+
+def test_build_zip_embeds_catalog_artwork_when_found(monkeypatch):
+    monkeypatch.setattr(
+        process_audio,
+        "detect_genre",
+        lambda artist, title, deep_search=False: {
+            "genre": "House",
+            "artwork_url": "https://example.com/cover.jpg",
+        },
+    )
+    monkeypatch.setattr(
+        process_audio, "fetch_artwork", lambda url: _FAKE_ARTWORK if url else None
+    )
+
+    files = [_upload("Real Artist - Real Title.wav", _make_wav(200))]
+    zip_bytes, manifest = asyncio.run(process_audio.build_zip(files))
+
+    # Not a manifest field -- internal-only, used to embed the tag itself.
+    [entry] = manifest.values()
+    assert "artwork_url" not in entry
+
+    with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
+        [wav_name] = [n for n in zf.namelist() if n.endswith(".wav")]
+        tagged_bytes = zf.read(wav_name)
+
+    with tempfile.NamedTemporaryFile(suffix=".wav") as tmp:
+        tmp.write(tagged_bytes)
+        tmp.flush()
+        from mutagen.wave import WAVE
+
+        audio = WAVE(tmp.name)
+        apic = audio.tags["APIC:Cover"]
+        assert apic.data == _FAKE_ARTWORK[0]
+        assert apic.mime == _FAKE_ARTWORK[1]
+
+
+def test_build_zip_has_no_artwork_tag_when_none_found(monkeypatch):
+    monkeypatch.setattr(
+        process_audio,
+        "detect_genre",
+        lambda artist, title, deep_search=False: {"genre": None, "artwork_url": None},
+    )
+
+    files = [_upload("Real Artist - Real Title.wav", _make_wav(200))]
+    zip_bytes, _ = asyncio.run(process_audio.build_zip(files))
+
+    with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
+        [wav_name] = [n for n in zf.namelist() if n.endswith(".wav")]
+        tagged_bytes = zf.read(wav_name)
+
+    with tempfile.NamedTemporaryFile(suffix=".wav") as tmp:
+        tmp.write(tagged_bytes)
+        tmp.flush()
+        from mutagen.wave import WAVE
+
+        audio = WAVE(tmp.name)
+        assert "APIC:Cover" not in audio.tags
