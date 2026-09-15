@@ -109,6 +109,12 @@ def health():
         "ai_daily_limit": ai_budget.DAILY_AI_CALL_LIMIT,
         "sentry_configured": bool(os.environ.get("SENTRY_DSN")),
         "email_configured": bool(os.environ.get("RESEND_API_KEY")),
+        "stripe_configured": bool(
+            os.environ.get("STRIPE_SECRET_KEY")
+            and os.environ.get("STRIPE_WEBHOOK_SECRET")
+            and os.environ.get("STRIPE_PRICE_MONTHLY")
+            and os.environ.get("STRIPE_PRICE_ANNUAL")
+        ),
     }
 
 

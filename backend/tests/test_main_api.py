@@ -25,6 +25,20 @@ def test_health(client):
     assert "firebase_configured" in body
 
 
+def test_health_stripe_configured_requires_all_four_vars(client, monkeypatch):
+    required = ["STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET", "STRIPE_PRICE_MONTHLY", "STRIPE_PRICE_ANNUAL"]
+    for var in required:
+        monkeypatch.delenv(var, raising=False)
+    assert client.get("/health").json()["stripe_configured"] is False
+
+    for var in required:
+        monkeypatch.setenv(var, "test-value")
+    assert client.get("/health").json()["stripe_configured"] is True
+
+    monkeypatch.delenv("STRIPE_WEBHOOK_SECRET", raising=False)
+    assert client.get("/health").json()["stripe_configured"] is False
+
+
 def test_profile_requires_auth(client):
     assert client.get("/profile").status_code == 401
     assert client.put("/profile", json={}).status_code == 401
