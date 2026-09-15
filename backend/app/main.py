@@ -104,25 +104,16 @@ def startup():
 
 @app.get("/health")
 def health():
+    # Public and unauthenticated (uptime monitors hit this) -- deliberately
+    # bare. Which third-party integrations are configured, AI usage/limits,
+    # etc. used to live here too, but that's operational detail an anonymous
+    # caller has no business reading; it's on the admin-only /admin/stats
+    # instead.
     return {
         "status": "ok",
         "essentia": es.__file__ is not None,
         "mutagen": mutagen.version_string,
         "firebase_configured": get_app() is not None,
-        "spotify_configured": bool(
-            os.environ.get("SPOTIFY_CLIENT_ID") and os.environ.get("SPOTIFY_CLIENT_SECRET")
-        ),
-        "ai_cleanup_configured": bool(os.environ.get("GEMINI_API_KEY")),
-        "ai_calls_today": ai_budget.calls_used_today(),
-        "ai_daily_limit": ai_budget.DAILY_AI_CALL_LIMIT,
-        "sentry_configured": bool(os.environ.get("SENTRY_DSN")),
-        "email_configured": bool(os.environ.get("RESEND_API_KEY")),
-        "stripe_configured": bool(
-            os.environ.get("STRIPE_SECRET_KEY")
-            and os.environ.get("STRIPE_WEBHOOK_SECRET")
-            and os.environ.get("STRIPE_PRICE_MONTHLY")
-            and os.environ.get("STRIPE_PRICE_ANNUAL")
-        ),
     }
 
 
@@ -229,7 +220,23 @@ def admin_read_user_history(uid: str, request: Request):
 @app.get("/admin/stats")
 def admin_stats(request: Request):
     _require_admin(request)
-    return get_stats()
+    return {
+        **get_stats(),
+        # Which integrations are configured -- moved off the public /health
+        # endpoint, which had no business handing this to an anonymous caller.
+        "spotify_configured": bool(
+            os.environ.get("SPOTIFY_CLIENT_ID") and os.environ.get("SPOTIFY_CLIENT_SECRET")
+        ),
+        "ai_cleanup_configured": bool(os.environ.get("GEMINI_API_KEY")),
+        "sentry_configured": bool(os.environ.get("SENTRY_DSN")),
+        "email_configured": bool(os.environ.get("RESEND_API_KEY")),
+        "stripe_configured": bool(
+            os.environ.get("STRIPE_SECRET_KEY")
+            and os.environ.get("STRIPE_WEBHOOK_SECRET")
+            and os.environ.get("STRIPE_PRICE_MONTHLY")
+            and os.environ.get("STRIPE_PRICE_ANNUAL")
+        ),
+    }
 
 
 @app.get("/admin/billing-stats")

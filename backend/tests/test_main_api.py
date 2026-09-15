@@ -26,18 +26,41 @@ def test_health(client):
     assert "firebase_configured" in body
 
 
-def test_health_stripe_configured_requires_all_four_vars(client, monkeypatch):
+def test_health_does_not_leak_integration_config_or_ai_usage(client):
+    # /health is public and unauthenticated -- this stuff belongs behind
+    # /admin/stats instead, not handed to anyone who curls the URL.
+    body = client.get("/health").json()
+    for leaked_field in (
+        "stripe_configured",
+        "sentry_configured",
+        "email_configured",
+        "spotify_configured",
+        "ai_cleanup_configured",
+        "ai_calls_today",
+        "ai_daily_limit",
+    ):
+        assert leaked_field not in body
+
+
+def test_admin_stats_stripe_configured_requires_all_four_vars(client, monkeypatch):
+    monkeypatch.setattr(main, "get_current_user", lambda request: "admin-uid")
+    monkeypatch.setattr(main, "get_settings", lambda uid: {"is_admin": True})
+    monkeypatch.setattr(
+        main,
+        "get_stats",
+        lambda: {"total_users": 0, "by_plan": {}, "admin_count": 0, "recent_signups": []},
+    )
     required = ["STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET", "STRIPE_PRICE_MONTHLY", "STRIPE_PRICE_ANNUAL"]
     for var in required:
         monkeypatch.delenv(var, raising=False)
-    assert client.get("/health").json()["stripe_configured"] is False
+    assert client.get("/admin/stats").json()["stripe_configured"] is False
 
     for var in required:
         monkeypatch.setenv(var, "test-value")
-    assert client.get("/health").json()["stripe_configured"] is True
+    assert client.get("/admin/stats").json()["stripe_configured"] is True
 
     monkeypatch.delenv("STRIPE_WEBHOOK_SECRET", raising=False)
-    assert client.get("/health").json()["stripe_configured"] is False
+    assert client.get("/admin/stats").json()["stripe_configured"] is False
 
 
 def test_profile_requires_auth(client):
