@@ -77,3 +77,15 @@ export function trackEvent(name: string, params?: Record<string, unknown>) {
   if (!GA_MEASUREMENT_ID) return
   window.gtag?.("event", name, params)
 }
+
+/** Sent manually on the initial load and every client-side route change --
+ * config() above passes send_page_view: false so this is the only source of
+ * page_view events, avoiding a double-count on first load. */
+export function trackPageView(path: string) {
+  if (!GA_MEASUREMENT_ID) return
+  window.gtag?.("event", "page_view", {
+    page_path: path,
+    page_location: window.location.href,
+    page_title: document.title,
+  })
+}
