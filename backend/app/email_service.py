@@ -33,6 +33,11 @@ def send_email(to: str, subject: str, html: str) -> bool:
         headers={
             "Authorization": f"Bearer {RESEND_API_KEY}",
             "Content-Type": "application/json",
+            # api.resend.com sits behind Cloudflare, which has been seen
+            # blocking this request outright (403, Cloudflare error 1010)
+            # based on urllib's default "Python-urllib/x.y" User-Agent
+            # looking like a bot -- a real client identifier avoids that.
+            "User-Agent": "CratePrepBackend/1.0 (+https://crateprep.app)",
         },
         method="POST",
     )
