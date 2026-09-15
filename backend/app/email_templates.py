@@ -77,6 +77,21 @@ def verification_email_html(action_link: str) -> str:
     )
 
 
+def payment_failed_email_html(manage_billing_url: str) -> str:
+    return _base_email(
+        preheader="We couldn't process your CratePrep Pro payment.",
+        heading="We couldn't process your payment",
+        body_html=(
+            "Your card was declined on your CratePrep Pro subscription. "
+            "Update your payment method to keep your unlimited tracks, AI "
+            "set ordering, and saved templates — your account will "
+            "revert to the Free plan if this isn't resolved."
+        ),
+        button_text="Update Payment Method",
+        button_url=manage_billing_url,
+    )
+
+
 def password_reset_email_html(action_link: str) -> str:
     return _base_email(
         preheader="Reset your CratePrep password.",

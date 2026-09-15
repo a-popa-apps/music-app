@@ -7,9 +7,21 @@ import stripe
 from firebase_admin import auth as firebase_auth
 
 from .auth import get_app
+from .email_service import send_email
+from .email_templates import payment_failed_email_html
 from .profile_store import _users_collection, get_settings
 
 REVENUE_WINDOW_DAYS = 30
+
+# Stripe webhooks arrive with no browser Origin to derive a frontend URL
+# from (unlike every other endpoint here, which reads it off the request --
+# see main.py's _frontend_base_url) -- this is the one place that needs a
+# fixed fallback for links embedded in a webhook-triggered email.
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "https://music-app-sage-sigma.vercel.app")
+
+# A payment failure, not a deliberate cancellation -- worth a heads-up email
+# so a Pro subscriber doesn't silently lose access without knowing why.
+PAYMENT_FAILED_STATUSES = {"past_due", "unpaid"}
 
 PRICE_IDS = {
     "monthly": os.environ.get("STRIPE_PRICE_MONTHLY"),
@@ -160,6 +172,16 @@ def get_billing_stats() -> dict:
     }
 
 
+def _safe_get(obj, key: str, default=None):
+    """This stripe-python version's StripeObject doesn't support .get()
+    (dict-style [] access only -- see _stripe_obj's docstring in
+    tests/test_billing.py for the live-webhook bug this class of mistake
+    already caused once). `in` + [] works on both a real StripeObject and a
+    plain dict, so this is safe for production events and for test
+    fixtures that mock event["data"] as a plain dict."""
+    return obj[key] if key in obj else default
+
+
 def _uid_from_customer(client, customer_id: str | None) -> str | None:
     if not customer_id:
         return None
@@ -212,3 +234,17 @@ def handle_webhook_event(payload: bytes, sig_header: str) -> None:
             {"plan": _plan_for_status(status), "subscription_status": status},
             merge=True,
         )
+
+        # Only on the transition *into* a failed-payment state -- not on
+        # every subsequent webhook delivery while already there (Stripe
+        # retries/re-sends events), and not on a deliberate cancellation.
+        previous_attributes = _safe_get(event["data"], "previous_attributes", {})
+        previous_status = _safe_get(previous_attributes, "status")
+        if status in PAYMENT_FAILED_STATUSES and previous_status not in PAYMENT_FAILED_STATUSES:
+            email = _user_email(uid)
+            if email:
+                send_email(
+                    email,
+                    "Action needed: update your CratePrep payment method",
+                    payment_failed_email_html(f"{FRONTEND_URL}/profile"),
+                )

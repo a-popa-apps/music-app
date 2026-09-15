@@ -44,6 +44,23 @@ def test_plan_for_status():
     assert billing._plan_for_status(None) == "free"
 
 
+def test_safe_get_works_on_plain_dict():
+    assert billing._safe_get({"a": 1}, "a") == 1
+    assert billing._safe_get({"a": 1}, "missing", "default") == "default"
+
+
+def test_safe_get_works_on_stripe_object_without_dict_get():
+    # Regression test: this SDK version's StripeObject doesn't support
+    # .get() (dict-style [] access only) -- _safe_get must work against the
+    # real type webhook events actually deliver, not just a plain dict.
+    from stripe._stripe_object import StripeObject
+
+    obj = StripeObject.construct_from({"a": 1}, "sk_test_x")
+    assert not hasattr(obj, "get")
+    assert billing._safe_get(obj, "a") == 1
+    assert billing._safe_get(obj, "missing", "default") == "default"
+
+
 def test_create_checkout_session_rejects_invalid_cycle(fake_users, fake_stripe):
     with pytest.raises(ValueError):
         billing.create_checkout_session("uid-1", "weekly", "https://x/success", "https://x/cancel")
@@ -132,6 +149,80 @@ def test_webhook_falls_back_to_customer_lookup_for_uid(fake_users, fake_stripe):
     settings = profile_store.get_settings("uid-2")
     assert settings["plan"] == "free"
     assert settings["subscription_status"] == "past_due"
+
+
+def test_webhook_sends_payment_failed_email_on_transition_to_past_due(fake_users, fake_stripe, monkeypatch):
+    fake_users.document("uid-1").set({"plan": "pro", "subscription_status": "active"}, merge=True)
+    sent = []
+    monkeypatch.setattr(billing, "send_email", lambda to, subject, html: sent.append((to, subject)) or True)
+    fake_stripe.Webhook.construct_event.return_value = {
+        "type": "customer.subscription.updated",
+        "data": {
+            "object": _stripe_obj({"metadata": {"uid": "uid-1"}, "customer": "cus_123", "status": "past_due"}),
+            "previous_attributes": {"status": "active"},
+        },
+    }
+
+    billing.handle_webhook_event(b"payload", "sig")
+
+    assert len(sent) == 1
+    assert sent[0][0] == "test@example.com"
+    assert "payment" in sent[0][1].lower()
+
+
+def test_webhook_does_not_resend_payment_failed_email_while_already_past_due(
+    fake_users, fake_stripe, monkeypatch
+):
+    # Stripe can re-deliver the same event, or send further updates while a
+    # subscription sits in past_due -- only the *transition into* the state
+    # should trigger the email, not every update while already there.
+    fake_users.document("uid-1").set({"plan": "free", "subscription_status": "past_due"}, merge=True)
+    sent = []
+    monkeypatch.setattr(billing, "send_email", lambda *a, **k: sent.append(1) or True)
+    fake_stripe.Webhook.construct_event.return_value = {
+        "type": "customer.subscription.updated",
+        "data": {
+            "object": _stripe_obj({"metadata": {"uid": "uid-1"}, "customer": "cus_123", "status": "past_due"}),
+            "previous_attributes": {"status": "past_due"},
+        },
+    }
+
+    billing.handle_webhook_event(b"payload", "sig")
+
+    assert sent == []
+
+
+def test_webhook_does_not_send_payment_failed_email_on_deliberate_cancellation(
+    fake_users, fake_stripe, monkeypatch
+):
+    fake_users.document("uid-1").set({"plan": "pro", "subscription_status": "active"}, merge=True)
+    sent = []
+    monkeypatch.setattr(billing, "send_email", lambda *a, **k: sent.append(1) or True)
+    fake_stripe.Webhook.construct_event.return_value = {
+        "type": "customer.subscription.deleted",
+        "data": {"object": _stripe_obj({"metadata": {"uid": "uid-1"}, "customer": "cus_123"})},
+    }
+
+    billing.handle_webhook_event(b"payload", "sig")
+
+    assert sent == []
+
+
+def test_webhook_skips_payment_failed_email_when_no_email_on_file(fake_users, fake_stripe, monkeypatch):
+    monkeypatch.setattr(billing, "_user_email", lambda uid: None)
+    sent = []
+    monkeypatch.setattr(billing, "send_email", lambda *a, **k: sent.append(1) or True)
+    fake_stripe.Webhook.construct_event.return_value = {
+        "type": "customer.subscription.updated",
+        "data": {
+            "object": _stripe_obj({"metadata": {"uid": "uid-1"}, "customer": "cus_123", "status": "unpaid"}),
+            "previous_attributes": {"status": "active"},
+        },
+    }
+
+    billing.handle_webhook_event(b"payload", "sig")
+
+    assert sent == []
 
 
 def test_get_billing_stats_requires_stripe_configured(monkeypatch):
