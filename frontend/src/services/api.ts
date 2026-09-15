@@ -498,3 +498,20 @@ export async function summarizeFeedback(idToken: string): Promise<{ summary: str
   if (!res.ok) throw new Error(`Failed to summarize feedback: ${res.status}`)
   return res.json()
 }
+
+export async function deleteFeedback(idToken: string, feedbackId: string): Promise<void> {
+  const res = await fetch(`${BACKEND_URL}/admin/feedback/${feedbackId}`, {
+    method: "DELETE",
+    headers: adminHeaders(idToken),
+  })
+  if (!res.ok) throw new Error(`Failed to delete feedback: ${res.status}`)
+}
+
+export async function deleteFeedbackBatch(idToken: string, feedbackIds: string[]): Promise<void> {
+  const res = await fetch(`${BACKEND_URL}/admin/feedback/bulk-delete`, {
+    method: "POST",
+    headers: adminHeaders(idToken),
+    body: JSON.stringify({ feedback_ids: feedbackIds }),
+  })
+  if (!res.ok) throw new Error(`Failed to delete feedback: ${res.status}`)
+}

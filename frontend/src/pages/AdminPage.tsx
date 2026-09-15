@@ -5,6 +5,8 @@ import { useAuth } from "../hooks/useAuth"
 import { useIsAdmin } from "../hooks/useIsAdmin"
 import {
   createDiscountCode,
+  deleteFeedback,
+  deleteFeedbackBatch,
   deleteUserAsAdmin,
   getAdminStats,
   getAdminUsers,
@@ -520,6 +522,9 @@ function FeedbackTab({
   const [aiSummary, setAiSummary] = useState<string | null | undefined>(undefined)
   const [summarizing, setSummarizing] = useState(false)
   const [summaryError, setSummaryError] = useState<string | null>(null)
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [bulkDeleting, setBulkDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   async function handleToggleRead(f: FeedbackSubmission) {
     setBusyId(f.feedback_id)
@@ -544,10 +549,64 @@ function FeedbackTab({
     }
   }
 
+  function toggleSelected(feedbackId: string) {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(feedbackId)) next.delete(feedbackId)
+      else next.add(feedbackId)
+      return next
+    })
+  }
+
+  function toggleSelectAll() {
+    if (!feedback) return
+    setSelected((prev) => (prev.size === feedback.length ? new Set() : new Set(feedback.map((f) => f.feedback_id))))
+  }
+
+  async function handleDelete(f: FeedbackSubmission) {
+    const confirmed = window.confirm("Delete this submission? This cannot be undone.")
+    if (!confirmed) return
+    setDeleteError(null)
+    setBusyId(f.feedback_id)
+    try {
+      await deleteFeedback(token, f.feedback_id)
+      setSelected((prev) => {
+        const next = new Set(prev)
+        next.delete(f.feedback_id)
+        return next
+      })
+      onReload()
+    } catch {
+      setDeleteError("Couldn't delete that submission.")
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  async function handleBulkDelete() {
+    const count = selected.size
+    const confirmed = window.confirm(
+      `Delete ${count} submission${count === 1 ? "" : "s"}? This cannot be undone.`
+    )
+    if (!confirmed) return
+    setDeleteError(null)
+    setBulkDeleting(true)
+    try {
+      await deleteFeedbackBatch(token, [...selected])
+      setSelected(new Set())
+      onReload()
+    } catch {
+      setDeleteError("Couldn't delete the selected submissions.")
+    } finally {
+      setBulkDeleting(false)
+    }
+  }
+
   if (error) return <p className="text-body-sm text-red-400">{error}</p>
   if (!feedback) return <p className="text-body-md text-white/60">Loading...</p>
 
   const unreadCount = feedback.filter((f) => !f.read).length
+  const allSelected = feedback.length > 0 && selected.size === feedback.length
 
   return (
     <div className="flex flex-col gap-4">
@@ -582,6 +641,24 @@ function FeedbackTab({
         </Card>
       )}
 
+      {deleteError && <p className="text-body-sm text-red-400">{deleteError}</p>}
+
+      {selected.size > 0 && (
+        <div className="flex items-center justify-between rounded border border-red-400/40 bg-red-500/10 px-4 py-3">
+          <span className="text-body-sm text-white/80">
+            {selected.size} selected
+          </span>
+          <button
+            type="button"
+            onClick={handleBulkDelete}
+            disabled={bulkDeleting}
+            className="rounded-full border border-red-400 px-4 py-1.5 text-body-sm font-semibold text-red-300 hover:bg-red-500/10 disabled:opacity-50"
+          >
+            {bulkDeleting ? "Deleting..." : `Delete selected (${selected.size})`}
+          </button>
+        </div>
+      )}
+
       <Card>
       {feedback.length === 0 ? (
         <p className="text-body-md text-white/60">No submissions yet.</p>
@@ -590,11 +667,21 @@ function FeedbackTab({
           <table className="w-full text-left text-body-sm">
             <thead>
               <tr className="border-b border-white/10 text-white/60">
+                <th className="py-2 pr-4">
+                  <input
+                    type="checkbox"
+                    aria-label="Select all"
+                    checked={allSelected}
+                    onChange={toggleSelectAll}
+                    className="h-4 w-4 rounded border-white/30 bg-transparent accent-secondary-container"
+                  />
+                </th>
                 <th className="py-2 pr-4">Type</th>
                 <th className="py-2 pr-4">Subject / Message</th>
                 <th className="py-2 pr-4">Email</th>
                 <th className="py-2 pr-4">Date</th>
                 <th className="py-2 pr-4">Read</th>
+                <th className="py-2 pr-4"></th>
               </tr>
             </thead>
             <tbody>
@@ -603,6 +690,15 @@ function FeedbackTab({
                   key={f.feedback_id}
                   className={`border-b border-white/10 ${f.read ? "" : "bg-secondary-container/10"}`}
                 >
+                  <td className="py-2 pr-4">
+                    <input
+                      type="checkbox"
+                      aria-label={`Select submission from ${f.email || "anonymous"}`}
+                      checked={selected.has(f.feedback_id)}
+                      onChange={() => toggleSelected(f.feedback_id)}
+                      className="h-4 w-4 rounded border-white/30 bg-transparent accent-secondary-container"
+                    />
+                  </td>
                   <td className="py-2 pr-4 text-white/60">
                     {f.category === "support" ? "Support" : "Feedback"}
                   </td>
@@ -630,6 +726,16 @@ function FeedbackTab({
                           f.read ? "translate-x-5" : "translate-x-0.5"
                         }`}
                       />
+                    </button>
+                  </td>
+                  <td className="py-2 pr-4">
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(f)}
+                      disabled={busyId === f.feedback_id}
+                      className="rounded-full border border-red-400 px-3 py-1 text-body-sm font-semibold text-red-300 hover:bg-red-500/10 disabled:opacity-50"
+                    >
+                      Delete
                     </button>
                   </td>
                 </tr>

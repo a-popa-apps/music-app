@@ -326,6 +326,59 @@ def test_admin_mark_feedback_read_allowed_for_admin(client, monkeypatch):
     assert res.json() == {"feedback_id": "f1", "read": True}
 
 
+def test_admin_delete_feedback_requires_auth(client):
+    assert client.delete("/admin/feedback/some-id").status_code == 401
+    assert client.post("/admin/feedback/bulk-delete", json={"feedback_ids": ["a"]}).status_code == 401
+
+
+def test_admin_delete_feedback_forbidden_for_non_admin(client, monkeypatch):
+    monkeypatch.setattr(main, "get_current_user", lambda request: "uid-1")
+    monkeypatch.setattr(main, "get_settings", lambda uid: {"is_admin": False})
+    assert client.delete("/admin/feedback/some-id").status_code == 403
+    assert client.post("/admin/feedback/bulk-delete", json={"feedback_ids": ["a"]}).status_code == 403
+
+
+def test_admin_delete_feedback_allowed_for_admin(client, monkeypatch):
+    monkeypatch.setattr(main, "get_current_user", lambda request: "admin-uid")
+    monkeypatch.setattr(main, "get_settings", lambda uid: {"is_admin": True})
+    captured = {}
+    monkeypatch.setattr(main, "delete_feedback", lambda feedback_id: captured.setdefault("id", feedback_id))
+
+    res = client.delete("/admin/feedback/f1")
+
+    assert res.status_code == 200
+    assert res.json() == {"deleted": True}
+    assert captured["id"] == "f1"
+
+
+def test_admin_delete_feedback_404_for_unknown_id(client, monkeypatch):
+    monkeypatch.setattr(main, "get_current_user", lambda request: "admin-uid")
+    monkeypatch.setattr(main, "get_settings", lambda uid: {"is_admin": True})
+
+    def fake_delete(feedback_id):
+        raise ValueError(f"No such feedback submission: {feedback_id!r}")
+
+    monkeypatch.setattr(main, "delete_feedback", fake_delete)
+
+    res = client.delete("/admin/feedback/does-not-exist")
+    assert res.status_code == 404
+
+
+def test_admin_bulk_delete_feedback_allowed_for_admin(client, monkeypatch):
+    monkeypatch.setattr(main, "get_current_user", lambda request: "admin-uid")
+    monkeypatch.setattr(main, "get_settings", lambda uid: {"is_admin": True})
+    captured = {}
+    monkeypatch.setattr(
+        main, "delete_feedback_batch", lambda feedback_ids: captured.setdefault("ids", feedback_ids)
+    )
+
+    res = client.post("/admin/feedback/bulk-delete", json={"feedback_ids": ["f1", "f2"]})
+
+    assert res.status_code == 200
+    assert res.json() == {"deleted": 2}
+    assert captured["ids"] == ["f1", "f2"]
+
+
 def test_admin_summarize_feedback_requires_auth(client):
     assert client.post("/admin/feedback/summarize").status_code == 401
 

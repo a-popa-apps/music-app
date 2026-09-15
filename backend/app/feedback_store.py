@@ -10,11 +10,15 @@ from .auth import get_app
 VALID_CATEGORIES = {"support", "feedback"}
 
 
-def _feedback_collection():
+def _firestore_client():
     app = get_app()
     if app is None:
         raise RuntimeError("Firebase is not configured")
-    return firestore.client(app=app).collection("feedback_submissions")
+    return firestore.client(app=app)
+
+
+def _feedback_collection():
+    return _firestore_client().collection("feedback_submissions")
 
 
 def create_feedback(
@@ -56,3 +60,20 @@ def mark_feedback_read(feedback_id: str, read: bool) -> dict:
         raise ValueError(f"No such feedback submission: {feedback_id!r}")
     ref.set({"read": bool(read)}, merge=True)
     return ref.get().to_dict()
+
+
+def delete_feedback(feedback_id: str) -> None:
+    ref = _feedback_collection().document(feedback_id)
+    if not ref.get().exists:
+        raise ValueError(f"No such feedback submission: {feedback_id!r}")
+    ref.delete()
+
+
+def delete_feedback_batch(feedback_ids: list[str]) -> None:
+    """Deletes multiple submissions (a "select all and delete" from the
+    admin UI). Unknown ids are skipped rather than raising -- by the time a
+    bulk delete lands, another admin tab or click may have already removed
+    one of the selected rows, and that's not a reason to fail the rest."""
+    collection = _feedback_collection()
+    for feedback_id in feedback_ids:
+        collection.document(feedback_id).delete()

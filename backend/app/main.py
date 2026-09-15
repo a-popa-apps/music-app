@@ -50,7 +50,13 @@ from .email_templates import (
     verification_email_html,
     welcome_email_html,
 )
-from .feedback_store import create_feedback, list_feedback, mark_feedback_read
+from .feedback_store import (
+    create_feedback,
+    delete_feedback,
+    delete_feedback_batch,
+    list_feedback,
+    mark_feedback_read,
+)
 from .feedback_summary import generate_feedback_summary
 from .history_store import add_history_entries, clear_history, list_history
 from .process_audio import (
@@ -299,6 +305,27 @@ def admin_mark_feedback_read(feedback_id: str, body: FeedbackReadUpdate, request
         return mark_feedback_read(feedback_id, body.read)
     except ValueError as e:
         raise HTTPException(404, str(e))
+
+
+@app.delete("/admin/feedback/{feedback_id}")
+def admin_delete_feedback(feedback_id: str, request: Request):
+    _require_admin(request)
+    try:
+        delete_feedback(feedback_id)
+    except ValueError as e:
+        raise HTTPException(404, str(e))
+    return {"deleted": True}
+
+
+class FeedbackBulkDelete(BaseModel):
+    feedback_ids: list[str]
+
+
+@app.post("/admin/feedback/bulk-delete")
+def admin_bulk_delete_feedback(body: FeedbackBulkDelete, request: Request):
+    _require_admin(request)
+    delete_feedback_batch(body.feedback_ids)
+    return {"deleted": len(body.feedback_ids)}
 
 
 @app.post("/admin/feedback/summarize")

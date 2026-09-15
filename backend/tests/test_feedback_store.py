@@ -55,3 +55,32 @@ def test_mark_feedback_read_toggles(fake_feedback):
 def test_mark_feedback_read_rejects_unknown_id(fake_feedback):
     with pytest.raises(ValueError):
         feedback_store.mark_feedback_read("does-not-exist", True)
+
+
+def test_delete_feedback_removes_entry(fake_feedback):
+    doc = feedback_store.create_feedback("feedback", "hello")
+    feedback_store.delete_feedback(doc["feedback_id"])
+    assert feedback_store.list_feedback() == []
+
+
+def test_delete_feedback_rejects_unknown_id(fake_feedback):
+    with pytest.raises(ValueError):
+        feedback_store.delete_feedback("does-not-exist")
+
+
+def test_delete_feedback_batch_removes_all_listed(fake_feedback):
+    a = feedback_store.create_feedback("feedback", "one")
+    b = feedback_store.create_feedback("feedback", "two")
+    c = feedback_store.create_feedback("feedback", "three")
+
+    feedback_store.delete_feedback_batch([a["feedback_id"], b["feedback_id"]])
+
+    remaining = feedback_store.list_feedback()
+    assert [d["feedback_id"] for d in remaining] == [c["feedback_id"]]
+
+
+def test_delete_feedback_batch_skips_unknown_ids(fake_feedback):
+    doc = feedback_store.create_feedback("feedback", "hello")
+    # Should not raise even though "does-not-exist" isn't a real id.
+    feedback_store.delete_feedback_batch([doc["feedback_id"], "does-not-exist"])
+    assert feedback_store.list_feedback() == []
