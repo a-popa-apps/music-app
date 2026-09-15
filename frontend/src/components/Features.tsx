@@ -1,8 +1,13 @@
-// Same gradient-border + glow treatment as the Pro plan card in Pricing.tsx
-// (an outer div's gradient background peeking through 2px of padding around
-// a solid inner card) -- here reserved for :hover instead of always-on, as a
-// "this is what Pro feels like" preview on cards that live on the free tier
-// of the page.
+// Same gradient-border + glow treatment as the Pro plan card in Pricing.tsx,
+// as a "this is what Pro feels like" preview on cards that live on the free
+// part of the page -- but only on hover, faded in with opacity rather than
+// toggling the gradient itself. A CSS background-image (what a gradient is)
+// can't be smoothly transitioned -- toggling it directly via hover: pops in
+// and out instantly no matter what transition classes surround it, which is
+// exactly what read as "flashing." The gradient here is always rendered on
+// its own layer behind the content and only ever fades via opacity, which
+// *does* transition smoothly; the content card on top keeps its own colors
+// transitioning normally since solid colors interpolate fine.
 function FeatureCard({
   className = "",
   children,
@@ -11,10 +16,12 @@ function FeatureCard({
   children: React.ReactNode
 }) {
   return (
-    <div
-      className={`group rounded-[calc(0.25rem+2px)] p-[2px] transition-shadow duration-300 hover:bg-gradient-to-r hover:from-secondary-container hover:to-[#ff3d78] hover:shadow-[0_0_70px_rgba(255,107,53,0.3)] ${className}`}
-    >
-      <div className="flex h-full flex-col rounded border border-white/10 bg-white/10 p-8 backdrop-blur-md transition-colors duration-300 group-hover:border-transparent group-hover:bg-[#12122a]/95">
+    <div className={`group relative rounded-[calc(1rem+4px)] ${className}`}>
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -inset-[2px] rounded-[calc(1rem+4px)] bg-gradient-to-r from-secondary-container to-[#ff3d78] opacity-0 shadow-[0_0_70px_rgba(255,107,53,0.3)] transition-opacity duration-500 ease-out group-hover:opacity-100"
+      />
+      <div className="relative flex h-full flex-col rounded-2xl border border-white/10 bg-white/10 p-8 backdrop-blur-md transition-colors duration-500 ease-out group-hover:border-transparent group-hover:bg-[#12122a]/95">
         {children}
       </div>
     </div>
