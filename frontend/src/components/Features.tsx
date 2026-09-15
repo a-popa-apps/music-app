@@ -3,29 +3,15 @@ const FEATURES = [
     icon: "spellcheck",
     title: "Zero Junk Filenames",
     description:
-      "Surgically strips '[FREE DOWNLOAD]', 'BUY_ON_BEATPORT', Telegram watermarks, and rip garbage automatically before export.",
-    footnote: 'Cleaned: "Artist - Title.wav"',
+      "Surgically strips '[FREE DOWNLOAD]', 'BUY_ON_BEATPORT', Telegram watermarks, and rip garbage automatically before export. When a filename has no separator and no catalog match, an AI model steps in to split artist and title correctly instead of a coin-flip guess.",
+    footnote: "AI Split: Pro Feature",
   },
   {
     icon: "speed",
-    title: "Rock-Solid BPM & Key",
+    title: "Rock-Solid BPM, Key & Genre",
     description:
-      "High-precision transient detection and Camelot harmonic wheel matching. Handles polyrhythms without drifting off grid.",
-    footnote: "99.8% Beat-Grid Transient Lock",
-  },
-  {
-    icon: "sell",
-    title: "Verified Genre & Energy Tags",
-    description:
-      "Cross-references Spotify and Discogs to tag every track's real genre, then rates its energy 1-10 from loudness -- no more guessing by ear.",
-    footnote: "Spotify + Discogs Verified",
-  },
-  {
-    icon: "auto_awesome",
-    title: "AI-Assisted Filename Cleanup",
-    description:
-      "When a filename has no separator and no catalog match -- the cases regex and Spotify/Discogs can't crack -- an AI model steps in to split artist and title correctly instead of a coin-flip word-count guess.",
-    footnote: "Pro Feature",
+      "High-precision transient detection and Camelot harmonic wheel matching handle polyrhythms without drifting off grid. Every track's real genre is cross-referenced against Spotify, Discogs, and more, then rated for energy 1-10 from loudness -- no more guessing by ear.",
+    footnote: "Verified Across 5+ Catalogs",
   },
   {
     icon: "insights",
@@ -38,15 +24,22 @@ const FEATURES = [
     icon: "shuffle",
     title: "AI Harmonic Set Ordering",
     description:
-      "One click orders your whole batch by Camelot-wheel compatibility and BPM -- starting straight from the messy files you dropped, no separate step to first build an organized library like other set-building tools require.",
+      "One click orders your whole batch by Camelot-wheel compatibility and BPM -- starting straight from the messy files you just downloaded. Other set-building tools, including ones built specifically for this, need an already-organized library to import first; CratePrep skips that step entirely.",
     footnote: "Pro Feature",
   },
   {
-    icon: "route",
-    title: "One Tool, Start To Finish",
+    icon: "devices",
+    title: "Ready For Any DJ Software",
     description:
-      "Everything else that orders a set -- including tools built specifically for it -- needs an already-organized, already-tagged library to import first. CratePrep starts from the messy folder you just downloaded: detection, cleanup, and harmonic set-ordering in one drop, no separate library-building step first.",
-    footnote: "Raw Files In, Ready Set Out",
+      "Every track is tagged with the correct BPM, key, and genre before you download, so it shows up right the moment you drag it into your library -- no manual fixes, no re-tagging.",
+    footnote: "Rekordbox, Serato & Traktor Verified",
+  },
+  {
+    icon: "security",
+    title: "No Files Retained",
+    description:
+      "Your tracks are processed for a single request and streamed back -- nothing is stored on our servers afterward.",
+    footnote: "Zero Retention Policy",
   },
 ]
 
@@ -85,54 +78,6 @@ export function Features() {
               </div>
             </div>
           ))}
-
-          <div className="flex flex-col rounded border border-white/10 bg-white/10 p-8 backdrop-blur-md transition-colors hover:bg-white/15 lg:col-span-2">
-            <div className="mb-6 flex h-10 w-10 items-center justify-center rounded-full bg-white/10">
-              <span className="material-symbols-outlined text-[22px] text-secondary-container">
-                devices
-              </span>
-            </div>
-            <h3 className="mb-2 text-headline-sm text-white">
-              Ready For Any DJ Software
-            </h3>
-            <p className="mb-4 text-body-md text-white/70">
-              Every track is tagged with the correct BPM, key, and genre
-              before you download, so it shows up right the moment you drag
-              it into your library — no manual fixes, no re-tagging.
-            </p>
-            <div className="mt-auto flex flex-wrap gap-1">
-              {[
-                "Standard BPM & Key Tags",
-                "Works With Any DJ Software",
-                "No Manual Re-Tagging",
-              ].map((tag) => (
-                <span
-                  key={tag}
-                  className="rounded-full bg-white/10 px-4 py-1 font-mono text-meta-badge text-white"
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex flex-col rounded border border-white/10 bg-white/10 p-8 backdrop-blur-md transition-colors hover:bg-white/15">
-            <div className="mb-6 flex h-10 w-10 items-center justify-center rounded-full bg-white/10">
-              <span className="material-symbols-outlined text-[22px] text-secondary-container">
-                security
-              </span>
-            </div>
-            <h3 className="mb-2 text-headline-sm text-white">
-              No Files Retained
-            </h3>
-            <p className="mb-4 text-body-md text-white/70">
-              Your tracks are processed for a single request and streamed
-              back — nothing is stored on our servers afterward.
-            </p>
-            <div className="mt-auto font-mono text-meta-numeric font-semibold text-secondary-container">
-              &bull; Zero Retention Policy
-            </div>
-          </div>
         </div>
       </div>
     </section>
