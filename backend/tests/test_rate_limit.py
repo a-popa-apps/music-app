@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import time
+
 import pytest
 from fastapi import HTTPException
 
@@ -75,3 +77,28 @@ def test_max_requests_override_allows_a_higher_ceiling_for_pro():
         rate_limit.enforce_rate_limit(
             request, key="uid-pro", max_requests=rate_limit.MAX_REQUESTS_PRO
         )
+
+
+def test_sweep_removes_only_fully_expired_buckets():
+    now = time.time()
+    rate_limit._requests["sweep-stale"] = [now - rate_limit.WINDOW_SECONDS - 10]
+    rate_limit._requests["sweep-fresh"] = [now - 5]
+    rate_limit._requests["sweep-empty"] = []
+
+    rate_limit._sweep_stale_buckets(now)
+
+    assert "sweep-stale" not in rate_limit._requests
+    assert "sweep-empty" not in rate_limit._requests
+    assert "sweep-fresh" in rate_limit._requests
+
+
+def test_enforce_rate_limit_sweeps_stale_buckets_when_triggered(monkeypatch):
+    request = _FakeRequest(host="10.0.0.11")
+    rate_limit.enforce_rate_limit(request)
+    # Simulate this bucket's window having fully expired since that call.
+    rate_limit._requests["10.0.0.11"] = [time.time() - rate_limit.WINDOW_SECONDS - 10]
+
+    monkeypatch.setattr(rate_limit.random, "random", lambda: 0.0)  # force the sweep to fire
+    rate_limit.enforce_rate_limit(_FakeRequest(host="10.0.0.12"))
+
+    assert "10.0.0.11" not in rate_limit._requests

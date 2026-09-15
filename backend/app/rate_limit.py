@@ -1,7 +1,7 @@
 from __future__ import annotations
 
+import random
 import time
-from collections import defaultdict
 
 from fastapi import HTTPException, Request
 
@@ -11,7 +11,13 @@ MAX_REQUESTS_PRO = 25
 
 # In-memory is fine for a single Render instance; would need a shared store
 # (e.g. Redis) if this ever runs across multiple instances.
-_requests: dict[str, list[float]] = defaultdict(list)
+_requests: dict[str, list[float]] = {}
+
+# Every call has a small chance of triggering a full sweep of stale buckets
+# (see _sweep_stale_buckets). Without this, a bucket for a one-time visitor
+# who never calls again would keep its (tiny but permanent) slot in
+# `_requests` forever, since nothing else ever revisits that key to trim it.
+_SWEEP_PROBABILITY = 0.01
 
 
 def _client_ip(request: Request) -> str:
@@ -19,6 +25,19 @@ def _client_ip(request: Request) -> str:
     if forwarded:
         return forwarded.split(",")[0].strip()
     return request.client.host if request.client else "unknown"
+
+
+def _sweep_stale_buckets(now: float) -> None:
+    """Removes every bucket whose entire timestamp window has already
+    expired. Run probabilistically rather than on every call -- scanning
+    the whole dict on every request would be wasteful at any real traffic
+    volume, but an occasional sweep still keeps memory bounded to roughly
+    the active window's worth of distinct callers instead of growing
+    forever with every uid/IP ever seen."""
+    cutoff = now - WINDOW_SECONDS
+    stale_keys = [key for key, timestamps in _requests.items() if not timestamps or timestamps[-1] < cutoff]
+    for key in stale_keys:
+        del _requests[key]
 
 
 def enforce_rate_limit(
@@ -31,9 +50,12 @@ def enforce_rate_limit(
     sized to its plan, rather than sharing a limit with everyone on the same
     IP/NAT -- falls back to client IP when no key is given (e.g. for a route
     that doesn't require auth)."""
-    bucket_key = key or _client_ip(request)
     now = time.time()
-    timestamps = _requests[bucket_key]
+    if random.random() < _SWEEP_PROBABILITY:
+        _sweep_stale_buckets(now)
+
+    bucket_key = key or _client_ip(request)
+    timestamps = _requests.setdefault(bucket_key, [])
 
     cutoff = now - WINDOW_SECONDS
     while timestamps and timestamps[0] < cutoff:
