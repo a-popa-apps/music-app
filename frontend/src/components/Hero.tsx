@@ -385,38 +385,47 @@ export function Hero() {
       genre: editDraft.genre.trim() || null,
       bpm,
     }
+    const values = { ...track, ...updates }
+    const correction: TrackCorrection = {
+      artist: values.artist,
+      title: values.title,
+      genre: values.genre,
+      bpm: values.bpm,
+      camelot: values.key,
+      tonality: values.tonality,
+      energy: values.energy,
+      duration_seconds: values.duration,
+    }
 
     setRetagging(true)
     setRetagError(null)
     try {
-      // Corrections are positional, matching uploadedFiles' fixed upload
-      // order (originalResults never gets reordered, only `results`
-      // does) -- one entry per file, with the edited track's fields
-      // overridden and everyone else's carried through unchanged.
-      const corrections: TrackCorrection[] = originalResults.map((t) => {
-        const values = t.originalIndex === track.originalIndex ? { ...t, ...updates } : t
-        return {
-          artist: values.artist,
-          title: values.title,
-          genre: values.genre,
-          bpm: values.bpm,
-          camelot: values.key,
-          tonality: values.tonality,
-          energy: values.energy,
-          duration_seconds: values.duration,
-        }
-      })
-
+      // Only the corrected file needs to go back to the backend -- every
+      // other track's already-tagged bytes are still sitting in zipFiles
+      // from the original /process response, so there's no reason to
+      // re-upload and re-tag the whole batch for a single typo fix.
+      const file = uploadedFiles[track.originalIndex]
       const idToken = user ? await user.getIdToken() : undefined
-      const blob = await retagFiles(uploadedFiles, corrections, idToken)
+      const blob = await retagFiles([file], [correction], idToken)
       const bytes = new Uint8Array(await blob.arrayBuffer())
       const unzipped = unzipSync(bytes)
-      const fresh = parseManifest(unzipped)
-      const freshByIndex = new Map(fresh.map((t) => [t.originalIndex, t]))
+      const [fresh] = parseManifest(unzipped)
+      if (!fresh) throw new Error("Empty retag response")
+      // parseManifest assigns originalIndex from position within this
+      // (single-entry) response -- always 0, so it has to be overridden
+      // with the real, stable index rather than trusted as-is.
+      const updated: ProcessedTrack = { ...fresh, originalIndex: track.originalIndex }
+      const newBytes = unzipped[updated.name]
 
-      setZipFiles(unzipped)
-      setResults((prev) => prev.map((t) => freshByIndex.get(t.originalIndex) ?? t))
-      setOriginalResults((prev) => prev.map((t) => freshByIndex.get(t.originalIndex) ?? t))
+      setZipFiles((prev) => {
+        if (!prev) return prev
+        const next = { ...prev }
+        if (track.name !== updated.name) delete next[track.name]
+        if (newBytes) next[updated.name] = newBytes
+        return next
+      })
+      setResults((prev) => prev.map((t) => (t.originalIndex === track.originalIndex ? updated : t)))
+      setOriginalResults((prev) => prev.map((t) => (t.originalIndex === track.originalIndex ? updated : t)))
       setEditingTrack(null)
     } catch {
       setRetagError("Couldn't save that correction. Try again.")
