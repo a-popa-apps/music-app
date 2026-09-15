@@ -7,7 +7,7 @@ Backend (Render):
 - [x] `FIREBASE_SERVICE_ACCOUNT_JSON` — **confirmed set** (`/health` → `firebase_configured: true`, checked 2026-09-14).
 - [ ] `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` / `STRIPE_PRICE_MONTHLY` / `STRIPE_PRICE_ANNUAL` — not checkable via `/health` (no field for it); still needs a real test-mode purchase to confirm end-to-end (see below).
 - [x] `SPOTIFY_CLIENT_ID` / `SPOTIFY_CLIENT_SECRET` — **confirmed set** (`/health` → `spotify_configured: true`, checked 2026-09-14).
-- [ ] `DISCOGS_TOKEN` — optional, unconfirmed either way; works without it.
+- [x] `DISCOGS_TOKEN` — **confirmed set** on Render, checked 2026-09-15. Verified the token itself works with a real Discogs search call before setting it. Optional — genre lookup already worked without it, this just raises the API rate limit (25 req/min unauthenticated → 60 req/min with a token). No `/health` field for it (nothing to gate on; Discogs lookup runs either way).
 
 Frontend (Vercel):
 - [x] `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_STORAGE_BUCKET`, `VITE_FIREBASE_MESSAGING_SENDER_ID`, `VITE_FIREBASE_APP_ID` — **confirmed set with real-looking values** (inspected the built production JS bundle at `music-app-sage-sigma.vercel.app`, found a real Firebase API key and `a-popa-music-apps.firebaseapp.com` auth domain baked in, checked 2026-09-14). Not the same as a verified end-to-end sign-in (no test credentials used) but rules out "vars are empty/placeholder".
