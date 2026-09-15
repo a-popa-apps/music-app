@@ -178,15 +178,38 @@ in `lookup_track()`.
 | **Juno Download** | ⚫ Defunct | Site shut down June 2026 — the API (which existed, XML-based) is gone with it. |
 | **Cyanite.ai** | 🟡 Open, but not a fit | AI *audio* analysis (genre/mood classifier on the raw track, not catalog matching) rather than a lookup source — technically accessible, but real API usage starts at €290/month, which dwarfs CratePrep's entire $5-8/mo price point. 5 free analyses/month otherwise. Not worth it at this scale. |
 
-**Recommendation**: add MusicBrainz, iTunes, Deezer, Last.fm, and
-TheAudioDB as more fallback lookups in `lookup_track()` (same pattern as
-the existing Spotify → Discogs chain) — all five are free, public, and
-need no partnership. Beatport/Beatsource/Traxsource/SoundCloud would
-need an actual business relationship or a reopened registration window
-(worth revisiting later — Beatport/Beatsource/Traxsource's genre/style
-data is the most DJ-relevant of anything on this list), Juno isn't an
-option since it no longer exists, and Cyanite.ai's pricing doesn't fit
-CratePrep's own price point.
+**Recommendation, shipped 2026-09-15**: added MusicBrainz, iTunes,
+Deezer, TheAudioDB, and Last.fm as more genre-lookup fallbacks. iTunes
+and Deezer joined `lookup_track()`'s combined-query chain (they handle
+a not-yet-split "artist title" search reliably, same as Spotify/
+Discogs); MusicBrainz/TheAudioDB/Last.fm instead became fallbacks
+inside `detect_genre()`, since their APIs need artist and title as
+separate, already-known fields to search reliably -- MusicBrainz's
+plain-text search demonstrably ranked an unrelated cover recording
+above the real Daft Punk track during testing, so it isn't safe for
+the "guess from a messy filename" role `lookup_track()` plays.
+**`LASTFM_API_KEY` still isn't set** (free key, register at
+last.fm/api/account/create) -- the integration is live in code but
+no-ops until one is added, same pattern as every other optional
+credential in this app. Beatport/Beatsource/Traxsource/SoundCloud would
+still need an actual business relationship or a reopened registration
+window (worth revisiting later — their genre/style data is the most
+DJ-relevant of anything on this list), Juno isn't an option since it no
+longer exists, and Cyanite.ai's pricing doesn't fit CratePrep's own
+price point.
+
+**Also shipped alongside this**: cover art embedding. Spotify, Discogs,
+iTunes, Deezer, and TheAudioDB all already return a cover image URL in
+the same responses used for genre — CratePrep now downloads and embeds
+it (APIC for MP3/WAV/AIFF, FLAC's native picture block, Ogg Vorbis's
+`METADATA_BLOCK_PICTURE` convention), the same "detected value always
+wins" policy as every other tag it writes. This wasn't something either
+Quickie or the BPM/key/tagging competitors above were confirmed to
+have — worth a line on the landing page once verified live in
+production (Discogs' `cover_image` field only actually populates for
+token-authenticated requests, which production has via `DISCOGS_TOKEN`
+but this session's sandbox didn't — so iTunes/Deezer/TheAudioDB's
+artwork was what actually got exercised end-to-end here).
 
 ## Adjacent competitors: AI/harmonic set-building tools
 
