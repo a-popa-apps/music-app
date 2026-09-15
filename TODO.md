@@ -44,6 +44,14 @@ This session's network access was restricted for most of this work (couldn't rea
 - [x] Approaching free-tier limit email — `POST /process` now emails a Free-plan user the first time their monthly usage reaches 80% of the 10-track limit (`USAGE_WARNING_THRESHOLD` in `backend/app/profile_store.py`), with an upgrade link. Sent at most once per billing period (tracked via a `usage_warning_period` flag, same pattern as `welcome_email_sent`). Shipped 2026-09-15.
 - [x] Password-changed security notice — `AuthActionPage.tsx` calls a new `POST /auth/password-changed-notice` endpoint right after a password reset succeeds, so an account owner finds out immediately if someone else changed their password. Same exposure/rate-limiting as `/auth/forgot-password` (no stronger proof a reset just happened — a false positive is a mildly annoying email, not a security hole). Shipped 2026-09-15.
 
+## Before launch
+
+- [ ] Switch Stripe from test mode to live mode — three env vars on Render need to change together, all mode-specific in Stripe (test and live are fully separate objects):
+  - `STRIPE_SECRET_KEY` — swap the `sk_test_...` key for the live `sk_live_...` key.
+  - `STRIPE_PRICE_MONTHLY` / `STRIPE_PRICE_ANNUAL` — test-mode prices don't exist in live mode; recreate the Pro Monthly/Annual products and prices in live mode (or use Stripe's "copy to live mode" option) and use the new live price IDs.
+  - `STRIPE_WEBHOOK_SECRET` — webhook endpoints are also mode-specific; create a new one in the Stripe dashboard (live mode) pointing at `https://music-app-backend-eo2m.onrender.com/billing/webhook`, then use the signing secret it gives you.
+  - No code changes needed — `billing.py` doesn't distinguish test vs live, it just uses whatever's configured. Worth recreating the live-mode products/prices ahead of the actual switch so it's just an env var swap on launch day.
+
 ## Other loose ends noticed while working in this repo
 
 - [ ] Connect the **Render** connector at claude.ai → Settings → Connectors (search "Render", authorize via OAuth) — lets Claude check deploys/logs/metrics and manage the web service directly
