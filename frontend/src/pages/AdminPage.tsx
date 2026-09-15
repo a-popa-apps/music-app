@@ -869,8 +869,8 @@ export function AdminPage() {
   return (
     <>
       <Header dark />
-      <div className="min-h-screen w-full bg-black px-4 py-12 pt-32">
-        <div className="mx-auto max-w-4xl">
+      <div className="min-h-screen w-full bg-black py-12 pt-32">
+        <div className="mx-auto w-full max-w-7xl px-4 lg:px-12">
           <h1 className="mb-6 text-headline-lg text-white">Admin</h1>
 
           <div className="mb-6 flex gap-2 border-b border-white/10">
