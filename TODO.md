@@ -53,6 +53,14 @@ This session's network access was restricted for most of this work (couldn't rea
   - No code changes needed — `billing.py` doesn't distinguish test vs live, it just uses whatever's configured. Worth recreating the live-mode products/prices ahead of the actual switch so it's just an env var swap on launch day.
 - [ ] **Verify a custom sending domain in Resend and set `EMAIL_FROM`** — hard blocker, confirmed 2026-09-15: Resend's sandbox sender (`onboarding@resend.dev`) only delivers to the account owner's own address, so right now none of the 9 transactional emails (verification, password reset, welcome, payment-failed, admin feedback alert, subscription-started, cancellation, usage-limit warning, password-changed) can reach any real user. Steps: verify `crateprep.app` (or the launch domain) as a sending domain in the Resend dashboard (adds DNS records they provide), then set `EMAIL_FROM` to something like `CratePrep <noreply@crateprep.app>` on Render. No code changes needed — every email already reads `EMAIL_FROM` from the environment.
 
+## Product ideas — nice to have
+
+From a product-improvement pass on 2026-09-15 (full list had 6 ideas; #1 playback/waveform, #3 inline correction of results, and #5 energy-heuristic tuning were picked to build now — see git history around this date). Parked here for later:
+
+- [ ] Surface BPM/key confidence in the results table — `detect_bpm.py`/`detect_key.py` already compute confidence internally (key detection even retries below a 0.7 threshold), it's just never shown to the user. Cheap: the data already exists, this is purely a UI addition (e.g. a "double-check this one" flag on low-confidence rows).
+- [ ] Native Rekordbox XML / Serato crate export, not just ID3 tags + a generic `.m3u8` — would be a real differentiator since DJs live inside those tools daily rather than raw folders of tagged files. Bigger lift: need to learn each tool's export format.
+- [ ] Duplicate detection across a batch (or a user's whole history) via audio fingerprinting — DJs often accumulate the same track ripped from multiple sources under different filenames. The pipeline already decodes every file, so the raw signal is there; would need a fingerprinting/similarity step added.
+
 ## Other loose ends noticed while working in this repo
 
 - [ ] Connect the **Render** connector at claude.ai → Settings → Connectors (search "Render", authorize via OAuth) — lets Claude check deploys/logs/metrics and manage the web service directly
