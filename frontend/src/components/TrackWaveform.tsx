@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, type PointerEvent } from "react"
 
 const BAR_COUNT = 60
 
@@ -35,17 +35,41 @@ function extractPeaks(buffer: AudioBuffer, bars: number): number[] {
 interface TrackWaveformProps {
   bytes: Uint8Array | null
   progress: number // 0-1, how far through playback
+  onSeek?: (fraction: number) => void // 0-1, called while clicking/dragging the bars
   className?: string
 }
 
 // Renders a static bar-style waveform (decoded lazily the first time this
 // row scrolls into view, then cached) with bars up to `progress` styled as
 // "played". Playback control lives in the parent -- this component only
-// draws.
-export function TrackWaveform({ bytes, progress, className = "" }: TrackWaveformProps) {
+// draws, and reports back where a click/drag landed via `onSeek`.
+export function TrackWaveform({ bytes, progress, onSeek, className = "" }: TrackWaveformProps) {
   const [peaks, setPeaks] = useState<number[] | null>(null)
   const [inView, setInView] = useState(false)
+  const [seeking, setSeeking] = useState(false)
   const containerRef = useRef<HTMLDivElement | null>(null)
+
+  function fractionFromPointer(e: PointerEvent<HTMLDivElement>): number {
+    const rect = containerRef.current?.getBoundingClientRect()
+    if (!rect || rect.width === 0) return 0
+    return Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width))
+  }
+
+  function handlePointerDown(e: PointerEvent<HTMLDivElement>) {
+    if (!onSeek) return
+    e.currentTarget.setPointerCapture(e.pointerId)
+    setSeeking(true)
+    onSeek(fractionFromPointer(e))
+  }
+
+  function handlePointerMove(e: PointerEvent<HTMLDivElement>) {
+    if (!seeking || !onSeek) return
+    onSeek(fractionFromPointer(e))
+  }
+
+  function stopSeeking() {
+    setSeeking(false)
+  }
 
   useEffect(() => {
     const el = containerRef.current
@@ -83,7 +107,14 @@ export function TrackWaveform({ bytes, progress, className = "" }: TrackWaveform
   const playedBars = peaks ? Math.round(progress * peaks.length) : 0
 
   return (
-    <div ref={containerRef} className={`flex items-end gap-px ${className}`}>
+    <div
+      ref={containerRef}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={stopSeeking}
+      onPointerLeave={stopSeeking}
+      className={`flex touch-none items-end gap-px ${onSeek ? "cursor-pointer" : ""} ${className}`}
+    >
       {(peaks ?? new Array(BAR_COUNT).fill(0.2)).map((height, i) => (
         <span
           key={i}

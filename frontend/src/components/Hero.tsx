@@ -30,11 +30,17 @@ interface ManifestEntry {
   tonality?: string | null
   name_source?: string | null
   error?: string
+  preview_filename?: string
 }
 
 interface ProcessedTrack {
   name: string
   originalFilename?: string
+  // Set only for formats Chrome/Firefox can't decode natively (AIFF) --
+  // a browser-playable WAV transcode of the same audio, zipped alongside
+  // the real file. Playback/waveform use this when present; download
+  // still exports the original, untouched file.
+  previewFilename?: string
   bpm: number | null
   key: string | null
   genre: string | null
@@ -139,6 +145,7 @@ function parseManifest(files: Unzipped): ProcessedTrack[] {
   return Object.entries(manifest).map(([name, entry], originalIndex) => ({
     name,
     originalFilename: entry.original_filename,
+    previewFilename: entry.preview_filename,
     bpm: entry.bpm ?? null,
     key: entry.camelot ?? null,
     genre: entry.genre ?? null,
@@ -190,6 +197,11 @@ export function Hero() {
   // a new filename), so either survives a reorder *and* a save without
   // silently pointing at the wrong track.
   const [playingTrack, setPlayingTrack] = useState<number | null>(null)
+  // Whether audioRef is actively playing playingTrack right now -- kept
+  // separate so pausing doesn't lose which track is loaded (needed for
+  // the waveform's scrub-while-paused case and for resuming in place
+  // instead of restarting from 0).
+  const [isPlaying, setIsPlaying] = useState(false)
   const [playbackProgress, setPlaybackProgress] = useState(0)
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const audioUrlRef = useRef<string | null>(null)
@@ -214,12 +226,22 @@ export function Hero() {
 
   function togglePlay(track: ProcessedTrack) {
     const audio = audioRef.current
-    const bytes = zipFiles?.[track.name]
+    // Prefer the browser-playable preview transcode when one was generated
+    // (formats like AIFF that Chrome/Firefox can't decode natively) -- the
+    // real file (used for download) stays untouched either way.
+    const bytes = zipFiles?.[track.previewFilename ?? track.name]
     if (!audio || !bytes) return
 
     if (playingTrack === track.originalIndex) {
-      audio.pause()
-      setPlayingTrack(null)
+      // Same track already loaded -- toggle play/pause in place rather
+      // than reloading, so pausing and resuming keeps its position.
+      if (isPlaying) {
+        audio.pause()
+        setIsPlaying(false)
+      } else {
+        setIsPlaying(true)
+        void audio.play()
+      }
       return
     }
 
@@ -229,7 +251,38 @@ export function Hero() {
     audio.src = url
     setPlaybackProgress(0)
     setPlayingTrack(track.originalIndex)
+    setIsPlaying(true)
     void audio.play()
+  }
+
+  // Scrubbing the waveform: seeks within the already-loaded track in
+  // place, or loads-and-seeks a track that isn't the active one yet, so
+  // dragging a row that was never played still jumps straight to that point.
+  function handleSeek(track: ProcessedTrack, fraction: number) {
+    const audio = audioRef.current
+    const bytes = zipFiles?.[track.previewFilename ?? track.name]
+    if (!audio || !bytes) return
+
+    if (playingTrack !== track.originalIndex) {
+      revokeAudioUrl()
+      const url = URL.createObjectURL(new Blob([bytes]))
+      audioUrlRef.current = url
+      audio.src = url
+      setPlayingTrack(track.originalIndex)
+      setIsPlaying(true)
+      const seekOnceReady = () => {
+        audio.currentTime = fraction * (audio.duration || 0)
+        setPlaybackProgress(fraction)
+        audio.removeEventListener("loadedmetadata", seekOnceReady)
+      }
+      audio.addEventListener("loadedmetadata", seekOnceReady)
+      void audio.play()
+      return
+    }
+
+    if (!audio.duration) return
+    audio.currentTime = fraction * audio.duration
+    setPlaybackProgress(fraction)
   }
 
   function handleAudioTimeUpdate() {
@@ -240,6 +293,7 @@ export function Hero() {
 
   function handleAudioEnded() {
     setPlayingTrack(null)
+    setIsPlaying(false)
     setPlaybackProgress(0)
   }
 
@@ -342,6 +396,7 @@ export function Hero() {
     audioRef.current?.pause()
     revokeAudioUrl()
     setPlayingTrack(null)
+    setIsPlaying(false)
     setPlaybackProgress(0)
     setPhase("idle")
     setFileCount(0)
@@ -682,7 +737,7 @@ export function Hero() {
               )}
               <div className="grid grid-cols-12 items-center bg-white/5 px-6 py-2 font-mono text-meta-badge uppercase tracking-wider text-white/70">
                 <div className="col-span-1 text-center">#</div>
-                <div className="col-span-3">Track Title &amp; Artist</div>
+                <div className="col-span-4">Track Title &amp; Artist</div>
                 <div className="col-span-1 text-center">BPM</div>
                 <div className="col-span-2 text-center">Key</div>
                 <div className="col-span-1 text-center">
@@ -703,7 +758,7 @@ export function Hero() {
                     )}
                   </button>
                 </div>
-                <div className="col-span-2 hidden lg:block">Genre Tag</div>
+                <div className="col-span-1 hidden lg:block">Genre Tag</div>
                 <div className="col-span-3 text-right lg:col-span-2">Status</div>
               </div>
 
@@ -724,31 +779,32 @@ export function Hero() {
                     </span>
                     {String(i + 1).padStart(2, "0")}
                   </div>
-                  <div className="col-span-3 flex min-w-0 items-center gap-2 pr-2">
+                  <div className="col-span-4 flex min-w-0 items-center gap-2 pr-2">
                     {!track.failed && zipFiles?.[track.name] && (
                       <button
                         onClick={() => togglePlay(track)}
-                        aria-label={playingTrack === track.originalIndex ? "Pause" : "Play"}
+                        aria-label={playingTrack === track.originalIndex && isPlaying ? "Pause" : "Play"}
                         className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
                       >
                         <span className="material-symbols-outlined text-[16px]">
-                          {playingTrack === track.originalIndex ? "pause" : "play_arrow"}
+                          {playingTrack === track.originalIndex && isPlaying ? "pause" : "play_arrow"}
                         </span>
                       </button>
                     )}
                     <div className="flex min-w-0 flex-1 flex-col gap-1">
-                      <span className="truncate text-body-md font-bold text-white">
+                      <span className="break-words text-body-md font-bold text-white">
                         {track.name}
                       </span>
                       {track.originalFilename && (
-                        <span className="truncate text-body-sm text-white/50">
+                        <span className="break-words text-body-sm text-white/50">
                           was: {track.originalFilename}
                         </span>
                       )}
                       {!track.failed && zipFiles?.[track.name] && (
                         <TrackWaveform
-                          bytes={zipFiles[track.name]}
+                          bytes={zipFiles[track.previewFilename ?? track.name]}
                           progress={playingTrack === track.originalIndex ? playbackProgress : 0}
+                          onSeek={(fraction) => handleSeek(track, fraction)}
                           className="h-4"
                         />
                       )}
@@ -769,9 +825,12 @@ export function Hero() {
                   <div className="col-span-1 text-center font-mono text-meta-numeric font-bold text-secondary-container">
                     {track.energy !== null ? track.energy : "—"}
                   </div>
-                  <div className="col-span-2 hidden items-center lg:flex">
+                  <div className="col-span-1 hidden min-w-0 items-center lg:flex">
                     {track.genre && (
-                      <span className="rounded-full bg-white/15 px-2 py-px text-body-sm text-white">
+                      <span
+                        title={track.genre}
+                        className="max-w-full truncate rounded-full bg-white/15 px-2 py-px text-body-sm text-white"
+                      >
                         {track.genre}
                       </span>
                     )}

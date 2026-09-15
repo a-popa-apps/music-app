@@ -12,7 +12,7 @@ from fastapi import HTTPException, UploadFile
 from fastapi.concurrency import run_in_threadpool
 
 from .ai_cleanup import ai_split_artist_title
-from .audio_io import get_duration_seconds, load_audio
+from .audio_io import NEEDS_BROWSER_PREVIEW, get_duration_seconds, load_audio, make_preview_wav
 from .batch_summary import generate_batch_summary
 from .clean_filename import compose_name, guess_split, local_dash_split, prepare_stem
 from .detect_bpm import ANALYSIS_SECONDS, detect_bpm
@@ -162,7 +162,7 @@ def _analyze_and_tag(
     deep_search: bool = False,
     enhanced_detection: bool = False,
     ai_cleanup: bool = False,
-) -> tuple[bytes, dict, str]:
+) -> tuple[bytes, dict, str, bytes | None]:
     embedded_tags = read_embedded_tags(content, ext)
     artist, title, genre, name_debug = _resolve_artist_title_genre(
         stem, deep_search, embedded_tags=embedded_tags, ai_cleanup=ai_cleanup
@@ -195,7 +195,7 @@ def _analyze_and_tag(
             **name_debug,
         }
         final_name = compose_name(artist, title, stem, version_tag, ext)
-        return content, entry, final_name
+        return content, entry, final_name, None
 
     entry: dict = {
         # From the file's own header, not len(audio)/SAMPLE_RATE -- audio
@@ -266,7 +266,14 @@ def _analyze_and_tag(
         tagged_content = content
         entry["tag_error"] = f"{type(e).__name__}: {e}"
 
-    return tagged_content, entry, final_name
+    preview_content: bytes | None = None
+    if ext in NEEDS_BROWSER_PREVIEW:
+        try:
+            preview_content = make_preview_wav(content, ext)
+        except Exception as e:
+            entry["preview_error"] = f"{type(e).__name__}: {e}"
+
+    return tagged_content, entry, final_name, preview_content
 
 
 def _dedupe(name: str, seen: set[str]) -> str:
@@ -293,7 +300,7 @@ async def _analyze_one(
     deep_search: bool,
     enhanced_detection: bool,
     ai_cleanup: bool,
-) -> tuple[bytes, dict, str]:
+) -> tuple[bytes, dict, str, bytes | None]:
     try:
         return await run_in_threadpool(
             _analyze_and_tag,
@@ -309,7 +316,7 @@ async def _analyze_one(
     except Exception as e:
         # One file misbehaving shouldn't lose the rest of the batch --
         # fall back to including it unprocessed, with the error noted.
-        return content, {"error": f"Processing failed: {type(e).__name__}: {e}"}, original_name
+        return content, {"error": f"Processing failed: {type(e).__name__}: {e}"}, original_name, None
     finally:
         gc.collect()
 
@@ -375,7 +382,8 @@ async def build_corrected_zip(
                     tagged_content = content
 
                 zip_file.writestr(name, tagged_content)
-                manifest[name] = {
+
+                entry = {
                     "artist": artist,
                     "title": title,
                     "genre": genre,
@@ -386,6 +394,14 @@ async def build_corrected_zip(
                     "duration_seconds": duration,
                     "original_filename": original_name,
                 }
+                if ext in NEEDS_BROWSER_PREVIEW:
+                    try:
+                        preview_name = f"{name}.preview.wav"
+                        zip_file.writestr(preview_name, make_preview_wav(content, ext))
+                        entry["preview_filename"] = preview_name
+                    except Exception:
+                        pass
+                manifest[name] = entry
                 playlist_tracks.append((name, duration))
             except Exception as e:
                 name = _dedupe(original_name, seen_names)
@@ -467,9 +483,14 @@ async def build_zip(
                     manifest[original_name] = data
                     continue
 
-                tagged_content, entry, resolved_name = next(results_iter)
+                tagged_content, entry, resolved_name, preview_content = next(results_iter)
                 name = _dedupe(resolved_name, seen_names)
                 zip_file.writestr(name, tagged_content)
+
+                if preview_content is not None:
+                    preview_name = f"{name}.preview.wav"
+                    zip_file.writestr(preview_name, preview_content)
+                    entry["preview_filename"] = preview_name
 
                 entry["original_filename"] = original_name
                 manifest[name] = entry

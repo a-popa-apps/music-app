@@ -32,6 +32,33 @@ def load_audio(audio_bytes: bytes, suffix: str = ".wav", max_seconds: float | No
     return audio
 
 
+# Extensions the app accepts but that Chrome/Firefox's <audio> element and
+# Web Audio API have no native decoder for at all (confirmed directly:
+# canPlayType("audio/aiff") returns "", and decodeAudioData throws
+# EncodingError, even on a perfectly valid file) -- only Safari can play
+# these natively. Browser playback needs a transcoded stand-in; the
+# original bytes are untouched and still what gets exported/downloaded.
+NEEDS_BROWSER_PREVIEW = {".aiff", ".aif"}
+
+
+def make_preview_wav(content: bytes, suffix: str) -> bytes:
+    """Decodes the full track and re-encodes it as a WAV every browser can
+    play, for in-app playback/waveform purposes only. Uses essentia's own
+    FFmpeg-backed writer -- already a hard runtime dependency (it's what
+    decodes these same files for BPM/key/energy), so this adds no new
+    dependency. Mono output matches TrackWaveform's own peak extraction
+    (channel 0 only), so there's no fidelity loss for what this is used for."""
+    audio = load_audio(content, suffix, max_seconds=None)
+    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+        tmp_path = tmp.name
+    try:
+        es.MonoWriter(filename=tmp_path, format="wav", sampleRate=SAMPLE_RATE)(audio)
+        with open(tmp_path, "rb") as f:
+            return f.read()
+    finally:
+        os.unlink(tmp_path)
+
+
 def get_duration_seconds(content: bytes, suffix: str) -> float | None:
     """True file duration read from its own header via mutagen -- no audio
     decoding, so it stays accurate even when load_audio only decodes a

@@ -31,6 +31,35 @@ def _make_wav(freq: float = 220, duration: float = 1, sr: int = 22050) -> bytes:
     return buffer.getvalue()
 
 
+class _UnclosableBytesIO(io.BytesIO):
+    """aifc.Aifc_write.close() closes the underlying file object it was
+    given (unlike wave.Wave_write, which only closes files it opened
+    itself) -- it also writes the real frame count into the header at
+    close time, so the bytes aren't valid until after that call. Silencing
+    close() is the only way to get both: a fully-finalized AIFF and access
+    to the buffer afterward."""
+
+    def close(self):
+        pass
+
+
+def _make_aiff(freq: float = 220, duration: float = 1, sr: int = 22050) -> bytes:
+    import aifc
+
+    buffer = _UnclosableBytesIO()
+    n = int(sr * duration)
+    with aifc.open(buffer, "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(sr)
+        frames = bytearray()
+        for i in range(n):
+            sample = 0.5 * math.sin(2 * math.pi * freq * i / sr)
+            frames += struct.pack(">h", int(sample * 32767))
+        w.writeframes(bytes(frames))
+    return buffer.getvalue()
+
+
 def _upload(name: str, content: bytes) -> UploadFile:
     return UploadFile(io.BytesIO(content), filename=name)
 
@@ -71,6 +100,38 @@ def test_build_zip_spans_multiple_chunks_correctly(monkeypatch):
     assert len(manifest) == 5
     original_filenames = [entry.get("original_filename") for entry in manifest.values()]
     assert original_filenames == [f"Artist{i} - Title{i}.wav" for i in range(5)]
+
+
+def test_build_zip_generates_browser_preview_for_aiff_but_not_wav():
+    # Chrome/Firefox have no native AIFF decoder at all -- confirmed directly
+    # against a real browser (canPlayType empty, decodeAudioData throws) even
+    # on a perfectly valid file. build_zip must ship a browser-playable WAV
+    # transcode alongside any AIFF track for in-app playback, referenced via
+    # the manifest, while leaving formats browsers already support alone.
+    files = [
+        _upload("Artist - Title.aiff", _make_aiff(200)),
+        _upload("Artist2 - Title2.wav", _make_wav(200)),
+    ]
+
+    zip_bytes, manifest = asyncio.run(process_audio.build_zip(files))
+
+    by_original = {entry["original_filename"]: (name, entry) for name, entry in manifest.items()}
+    aiff_name, aiff_entry = by_original["Artist - Title.aiff"]
+    wav_name, wav_entry = by_original["Artist2 - Title2.wav"]
+
+    assert aiff_entry.get("preview_filename") == f"{aiff_name}.preview.wav"
+    assert "preview_filename" not in wav_entry
+
+    with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
+        names = zf.namelist()
+        assert aiff_entry["preview_filename"] in names
+        preview_bytes = zf.read(aiff_entry["preview_filename"])
+
+    with tempfile.NamedTemporaryFile(suffix=".wav") as tmp:
+        tmp.write(preview_bytes)
+        tmp.flush()
+        with wave.open(tmp.name, "rb") as w:
+            assert w.getnframes() > 0
 
 
 def test_build_zip_enhanced_detection_threads_through_without_error():
