@@ -215,7 +215,7 @@ def _analyze_and_tag(
         entry["key_error"] = f"{type(e).__name__}: {e}"
 
     try:
-        entry["energy"] = detect_energy(audio)
+        entry["energy"] = detect_energy(audio, full_track=enhanced_detection)
     except Exception as e:
         entry["energy"] = None
         entry["energy_error"] = f"{type(e).__name__}: {e}"
