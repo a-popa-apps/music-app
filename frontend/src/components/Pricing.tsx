@@ -132,7 +132,7 @@ export function Pricing() {
               <div>
                 <h3 className="text-headline-lg font-bold text-white">CratePrep Pro</h3>
                 <span className="text-body-sm text-white/70">
-                  Unlimited tracks, AI set ordering, and saved templates for ${price}/mo
+                  Detection, cleanup, and set-ordering — the whole pre-gig prep pipeline — for ${price}/mo
                 </span>
               </div>
 

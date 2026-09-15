@@ -41,6 +41,13 @@ const FEATURES = [
       "One click orders your whole batch by Camelot-wheel compatibility and BPM -- starting straight from the messy files you dropped, no separate step to first build an organized library like other set-building tools require.",
     footnote: "Pro Feature",
   },
+  {
+    icon: "route",
+    title: "One Tool, Start To Finish",
+    description:
+      "Everything else that orders a set -- including tools built specifically for it -- needs an already-organized, already-tagged library to import first. CratePrep starts from the messy folder you just downloaded: detection, cleanup, and harmonic set-ordering in one drop, no separate library-building step first.",
+    footnote: "Raw Files In, Ready Set Out",
+  },
 ]
 
 export function Features() {
