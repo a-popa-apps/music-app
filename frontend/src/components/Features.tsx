@@ -1,26 +1,3 @@
-// Same gradient-border + glow treatment as the Pro plan card in Pricing.tsx
-// (an outer div's gradient background peeking through 2px of padding around
-// a solid inner card) -- here reserved for :hover instead of always-on, as a
-// "this is what Pro feels like" preview on cards that live on the free tier
-// of the page.
-function FeatureCard({
-  className = "",
-  children,
-}: {
-  className?: string
-  children: React.ReactNode
-}) {
-  return (
-    <div
-      className={`group rounded-[calc(0.25rem+2px)] p-[2px] transition-shadow duration-300 hover:bg-gradient-to-r hover:from-secondary-container hover:to-[#ff3d78] hover:shadow-[0_0_70px_rgba(255,107,53,0.3)] ${className}`}
-    >
-      <div className="flex h-full flex-col rounded border border-white/10 bg-white/10 p-8 backdrop-blur-md transition-colors duration-300 group-hover:border-transparent group-hover:bg-[#12122a]/95">
-        {children}
-      </div>
-    </div>
-  )
-}
-
 const FEATURES = [
   {
     icon: "spellcheck",
@@ -81,7 +58,10 @@ export function Features() {
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           {FEATURES.map((feature) => (
-            <FeatureCard key={feature.title}>
+            <div
+              key={feature.title}
+              className="flex flex-col rounded border border-white/10 bg-white/10 p-8 backdrop-blur-md transition-colors hover:bg-white/15"
+            >
               <div className="mb-6 flex h-10 w-10 items-center justify-center rounded-full bg-white/10">
                 <span className="material-symbols-outlined text-[22px] text-secondary-container">
                   {feature.icon}
@@ -96,10 +76,10 @@ export function Features() {
               <div className="mt-auto font-mono text-meta-numeric font-semibold text-secondary-container">
                 &bull; {feature.footnote}
               </div>
-            </FeatureCard>
+            </div>
           ))}
 
-          <FeatureCard className="lg:col-span-2">
+          <div className="flex flex-col rounded border border-white/10 bg-white/10 p-8 backdrop-blur-md transition-colors hover:bg-white/15 lg:col-span-2">
             <div className="mb-6 flex h-10 w-10 items-center justify-center rounded-full bg-white/10">
               <span className="material-symbols-outlined text-[22px] text-secondary-container">
                 devices
@@ -127,9 +107,9 @@ export function Features() {
                 </span>
               ))}
             </div>
-          </FeatureCard>
+          </div>
 
-          <FeatureCard>
+          <div className="flex flex-col rounded border border-white/10 bg-white/10 p-8 backdrop-blur-md transition-colors hover:bg-white/15">
             <div className="mb-6 flex h-10 w-10 items-center justify-center rounded-full bg-white/10">
               <span className="material-symbols-outlined text-[22px] text-secondary-container">
                 security
@@ -145,7 +125,7 @@ export function Features() {
             <div className="mt-auto font-mono text-meta-numeric font-semibold text-secondary-container">
               &bull; Zero Retention Policy
             </div>
-          </FeatureCard>
+          </div>
         </div>
       </div>
     </section>
