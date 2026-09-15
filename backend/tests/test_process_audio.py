@@ -250,6 +250,33 @@ def test_duration_reflects_full_track_even_though_default_mode_only_decodes_a_wi
 
 
 def test_default_mode_only_decodes_the_analysis_window(monkeypatch):
+    # detect_bpm itself is responsible for deciding whether its windowed
+    # read needs a full-track retry (covered directly in test_detect_bpm.py)
+    # -- this test only checks build_zip's own wiring: when detect_bpm
+    # doesn't call full_audio_loader, no second decode happens.
+    real_load_audio = process_audio.load_audio
+    calls = []
+
+    def spy(content, ext, max_seconds=None):
+        calls.append(max_seconds)
+        return real_load_audio(content, ext, max_seconds=max_seconds)
+
+    monkeypatch.setattr(process_audio, "load_audio", spy)
+    monkeypatch.setattr(
+        process_audio, "detect_bpm", lambda audio, full_track=False, full_audio_loader=None: 128.0
+    )
+
+    files = [_upload("Artist - Title.wav", _make_wav(duration=2))]
+    asyncio.run(process_audio.build_zip(files))
+
+    assert calls == [process_audio.ANALYSIS_SECONDS]
+
+
+def test_default_mode_escalates_to_full_decode_on_low_confidence_bpm(monkeypatch):
+    # When detect_bpm decides it needs the full track (simulated here by
+    # actually calling the loader it's given, standing in for its own
+    # low-confidence retry), build_zip must decode the full track for it --
+    # a second, full decode for this track specifically.
     real_load_audio = process_audio.load_audio
     calls = []
 
@@ -259,10 +286,17 @@ def test_default_mode_only_decodes_the_analysis_window(monkeypatch):
 
     monkeypatch.setattr(process_audio, "load_audio", spy)
 
+    def fake_detect_bpm(audio, full_track=False, full_audio_loader=None):
+        if full_audio_loader is not None:
+            full_audio_loader()
+        return 128.0
+
+    monkeypatch.setattr(process_audio, "detect_bpm", fake_detect_bpm)
+
     files = [_upload("Artist - Title.wav", _make_wav(duration=2))]
     asyncio.run(process_audio.build_zip(files))
 
-    assert calls == [process_audio.ANALYSIS_SECONDS]
+    assert calls == [process_audio.ANALYSIS_SECONDS, None]
 
 
 def test_enhanced_detection_decodes_the_full_track(monkeypatch):

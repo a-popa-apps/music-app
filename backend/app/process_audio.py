@@ -211,7 +211,17 @@ def _analyze_and_tag(
     tonality = None
 
     try:
-        bpm = detect_bpm(audio, full_track=enhanced_detection)
+        bpm = detect_bpm(
+            audio,
+            full_track=enhanced_detection,
+            # Lets detect_bpm retry against the full track (only if its fast
+            # windowed read comes back low-confidence) without paying for a
+            # full decode upfront -- enhanced_detection already decoded the
+            # full track above, so there's nothing to retry with there.
+            full_audio_loader=(
+                None if enhanced_detection else lambda: load_audio(content, ext, max_seconds=None)
+            ),
+        )
         entry["bpm"] = bpm
     except Exception as e:
         entry["bpm"] = None
