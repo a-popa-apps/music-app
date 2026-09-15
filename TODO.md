@@ -21,7 +21,7 @@ Backend (Render), transactional email:
 - [x] `RESEND_API_KEY` — **confirmed set** (`/health` → `email_configured: true`, checked 2026-09-15). Verification, password-reset, and payment-failed emails are all sent through CratePrep's own branded templates instead of Firebase/Stripe's default ones.
 - [ ] `EMAIL_FROM` — optional, currently unset, so all three emails send from Resend's shared sandbox address (`onboarding@resend.dev`) rather than a `crateprep.app` address. To fix: verify `crateprep.app` as a sending domain in the Resend dashboard (DNS records they provide), then set this to something like `CratePrep <noreply@crateprep.app>`.
 - [ ] Nobody has triggered a real signup or password-reset yet to confirm an email actually lands in an inbox and renders correctly end-to-end — the code path and the rendered HTML are both verified, real delivery through Resend isn't.
-- [ ] `ADMIN_EMAIL` — optional, currently unset. Comma-separated list of addresses that get alerted when someone submits feedback/a support request via `POST /feedback`. Without it, new feedback is silently stored with no notification (you'd only see it by checking the admin panel).
+- [x] `ADMIN_EMAIL` — **confirmed set** to `popa472@gmail.com` on Render, checked 2026-09-15. Comma-separated list of addresses that get alerted when someone submits feedback/a support request via `POST /feedback`; add more addresses by separating with commas.
 
 ## Verify what's actually already set
 
