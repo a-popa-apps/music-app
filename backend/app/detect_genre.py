@@ -187,7 +187,6 @@ def _discogs_artist_id(artist: str) -> int | None:
             best_id, best_score = entry.get("id"), score
 
     return best_id if best_score >= 0.5 else None
-    return None
 
 
 def _discogs_artist_release_ids(artist_id: int, limit: int) -> list[int]:
