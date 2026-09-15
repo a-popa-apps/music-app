@@ -167,19 +167,25 @@ in `lookup_track()`.
 | **Discogs** | ✅ Already integrated | Fallback lookup, optional token raises the rate limit. |
 | **MusicBrainz** | 🟢 Feasible, free | Public API, non-commercial use is free. Rate limit ~1 req/sec average (up to 300/sec system-wide), requires a real identifying User-Agent string. [Docs](https://musicbrainz.org/doc/MusicBrainz_API), [rate limiting](https://musicbrainz.org/doc/MusicBrainz_API/Rate_Limiting). Genre tags are community-tagged, not always as clean as Spotify/Discogs. |
 | **iTunes Search API** | 🟢 Feasible, free | Public, no API key needed at all, returns genre alongside artist/title/artwork. [Apple's docs](https://developer.apple.com/library/content/documentation/AudioVideo/Conceptual/iTuneSearchAPI/index.html). |
+| **Deezer** | 🟢 Feasible, free | No API key or auth needed at all for public search (`api.deezer.com/search/track`) — the easiest of everything checked. Rate limit ~50 req/5sec. |
+| **Last.fm** | 🟢 Feasible, free | Free API key (no OAuth). `track.getTopTags` returns crowd-sourced tags, not a strict genre field, so noisier than Spotify/Discogs but usable. Rate limit ~2 req/sec. [API docs](https://www.last.fm/api/show/track.getTopTags). |
+| **TheAudioDB** | 🟢 Feasible, free | Community database, returns genre/style/mood. Shared public key (`"123"`) works with no signup; some methods have been rate-limited over the years due to abuse, but core lookups are still free. [Docs](https://www.theaudiodb.com/free_music_api). |
 | **Beatport** | 🔴 Blocked | v4 OAuth API exists but is partner-gated — no public self-serve signup, brokered case-by-case through their Partner Portal + biz-dev team. [api-evangelist writeup](https://github.com/api-evangelist/beatport), [partner portal](https://partnerportal.beatport.com/hc/en-us). |
 | **Beatsource** | 🔴 Blocked | Same parent company as Beatport, same partner-gated model — commercial use needs pre-approval in writing. |
 | **Traxsource** | 🔴 Blocked | API keys are invite-only, aimed at label partners/content providers reporting on their own catalog, not general third-party search access. |
+| **SoundCloud** | 🔴 Blocked | New third-party API key registration is currently closed; SoundCloud says they're "exploring" reopening it but isn't issuing new keys right now. |
 | **Juno Download** | ⚫ Defunct | Site shut down June 2026 — the API (which existed, XML-based) is gone with it. |
+| **Cyanite.ai** | 🟡 Open, but not a fit | AI *audio* analysis (genre/mood classifier on the raw track, not catalog matching) rather than a lookup source — technically accessible, but real API usage starts at €290/month, which dwarfs CratePrep's entire $5-8/mo price point. 5 free analyses/month otherwise. Not worth it at this scale. |
 
-**Recommendation**: add MusicBrainz and iTunes as two more fallback
-lookups in `lookup_track()` (same pattern as the existing Spotify →
-Discogs chain) — both are free, public, and need no partnership.
-Beatport/Beatsource/Traxsource would need an actual business
-relationship (worth revisiting if CratePrep grows enough to justify
-reaching out to their biz-dev teams — their genre/style data is the
-most DJ-relevant of anything on this list), and Juno isn't an option
-since it no longer exists.
+**Recommendation**: add MusicBrainz, iTunes, Deezer, Last.fm, and
+TheAudioDB as more fallback lookups in `lookup_track()` (same pattern as
+the existing Spotify → Discogs chain) — all five are free, public, and
+need no partnership. Beatport/Beatsource/Traxsource/SoundCloud would
+need an actual business relationship or a reopened registration window
+(worth revisiting later — Beatport/Beatsource/Traxsource's genre/style
+data is the most DJ-relevant of anything on this list), Juno isn't an
+option since it no longer exists, and Cyanite.ai's pricing doesn't fit
+CratePrep's own price point.
 
 ## Adjacent competitors: AI/harmonic set-building tools
 
