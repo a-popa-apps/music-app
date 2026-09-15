@@ -174,6 +174,7 @@ in `lookup_track()`.
 | **Beatsource** | 🔴 Blocked | Same parent company as Beatport, same partner-gated model — commercial use needs pre-approval in writing. |
 | **Traxsource** | 🔴 Blocked | API keys are invite-only, aimed at label partners/content providers reporting on their own catalog, not general third-party search access. |
 | **SoundCloud** | 🔴 Blocked | New third-party API key registration is currently closed; SoundCloud says they're "exploring" reopening it but isn't issuing new keys right now. |
+| **Volumo** | 🔴 No API at all | Newer (2022) curated underground-electronic DJ music store, pay-per-track (no subscription), ~417K artists/36K labels. No public or partner API found anywhere -- unlike Beatport/Traxsource, there isn't even a gated one to request access to. Worth rechecking if they ever launch one. |
 | **Juno Download** | ⚫ Defunct | Site shut down June 2026 — the API (which existed, XML-based) is gone with it. |
 | **Cyanite.ai** | 🟡 Open, but not a fit | AI *audio* analysis (genre/mood classifier on the raw track, not catalog matching) rather than a lookup source — technically accessible, but real API usage starts at €290/month, which dwarfs CratePrep's entire $5-8/mo price point. 5 free analyses/month otherwise. Not worth it at this scale. |
 
