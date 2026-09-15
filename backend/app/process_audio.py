@@ -12,6 +12,7 @@ from fastapi import HTTPException, UploadFile
 from fastapi.concurrency import run_in_threadpool
 
 from .ai_cleanup import ai_split_artist_title
+from .analysis_cache import content_hash, get_exact_match, store_exact_match
 from .audio_io import NEEDS_BROWSER_PREVIEW, get_duration_seconds, load_audio, make_preview_wav
 from .batch_summary import generate_batch_summary
 from .clean_filename import compose_name, guess_split, local_dash_split, prepare_stem
@@ -164,86 +165,117 @@ def _analyze_and_tag(
     ai_cleanup: bool = False,
 ) -> tuple[bytes, dict, str, bytes | None]:
     embedded_tags = read_embedded_tags(content, ext)
-    artist, title, genre, name_debug = _resolve_artist_title_genre(
-        stem, deep_search, embedded_tags=embedded_tags, ai_cleanup=ai_cleanup
-    )
-    # Internal-only -- used below to fetch and embed cover art, not meant
-    # for the manifest/results table, so it doesn't ride along in name_debug.
-    artwork_url = name_debug.pop("artwork_url", None)
     if embedded_tags and not version_tag:
         version_tag = embedded_tags["version_tag"]
 
-    try:
-        # Free/default mode only ever analyzes the first ANALYSIS_SECONDS
-        # (BPM, key, energy all already fast-path to a short window) --
-        # decoding just that slice instead of the whole track is the
-        # single biggest speed win available, since decode cost scales
-        # with track length. "Enhanced Detection" (Pro) still needs the
-        # full track for its full-track BPM pass and low-confidence key
-        # retry, so it decodes everything as before.
-        audio = load_audio(
-            content, ext, max_seconds=None if enhanced_detection else ANALYSIS_SECONDS
+    # A file with these exact bytes (anyone's upload, not just this user's)
+    # has already been fully analyzed before -- reuse that result and skip
+    # both the essentia decode/analysis and the genre catalog lookups, the
+    # two genuinely expensive steps. Exact-match only: this never risks
+    # reusing a subtly-wrong BPM/key from a different rip of the "same"
+    # song (see detect_genre's own cache for that case instead, which only
+    # shares genre/artwork -- safe across different rips -- never BPM/key).
+    file_hash = content_hash(content)
+    cached = get_exact_match(file_hash)
+
+    if cached:
+        entry: dict = {
+            "duration_seconds": get_duration_seconds(content, ext),
+            "artist": cached.get("artist"),
+            "title": cached.get("title"),
+            "name_source": cached.get("name_source"),
+            "bpm": cached.get("bpm"),
+            "key": cached.get("key"),
+            "camelot": cached.get("camelot"),
+            "tonality": cached.get("tonality"),
+            "energy": cached.get("energy"),
+            "genre": cached.get("genre"),
+        }
+        artist, title, genre = entry["artist"], entry["title"], entry["genre"]
+        bpm, camelot, tonality = entry["bpm"], entry["camelot"], entry["tonality"]
+        artwork_url = cached.get("artwork_url")
+    else:
+        artist, title, genre, name_debug = _resolve_artist_title_genre(
+            stem, deep_search, embedded_tags=embedded_tags, ai_cleanup=ai_cleanup
         )
-    except Exception as e:
+        # Internal-only -- used below to fetch and embed cover art, not
+        # meant for the manifest/results table, so it doesn't ride along
+        # in name_debug.
+        artwork_url = name_debug.pop("artwork_url", None)
+
+        try:
+            # Free/default mode only ever analyzes the first ANALYSIS_SECONDS
+            # (BPM, key, energy all already fast-path to a short window) --
+            # decoding just that slice instead of the whole track is the
+            # single biggest speed win available, since decode cost scales
+            # with track length. "Enhanced Detection" (Pro) still needs the
+            # full track for its full-track BPM pass and low-confidence key
+            # retry, so it decodes everything as before.
+            audio = load_audio(
+                content, ext, max_seconds=None if enhanced_detection else ANALYSIS_SECONDS
+            )
+        except Exception as e:
+            entry = {
+                "bpm": None,
+                "key": None,
+                "genre": genre,
+                "artist": artist,
+                "title": title,
+                "load_error": f"{type(e).__name__}: {e}",
+                **name_debug,
+            }
+            final_name = compose_name(artist, title, stem, version_tag, ext)
+            return content, entry, final_name, None
+
         entry = {
-            "bpm": None,
-            "key": None,
-            "genre": genre,
+            # From the file's own header, not len(audio)/SAMPLE_RATE -- audio
+            # may only be a truncated window above, but the track's real
+            # duration (shown in the UI, written into the playlist) must not be.
+            "duration_seconds": get_duration_seconds(content, ext),
             "artist": artist,
             "title": title,
-            "load_error": f"{type(e).__name__}: {e}",
             **name_debug,
         }
-        final_name = compose_name(artist, title, stem, version_tag, ext)
-        return content, entry, final_name, None
+        bpm = None
+        camelot = None
+        tonality = None
 
-    entry: dict = {
-        # From the file's own header, not len(audio)/SAMPLE_RATE -- audio
-        # may only be a truncated window above, but the track's real
-        # duration (shown in the UI, written into the playlist) must not be.
-        "duration_seconds": get_duration_seconds(content, ext),
-        "artist": artist,
-        "title": title,
-        **name_debug,
-    }
-    bpm = None
-    camelot = None
-    tonality = None
+        try:
+            bpm = detect_bpm(
+                audio,
+                full_track=enhanced_detection,
+                # Lets detect_bpm retry against the full track (only if its fast
+                # windowed read comes back low-confidence) without paying for a
+                # full decode upfront -- enhanced_detection already decoded the
+                # full track above, so there's nothing to retry with there.
+                full_audio_loader=(
+                    None if enhanced_detection else lambda: load_audio(content, ext, max_seconds=None)
+                ),
+            )
+            entry["bpm"] = bpm
+        except Exception as e:
+            entry["bpm"] = None
+            entry["bpm_error"] = f"{type(e).__name__}: {e}"
 
-    try:
-        bpm = detect_bpm(
-            audio,
-            full_track=enhanced_detection,
-            # Lets detect_bpm retry against the full track (only if its fast
-            # windowed read comes back low-confidence) without paying for a
-            # full decode upfront -- enhanced_detection already decoded the
-            # full track above, so there's nothing to retry with there.
-            full_audio_loader=(
-                None if enhanced_detection else lambda: load_audio(content, ext, max_seconds=None)
-            ),
-        )
-        entry["bpm"] = bpm
-    except Exception as e:
-        entry["bpm"] = None
-        entry["bpm_error"] = f"{type(e).__name__}: {e}"
+        try:
+            key_result = detect_key(audio, enhanced=enhanced_detection)
+            entry.update(key_result)
+            camelot = key_result["camelot"]
+            tonality = key_result["tonality"]
+        except Exception as e:
+            entry["key"] = None
+            entry["key_error"] = f"{type(e).__name__}: {e}"
 
-    try:
-        key_result = detect_key(audio, enhanced=enhanced_detection)
-        entry.update(key_result)
-        camelot = key_result["camelot"]
-        tonality = key_result["tonality"]
-    except Exception as e:
-        entry["key"] = None
-        entry["key_error"] = f"{type(e).__name__}: {e}"
+        try:
+            entry["energy"] = detect_energy(audio, full_track=enhanced_detection)
+        except Exception as e:
+            entry["energy"] = None
+            entry["energy_error"] = f"{type(e).__name__}: {e}"
 
-    try:
-        entry["energy"] = detect_energy(audio, full_track=enhanced_detection)
-    except Exception as e:
-        entry["energy"] = None
-        entry["energy_error"] = f"{type(e).__name__}: {e}"
+        del audio
+        entry["genre"] = genre
 
-    del audio
-    entry["genre"] = genre
+        store_exact_match(file_hash, {**entry, "artwork_url": artwork_url})
 
     final_name = compose_name(
         artist,

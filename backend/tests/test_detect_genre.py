@@ -454,3 +454,50 @@ class TestDetectGenre:
         monkeypatch.setattr(detect_genre, "_lastfm_genre_lookup", lambda a, t: None)
 
         assert detect_genre.detect_genre("A", "B") == {"genre": None, "artwork_url": None}
+
+
+class TestDetectGenreCache:
+    """The point of this cache: an MP3 rip and a FLAC rip of the same song
+    are completely different bytes (so an exact content-hash cache would
+    never match between them), but they share the same artist/title, and
+    genre/artwork don't change between rips of the same official release --
+    so caching by normalized artist+title is what actually saves the
+    network calls across different files of the "same" song."""
+
+    def test_second_lookup_for_same_artist_title_skips_the_network(self, monkeypatch):
+        store: dict = {}
+        monkeypatch.setattr(detect_genre, "get_genre_lookup", lambda a, t: store.get((a, t)))
+        monkeypatch.setattr(
+            detect_genre, "store_genre_lookup", lambda a, t, g, u: store.__setitem__((a, t), {"genre": g, "artwork_url": u})
+        )
+
+        calls = []
+        monkeypatch.setattr(
+            detect_genre,
+            "lookup_track",
+            lambda q: calls.append(q) or {"genre": "Techno", "artwork_url": "https://x/1.jpg"},
+        )
+
+        first = detect_genre.detect_genre("Rob Yancey", "Circe")
+        second = detect_genre.detect_genre("Rob Yancey", "Circe")
+
+        assert first == second == {"genre": "Techno", "artwork_url": "https://x/1.jpg"}
+        assert len(calls) == 1  # the network lookup only ran once
+
+    def test_cache_miss_hands_the_lookup_result_to_store_genre_lookup(self, monkeypatch):
+        monkeypatch.setattr(detect_genre, "get_genre_lookup", lambda a, t: None)
+        stored = []
+        monkeypatch.setattr(
+            detect_genre, "store_genre_lookup", lambda a, t, g, u: stored.append((a, t, g, u))
+        )
+        monkeypatch.setattr(
+            detect_genre, "lookup_track", lambda q: {"genre": "Techno", "artwork_url": "https://x/1.jpg"}
+        )
+
+        detect_genre.detect_genre("A", "B")
+
+        # store_genre_lookup itself (tested in test_analysis_cache.py) is
+        # what decides whether an empty result is actually worth
+        # persisting -- this only checks detect_genre hands it whatever
+        # the lookup actually found.
+        assert stored == [("A", "B", "Techno", "https://x/1.jpg")]

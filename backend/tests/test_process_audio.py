@@ -87,6 +87,39 @@ def test_build_zip_processes_multiple_files_in_order():
     assert len(names) == 5
 
 
+def test_build_zip_reuses_cached_analysis_for_identical_bytes(monkeypatch):
+    # Two different uploads of the exact same file (e.g. two different
+    # users) shouldn't pay for essentia analysis or genre lookups twice --
+    # the second one should reuse the first's result outright.
+    store: dict = {}
+    monkeypatch.setattr(process_audio, "get_exact_match", lambda h: store.get(h))
+    monkeypatch.setattr(process_audio, "store_exact_match", lambda h, entry: store.__setitem__(h, entry))
+
+    analyze_calls = []
+    real_resolve = process_audio._resolve_artist_title_genre
+
+    def spy_resolve(*args, **kwargs):
+        analyze_calls.append(1)
+        return real_resolve(*args, **kwargs)
+
+    monkeypatch.setattr(process_audio, "_resolve_artist_title_genre", spy_resolve)
+
+    content = _make_wav(220)
+    files_first = [_upload("Artist - Title.wav", content)]
+    files_second = [_upload("Artist - Title.wav", content)]
+
+    _, manifest1 = asyncio.run(process_audio.build_zip(files_first))
+    _, manifest2 = asyncio.run(process_audio.build_zip(files_second))
+
+    assert len(analyze_calls) == 1  # only the first upload actually resolved artist/title/genre
+
+    entry1 = next(iter(manifest1.values()))
+    entry2 = next(iter(manifest2.values()))
+    assert entry2["bpm"] == entry1["bpm"]
+    assert entry2["genre"] == entry1["genre"]
+    assert entry2["artist"] == entry1["artist"] and entry2["title"] == entry1["title"]
+
+
 def test_build_zip_spans_multiple_chunks_correctly(monkeypatch):
     # PROCESS_CONCURRENCY governs chunk size in build_zip -- with 5 files and
     # a chunk size of 2, this spans three chunks (2 + 2 + 1). Every file must

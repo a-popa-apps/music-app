@@ -8,6 +8,8 @@ import time
 import urllib.parse
 import urllib.request
 
+from .analysis_cache import get_genre_lookup, store_genre_lookup
+
 SPOTIFY_CLIENT_ID = os.environ.get("SPOTIFY_CLIENT_ID")
 SPOTIFY_CLIENT_SECRET = os.environ.get("SPOTIFY_CLIENT_SECRET")
 DISCOGS_TOKEN = os.environ.get("DISCOGS_TOKEN")  # optional, raises the rate limit
@@ -437,18 +439,34 @@ def _lastfm_genre_lookup(artist: str, title: str) -> dict | None:
 
 def detect_genre(artist: str | None, title: str | None, deep_search: bool = False) -> dict:
     """Genre (and artwork, when found) lookup for when artist/title are
-    already known (e.g. from a local dash split). Reuses lookup_track's
-    plausibility-checked search first (Spotify/Discogs/iTunes/Deezer),
-    then MusicBrainz/TheAudioDB/Last.fm (cheap, single-call fallbacks) if
-    still no genre, then the slower deep_discogs_lookup last, only when
-    deep_search is enabled and everything else found nothing.
+    already known (e.g. from a local dash split). Checks a global cache
+    (keyed by normalized artist+title, not the audio itself) first --
+    genre and artwork don't change between an MP3 and a FLAC of the same
+    official release, so this is what actually saves the network calls
+    below the next time anyone uploads a different rip of a track that's
+    already been looked up, not just an identical file."""
+    if not artist or not title:
+        return {"genre": None, "artwork_url": None}
+
+    cached = get_genre_lookup(artist, title)
+    if cached is not None:
+        return cached
+
+    result = _lookup_genre(artist, title, deep_search)
+    store_genre_lookup(artist, title, result["genre"], result["artwork_url"])
+    return result
+
+
+def _lookup_genre(artist: str, title: str, deep_search: bool) -> dict:
+    """Reuses lookup_track's plausibility-checked search first
+    (Spotify/Discogs/iTunes/Deezer), then MusicBrainz/TheAudioDB/Last.fm
+    (cheap, single-call fallbacks) if still no genre, then the slower
+    deep_discogs_lookup last, only when deep_search is enabled and
+    everything else found nothing.
 
     Returns {"genre": str | None, "artwork_url": str | None} -- artwork
     is kept from the first source that had it even if a later source ends
     up supplying the genre instead."""
-    if not artist or not title:
-        return {"genre": None, "artwork_url": None}
-
     artwork_url = None
 
     match = lookup_track(f"{artist} {title}")
