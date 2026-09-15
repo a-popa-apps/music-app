@@ -592,9 +592,11 @@ async def process(request: Request, files: list[UploadFile] = File(...)):
     validate_files(files, max_files=max_files)
 
     try:
-        # Reuse the settings already fetched above (when available) instead
-        # of check_and_reserve_usage reading the same document a second time.
-        tracks_used, should_warn_usage = check_and_reserve_usage(uid, len(files), plan, settings=settings)
+        # Reads the usage counter fresh inside a Firestore transaction
+        # rather than reusing the `settings` fetched above -- two
+        # concurrent requests both reading "under limit" before either
+        # write lands would otherwise let combined usage exceed the quota.
+        tracks_used, should_warn_usage = check_and_reserve_usage(uid, len(files), plan)
     except ValueError as e:
         raise HTTPException(402, str(e))
 

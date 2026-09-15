@@ -1,14 +1,18 @@
 import pytest
 
 from app import profile_store
-from tests.fake_firestore import FakeCollection
+from tests.fake_firestore import FakeClient
 
 
 @pytest.fixture
 def fake_collection(monkeypatch):
-    collection = FakeCollection()
-    monkeypatch.setattr(profile_store, "_users_collection", lambda: collection)
-    return collection
+    client = FakeClient()
+    monkeypatch.setattr(profile_store, "_firestore_client", lambda: client)
+    # Real transactions retry via firestore.transactional's internals, which
+    # expect a real Transaction object -- run the wrapped function directly
+    # against our single-shot FakeTransaction instead.
+    monkeypatch.setattr(profile_store, "_run_transaction", lambda client, fn: fn(client.transaction()))
+    return client.collection("users")
 
 
 def test_get_settings_returns_defaults_for_unknown_user(fake_collection):

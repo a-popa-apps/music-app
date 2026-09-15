@@ -63,11 +63,26 @@ READ_ONLY_FIELDS = {
 }
 
 
-def _users_collection():
+def _firestore_client():
     app = get_app()
     if app is None:
         raise RuntimeError("Firebase is not configured")
-    return firestore.client(app=app).collection("users")
+    return firestore.client(app=app)
+
+
+def _users_collection():
+    return _firestore_client().collection("users")
+
+
+def _run_transaction(client, update_fn):
+    """Executes update_fn(transaction) as a real Firestore transaction --
+    the client retries automatically (and update_fn re-runs) if another
+    write lands on the same document mid-transaction. update_fn must read
+    via `ref.get(transaction=transaction)` and write via
+    `transaction.set(...)`, never the doc ref's own .get()/.set()
+    directly, or there's nothing for Firestore to detect a conflict on."""
+    transaction = client.transaction()
+    return firestore.transactional(update_fn)(transaction)
 
 
 def get_settings(uid: str) -> dict:
@@ -108,9 +123,7 @@ def _current_period_key() -> str:
     return f"{now.year:04d}-{now.month:02d}"
 
 
-def check_and_reserve_usage(
-    uid: str, file_count: int, plan: str, settings: dict | None = None
-) -> tuple[int, bool]:
+def check_and_reserve_usage(uid: str, file_count: int, plan: str) -> tuple[int, bool]:
     """Enforces the Free plan's monthly track quota. Pro is unlimited here
     (still bounded by the per-batch MAX_FILES_PRO cap elsewhere). Raises
     ValueError if this batch would exceed the quota; otherwise reserves the
@@ -122,30 +135,41 @@ def check_and_reserve_usage(
     USAGE_WARNING_THRESHOLD within a billing period (never True twice for
     the same period). Pro always returns (0, False).
 
-    Pass `settings` when the caller already fetched this user's settings
-    (e.g. /process already needs plan/filename_template from it) to avoid
-    reading the same document twice in one request; fetches its own
-    otherwise."""
+    Runs as a Firestore transaction (read-check-write on the same document,
+    with Firestore itself detecting and retrying on conflicting writes) --
+    without it, two concurrent requests (two open tabs, a retried upload)
+    could both read "under limit" before either write landed, letting
+    combined usage exceed the quota. Always reads fresh rather than
+    accepting a pre-fetched `settings` dict, since anything read outside
+    the transaction can't be protected by it."""
     if plan == "pro":
         return 0, False
 
-    settings = settings if settings is not None else get_settings(uid)
-    period = _current_period_key()
-    used = settings["tracks_processed_this_period"] if settings["usage_period_start"] == period else 0
-    new_used = used + file_count
+    client = _firestore_client()
+    doc_ref = client.collection("users").document(uid)
 
-    if new_used > FREE_MONTHLY_TRACK_LIMIT:
-        raise ValueError(
-            f"Monthly Free plan limit reached ({used}/{FREE_MONTHLY_TRACK_LIMIT} tracks used). "
-            "Upgrade to Pro for more."
-        )
+    def _reserve(transaction):
+        snapshot = doc_ref.get(transaction=transaction)
+        current = {**DEFAULT_SETTINGS, **snapshot.to_dict()} if snapshot.exists else dict(DEFAULT_SETTINGS)
 
-    warning_already_sent = settings.get("usage_warning_period") == period
-    should_warn = new_used >= USAGE_WARNING_THRESHOLD and not warning_already_sent
+        period = _current_period_key()
+        used = current["tracks_processed_this_period"] if current["usage_period_start"] == period else 0
+        new_used = used + file_count
 
-    update = {"tracks_processed_this_period": new_used, "usage_period_start": period}
-    if should_warn:
-        update["usage_warning_period"] = period
-    _users_collection().document(uid).set(update, merge=True)
+        if new_used > FREE_MONTHLY_TRACK_LIMIT:
+            raise ValueError(
+                f"Monthly Free plan limit reached ({used}/{FREE_MONTHLY_TRACK_LIMIT} tracks used). "
+                "Upgrade to Pro for more."
+            )
 
-    return new_used, should_warn
+        warning_already_sent = current.get("usage_warning_period") == period
+        should_warn = new_used >= USAGE_WARNING_THRESHOLD and not warning_already_sent
+
+        update = {"tracks_processed_this_period": new_used, "usage_period_start": period}
+        if should_warn:
+            update["usage_warning_period"] = period
+        transaction.set(doc_ref, update, merge=True)
+
+        return new_used, should_warn
+
+    return _run_transaction(client, _reserve)

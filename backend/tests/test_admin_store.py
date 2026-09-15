@@ -3,13 +3,16 @@ from unittest.mock import MagicMock
 import pytest
 
 from app import admin_store, profile_store
-from tests.fake_firestore import FakeCollection
+from tests.fake_firestore import FakeClient, FakeCollection
 
 
 @pytest.fixture
 def fake_users(monkeypatch):
-    collection = FakeCollection()
+    client = FakeClient()
+    collection = client.collection("users")
     monkeypatch.setattr(profile_store, "_users_collection", lambda: collection)
+    monkeypatch.setattr(profile_store, "_firestore_client", lambda: client)
+    monkeypatch.setattr(profile_store, "_run_transaction", lambda client, fn: fn(client.transaction()))
     monkeypatch.setattr(admin_store, "_users_collection", lambda: collection)
     return collection
 

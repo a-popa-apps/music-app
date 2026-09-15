@@ -21,7 +21,7 @@ class _FakeDocRef:
         self._store = store
         self._doc_id = doc_id
 
-    def get(self) -> _FakeSnapshot:
+    def get(self, transaction=None) -> _FakeSnapshot:
         return _FakeSnapshot(self._store.get(self._doc_id))
 
     def set(self, data: dict, merge: bool = False) -> None:
@@ -81,6 +81,19 @@ class _FakeBatch:
         self._writes = []
 
 
+class FakeTransaction:
+    """Stands in for a Firestore Transaction. Single-shot -- no
+    retry-on-conflict, since an in-memory, single-threaded fake can't
+    meaningfully race -- just enough interface (doc_ref.get(transaction=...)
+    works already; .set() here) for code under test to be transaction-shaped.
+    Pair with monkeypatching the module's `_run_transaction` to call the
+    wrapped function directly instead of via the real firestore.transactional
+    decorator, which expects a real Transaction's retry/commit internals."""
+
+    def set(self, doc_ref: _FakeDocRef, data: dict, merge: bool = False) -> None:
+        doc_ref.set(data, merge=merge)
+
+
 class FakeClient:
     """Stands in for firestore.client() -- hands out the same FakeCollection
     instance per name (so state persists across calls) and a fresh batch."""
@@ -93,3 +106,6 @@ class FakeClient:
 
     def batch(self) -> _FakeBatch:
         return _FakeBatch()
+
+    def transaction(self) -> FakeTransaction:
+        return FakeTransaction()

@@ -1,14 +1,15 @@
 import pytest
 
 from app import anon_trial_store
-from tests.fake_firestore import FakeCollection
+from tests.fake_firestore import FakeClient
 
 
 @pytest.fixture
 def fake_collection(monkeypatch):
-    collection = FakeCollection()
-    monkeypatch.setattr(anon_trial_store, "_trials_collection", lambda: collection)
-    return collection
+    client = FakeClient()
+    monkeypatch.setattr(anon_trial_store, "_firestore_client", lambda: client)
+    monkeypatch.setattr(anon_trial_store, "_run_transaction", lambda client, fn: fn(client.transaction()))
+    return client.collection("anonymous_trials")
 
 
 def test_first_request_within_limit_succeeds(fake_collection):
