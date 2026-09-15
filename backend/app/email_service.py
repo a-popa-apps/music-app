@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 import urllib.error
 import urllib.request
+
+logger = logging.getLogger(__name__)
 
 RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
 EMAIL_FROM = os.environ.get("EMAIL_FROM", "CratePrep <onboarding@resend.dev>")
@@ -36,7 +39,12 @@ def send_email(to: str, subject: str, html: str) -> bool:
     try:
         with urllib.request.urlopen(req, timeout=10) as resp:
             return 200 <= resp.status < 300
-    except Exception:
+    except urllib.error.HTTPError as e:
+        body = e.read().decode("utf-8", errors="replace")
+        logger.warning("Resend send to %r failed: HTTP %s %s", to, e.code, body)
+        return False
+    except Exception as e:
+        logger.warning("Resend send to %r failed: %s", to, e)
         return False
 
 
