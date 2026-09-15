@@ -175,6 +175,11 @@ export function Hero() {
   const [zipFiles, setZipFiles] = useState<Unzipped | null>(null)
   const [aiSummary, setAiSummary] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  // Only a 402 (quota exhausted) gets the "upgrade" treatment (headline +
+  // CTA button) -- a 400 (bad file, unsupported format, batch too large)
+  // still shows its own specific backend message, just without implying
+  // upgrading would fix it.
+  const [isQuotaError, setIsQuotaError] = useState(false)
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [billingLoading, setBillingLoading] = useState(false)
   const [statusIndex, setStatusIndex] = useState(0)
@@ -342,10 +347,15 @@ export function Hero() {
       setAiSummary(parseBatchSummary(unzipped))
       setPhase("done")
     } catch (err) {
-      if (err instanceof ApiError && err.status === 402) {
+      if (err instanceof ApiError) {
         setErrorMessage(err.message)
+        setIsQuotaError(err.status === 402)
       } else {
+        // Not an ApiError at all -- a real network failure (timeout,
+        // connection refused), not a response the backend actually sent.
+        // That's the one case "didn't respond" is an accurate message.
         setErrorMessage(null)
+        setIsQuotaError(false)
       }
       setPhase("error")
     }
@@ -406,6 +416,7 @@ export function Hero() {
     setUploadedFiles([])
     setAiSummary(null)
     setErrorMessage(null)
+    setIsQuotaError(false)
     setShowUpgradeModal(false)
     setEditingTrack(null)
     setRetagError(null)
@@ -666,18 +677,20 @@ export function Hero() {
             <div className="flex w-full flex-col items-center gap-4 rounded border-2 border-red-400/30 bg-red-500/10 p-12 text-center backdrop-blur-md">
               <span className="material-symbols-outlined text-[36px] text-red-300">error</span>
               <h3 className="text-headline-sm text-white">
-                {errorMessage
+                {isQuotaError
                   ? user
                     ? "Monthly limit reached"
                     : "Free trial used up"
-                  : "Processing failed"}
+                  : errorMessage
+                    ? "Couldn't process those files"
+                    : "Processing failed"}
               </h3>
               <p className="text-body-md text-white/70">
                 {errorMessage ??
                   "The backend didn't respond. Check that it's awake and try again."}
               </p>
               <div className="flex items-center gap-3">
-                {errorMessage && (
+                {isQuotaError && (
                   <button
                     onClick={() => navigate(user ? "/#pricing" : "/auth")}
                     className="rounded-full bg-secondary-container px-6 py-2 text-body-sm font-semibold text-on-primary transition-opacity hover:opacity-90"
@@ -688,7 +701,7 @@ export function Hero() {
                 <button
                   onClick={reset}
                   className={
-                    errorMessage
+                    isQuotaError
                       ? "text-body-sm font-semibold text-white/70 underline hover:text-white"
                       : "rounded-full bg-secondary-container px-6 py-2 text-body-sm font-semibold text-on-primary transition-opacity hover:opacity-90"
                   }
