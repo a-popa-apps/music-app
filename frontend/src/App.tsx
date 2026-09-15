@@ -3,6 +3,7 @@ import { CookieConsentBanner } from "./components/CookieConsentBanner"
 import { FAQ } from "./components/FAQ"
 import { Features } from "./components/Features"
 import { FeedbackWidget } from "./components/FeedbackWidget"
+import { FinalCta } from "./components/FinalCta"
 import { Footer } from "./components/Footer"
 import { Header } from "./components/Header"
 import { Hero } from "./components/Hero"
@@ -29,6 +30,7 @@ function Landing() {
         <Features />
         <Pricing />
         <FAQ />
+        <FinalCta />
       </main>
       <Footer />
     </>
