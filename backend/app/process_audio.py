@@ -452,8 +452,10 @@ async def build_zip(
         zip_file.writestr("crateprep-playlist.m3u8", build_playlist(playlist_tracks))
 
         # One call for the whole batch, not per track -- cheap regardless of
-        # batch size, so this runs for every user, free or Pro.
-        summary = generate_batch_summary(manifest)
+        # batch size, so this runs for every user, free or Pro. Off the event
+        # loop: this is a blocking HTTP call to Gemini (up to a 15s timeout)
+        # and would otherwise stall every other concurrent request.
+        summary = await run_in_threadpool(generate_batch_summary, manifest)
         if summary:
             zip_file.writestr("crateprep-summary.json", json.dumps({"summary": summary}))
 

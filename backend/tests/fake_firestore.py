@@ -63,3 +63,33 @@ class FakeCollection:
 
     def where(self, field: str, op: str, value) -> _FakeQuery:
         return _FakeQuery(list(self._store.values())).where(field, op, value)
+
+
+class _FakeBatch:
+    """Just enough of Firestore's WriteBatch to test code that batches
+    several .set() calls into one commit instead of one round-trip each."""
+
+    def __init__(self):
+        self._writes: list[tuple[_FakeDocRef, dict]] = []
+
+    def set(self, doc_ref: _FakeDocRef, data: dict) -> None:
+        self._writes.append((doc_ref, data))
+
+    def commit(self) -> None:
+        for doc_ref, data in self._writes:
+            doc_ref.set(data)
+        self._writes = []
+
+
+class FakeClient:
+    """Stands in for firestore.client() -- hands out the same FakeCollection
+    instance per name (so state persists across calls) and a fresh batch."""
+
+    def __init__(self):
+        self._collections: dict[str, FakeCollection] = {}
+
+    def collection(self, name: str) -> FakeCollection:
+        return self._collections.setdefault(name, FakeCollection())
+
+    def batch(self) -> _FakeBatch:
+        return _FakeBatch()

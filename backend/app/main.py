@@ -10,6 +10,7 @@ from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from pydantic import BaseModel
+from starlette.concurrency import run_in_threadpool
 
 from . import ai_budget
 from .admin_store import (
@@ -616,7 +617,10 @@ async def process(request: Request, files: list[UploadFile] = File(...)):
         ai_cleanup=ai_cleanup,
     )
     try:
-        add_history_entries(uid, manifest)
+        # Firestore calls are synchronous network I/O -- run off the event
+        # loop so one user's history write can't stall every other
+        # concurrent request on this single-instance backend.
+        await run_in_threadpool(add_history_entries, uid, manifest)
     except Exception:
         pass  # don't let a history-write failure block returning the processed zip
 

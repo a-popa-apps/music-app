@@ -1,14 +1,14 @@
 import pytest
 
 from app import history_store
-from tests.fake_firestore import FakeCollection
+from tests.fake_firestore import FakeClient
 
 
 @pytest.fixture
 def fake_history(monkeypatch):
-    collection = FakeCollection()
-    monkeypatch.setattr(history_store, "_history_collection", lambda: collection)
-    return collection
+    client = FakeClient()
+    monkeypatch.setattr(history_store, "_firestore_client", lambda: client)
+    return client.collection("history")
 
 
 def _manifest_entry(**overrides):

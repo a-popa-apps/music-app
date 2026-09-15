@@ -8,24 +8,34 @@ from firebase_admin import firestore
 from .auth import get_app
 
 
-def _history_collection():
+def _firestore_client():
     app = get_app()
     if app is None:
         raise RuntimeError("Firebase is not configured")
-    return firestore.client(app=app).collection("history")
+    return firestore.client(app=app)
+
+
+def _history_collection():
+    return _firestore_client().collection("history")
 
 
 def add_history_entries(uid: str, manifest: dict) -> None:
     """Persists one doc per processed track (metadata only -- never the
     audio itself, consistent with the app's no-audio-retention policy).
     Best-effort from the caller's perspective: a failure here shouldn't
-    block returning the processed zip to the user."""
+    block returning the processed zip to the user.
+
+    Written as a single Firestore batch instead of one .set() per track --
+    a 50-track Pro batch used to mean 50 sequential network round-trips."""
     processed_at = datetime.now(timezone.utc).isoformat()
-    collection = _history_collection()
+    client = _firestore_client()
+    collection = client.collection("history")
+    batch = client.batch()
 
     for filename, entry in manifest.items():
         history_id = uuid.uuid4().hex
-        collection.document(history_id).set(
+        batch.set(
+            collection.document(history_id),
             {
                 "history_id": history_id,
                 "uid": uid,
@@ -39,8 +49,11 @@ def add_history_entries(uid: str, manifest: dict) -> None:
                 "duration_seconds": entry.get("duration_seconds"),
                 "failed": bool(entry.get("error")),
                 "processed_at": processed_at,
-            }
+            },
         )
+
+    if manifest:
+        batch.commit()
 
 
 def list_history(uid: str, limit: int = 1000) -> list[dict]:
