@@ -58,6 +58,21 @@ def test_build_zip_processes_multiple_files_in_order():
     assert len(names) == 5
 
 
+def test_build_zip_spans_multiple_chunks_correctly(monkeypatch):
+    # PROCESS_CONCURRENCY governs chunk size in build_zip -- with 5 files and
+    # a chunk size of 2, this spans three chunks (2 + 2 + 1). Every file must
+    # still be processed, in order, with none lost or duplicated across the
+    # chunk boundary.
+    monkeypatch.setattr(process_audio, "PROCESS_CONCURRENCY", 2)
+    files = [_upload(f"Artist{i} - Title{i}.wav", _make_wav(200 + i * 10)) for i in range(5)]
+
+    _, manifest = asyncio.run(process_audio.build_zip(files))
+
+    assert len(manifest) == 5
+    original_filenames = [entry.get("original_filename") for entry in manifest.values()]
+    assert original_filenames == [f"Artist{i} - Title{i}.wav" for i in range(5)]
+
+
 def test_build_zip_enhanced_detection_threads_through_without_error():
     files = [_upload("Artist - Title.wav", _make_wav(200))]
     zip_bytes, manifest = asyncio.run(process_audio.build_zip(files, enhanced_detection=True))
