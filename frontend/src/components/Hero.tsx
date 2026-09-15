@@ -737,9 +737,9 @@ export function Hero() {
               )}
               <div className="grid grid-cols-12 items-center bg-white/5 px-6 py-2 font-mono text-meta-badge uppercase tracking-wider text-white/70">
                 <div className="col-span-1 text-center">#</div>
-                <div className="col-span-4">Track Title &amp; Artist</div>
+                <div className="col-span-5">Track Title &amp; Artist</div>
                 <div className="col-span-1 text-center">BPM</div>
-                <div className="col-span-2 text-center">Key</div>
+                <div className="col-span-1 text-center">Key</div>
                 <div className="col-span-1 text-center">
                   <button
                     onClick={toggleEnergySort}
@@ -758,7 +758,7 @@ export function Hero() {
                     )}
                   </button>
                 </div>
-                <div className="col-span-1 hidden lg:block">Genre Tag</div>
+                <div className="col-span-1 hidden text-center lg:block">Genre Tag</div>
                 <div className="col-span-3 text-right lg:col-span-2">Status</div>
               </div>
 
@@ -779,7 +779,7 @@ export function Hero() {
                     </span>
                     {String(i + 1).padStart(2, "0")}
                   </div>
-                  <div className="col-span-4 flex min-w-0 items-center gap-2 pr-2">
+                  <div className="col-span-5 flex min-w-0 items-center gap-2 pr-2">
                     {!track.failed && zipFiles?.[track.name] && (
                       <button
                         onClick={() => togglePlay(track)}
@@ -813,7 +813,7 @@ export function Hero() {
                   <div className="col-span-1 text-center font-mono text-meta-numeric font-bold text-secondary-container">
                     {track.bpm !== null ? Math.round(track.bpm) : "—"}
                   </div>
-                  <div className="col-span-2 text-center">
+                  <div className="col-span-1 text-center">
                     {track.key ? (
                       <span className="rounded bg-white/10 px-2 py-px font-mono text-meta-numeric text-white">
                         {track.key}
@@ -825,7 +825,7 @@ export function Hero() {
                   <div className="col-span-1 text-center font-mono text-meta-numeric font-bold text-secondary-container">
                     {track.energy !== null ? track.energy : "—"}
                   </div>
-                  <div className="col-span-1 hidden min-w-0 items-center lg:flex">
+                  <div className="col-span-1 hidden min-w-0 items-center justify-center lg:flex">
                     {track.genre && (
                       <span
                         title={track.genre}
