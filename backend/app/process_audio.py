@@ -4,6 +4,7 @@ import asyncio
 import gc
 import io
 import json
+import logging
 import os
 import re
 import zipfile
@@ -23,6 +24,8 @@ from .detect_key import detect_key
 from .playlist import build_playlist
 from .read_tags import read_embedded_tags
 from .write_tags import write_tags
+
+logger = logging.getLogger(__name__)
 
 ALLOWED_EXTENSIONS = {".mp3", ".wav", ".flac", ".aiff", ".aif", ".ogg", ".aac"}
 MAX_FILES_FREE = 10
@@ -179,6 +182,16 @@ def _analyze_and_tag(
     cached = get_exact_match(file_hash)
 
     if cached:
+        # WARNING level purely so this shows up in Render's default log
+        # filtering without needing a logging-config change -- this is a
+        # confirmation line, not an actual problem.
+        logger.warning(
+            "CACHE HIT (exact) [%s]: %s - %s, bpm=%s",
+            file_hash[:12],
+            cached.get("artist"),
+            cached.get("title"),
+            cached.get("bpm"),
+        )
         entry: dict = {
             "duration_seconds": get_duration_seconds(content, ext),
             "artist": cached.get("artist"),
@@ -275,6 +288,13 @@ def _analyze_and_tag(
         del audio
         entry["genre"] = genre
 
+        logger.warning(
+            "CACHE MISS (exact) [%s]: analyzed and cached %s - %s, bpm=%s",
+            file_hash[:12],
+            artist,
+            title,
+            bpm,
+        )
         store_exact_match(file_hash, {**entry, "artwork_url": artwork_url})
 
     final_name = compose_name(

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import json
+import logging
 import os
 import re
 import time
@@ -9,6 +10,8 @@ import urllib.parse
 import urllib.request
 
 from .analysis_cache import get_genre_lookup, store_genre_lookup
+
+logger = logging.getLogger(__name__)
 
 SPOTIFY_CLIENT_ID = os.environ.get("SPOTIFY_CLIENT_ID")
 SPOTIFY_CLIENT_SECRET = os.environ.get("SPOTIFY_CLIENT_SECRET")
@@ -450,9 +453,11 @@ def detect_genre(artist: str | None, title: str | None, deep_search: bool = Fals
 
     cached = get_genre_lookup(artist, title)
     if cached is not None:
+        logger.warning("CACHE HIT (genre) %s - %s -> %s", artist, title, cached.get("genre"))
         return cached
 
     result = _lookup_genre(artist, title, deep_search)
+    logger.warning("CACHE MISS (genre) %s - %s -> %s", artist, title, result.get("genre"))
     store_genre_lookup(artist, title, result["genre"], result["artwork_url"])
     return result
 
