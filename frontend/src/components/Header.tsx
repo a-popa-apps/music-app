@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react"
-import { Link, useLocation, useNavigate } from "react-router-dom"
+import { Link, useLocation } from "react-router-dom"
 import { AccountMenu } from "./AccountMenu"
+import { AuthModal } from "./AuthModal"
 import { useAuth } from "../hooks/useAuth"
 import { useProfile } from "../hooks/useProfile"
 import { createCheckoutSession } from "../services/api"
@@ -29,11 +30,11 @@ export function Header({ dark = false }: { dark?: boolean }) {
   // the anchor link would just scroll to a spot that no longer exists.
   const navLinks = isPro ? NAV_LINKS.filter((link) => link.label !== "Pricing") : NAV_LINKS
   const location = useLocation()
-  const navigate = useNavigate()
   const overHero = dark || (location.pathname === "/" && !scrolled)
   const headerRef = useRef<HTMLElement>(null)
   const [activeSection, setActiveSection] = useState<string | null>(null)
   const [goProLoading, setGoProLoading] = useState(false)
+  const [authModalOpen, setAuthModalOpen] = useState(false)
 
   useEffect(() => {
     function handleScroll() {
@@ -76,7 +77,7 @@ export function Header({ dark = false }: { dark?: boolean }) {
 
   async function handleGoPro() {
     if (!user || !isVerified) {
-      navigate("/auth")
+      setAuthModalOpen(true)
       return
     }
     setGoProLoading(true)
@@ -171,8 +172,8 @@ export function Header({ dark = false }: { dark?: boolean }) {
           ) : (
             <>
               {!loggedIn && (
-                <Link
-                  to="/auth"
+                <button
+                  onClick={() => setAuthModalOpen(true)}
                   className={`text-body-sm font-semibold transition-colors ${
                     overHero
                       ? "text-white/80 hover:text-white"
@@ -180,7 +181,7 @@ export function Header({ dark = false }: { dark?: boolean }) {
                   }`}
                 >
                   Sign In
-                </Link>
+                </button>
               )}
               {loggedIn && (
                 <div className="hidden md:block">
@@ -295,20 +296,23 @@ export function Header({ dark = false }: { dark?: boolean }) {
               </button>
             </div>
           ) : (
-            <Link
-              to="/auth"
-              onClick={() => setMenuOpen(false)}
-              className={`rounded px-2 py-3 text-body-md font-semibold ${
+            <button
+              onClick={() => {
+                setMenuOpen(false)
+                setAuthModalOpen(true)
+              }}
+              className={`rounded px-2 py-3 text-left text-body-md font-semibold ${
                 overHero
                   ? "text-white hover:bg-white/10"
                   : "text-on-surface hover:bg-surface-container-low"
               }`}
             >
               Sign In
-            </Link>
+            </button>
           )}
         </nav>
       )}
+      {authModalOpen && <AuthModal onClose={() => setAuthModalOpen(false)} />}
     </header>
   )
 }
