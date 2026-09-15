@@ -8,6 +8,7 @@ import { useProfile } from "../hooks/useProfile"
 import { ApiError, createCheckoutSession, uploadAndProcess } from "../services/api"
 import { buildPlaylist } from "../utils/buildPlaylist"
 import { suggestSetOrder } from "../utils/suggestSetOrder"
+import { TrackWaveform } from "./TrackWaveform"
 import { UpgradeModal } from "./UpgradeModal"
 import { Waveform } from "./Waveform"
 
@@ -172,6 +173,54 @@ export function Hero() {
   const [energySort, setEnergySort] = useState<"asc" | "desc" | null>(null)
   const qualitySummary = useMemo(() => buildQualitySummary(results), [results])
 
+  // Playback keyed by track *name*, not index -- reordering (drag, Suggest
+  // Set Order, energy sort) changes index but not name, so this survives
+  // a reorder without silently swapping to the wrong track.
+  const [playingTrack, setPlayingTrack] = useState<string | null>(null)
+  const [playbackProgress, setPlaybackProgress] = useState(0)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const audioUrlRef = useRef<string | null>(null)
+
+  function revokeAudioUrl() {
+    if (audioUrlRef.current) {
+      URL.revokeObjectURL(audioUrlRef.current)
+      audioUrlRef.current = null
+    }
+  }
+
+  useEffect(() => revokeAudioUrl, [])
+
+  function togglePlay(track: ProcessedTrack) {
+    const audio = audioRef.current
+    const bytes = zipFiles?.[track.name]
+    if (!audio || !bytes) return
+
+    if (playingTrack === track.name) {
+      audio.pause()
+      setPlayingTrack(null)
+      return
+    }
+
+    revokeAudioUrl()
+    const url = URL.createObjectURL(new Blob([bytes]))
+    audioUrlRef.current = url
+    audio.src = url
+    setPlaybackProgress(0)
+    setPlayingTrack(track.name)
+    void audio.play()
+  }
+
+  function handleAudioTimeUpdate() {
+    const audio = audioRef.current
+    if (!audio || !audio.duration) return
+    setPlaybackProgress(audio.currentTime / audio.duration)
+  }
+
+  function handleAudioEnded() {
+    setPlayingTrack(null)
+    setPlaybackProgress(0)
+  }
+
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
       if (acceptedFiles.length === 0) return
@@ -267,6 +316,10 @@ export function Hero() {
   }
 
   function reset() {
+    audioRef.current?.pause()
+    revokeAudioUrl()
+    setPlayingTrack(null)
+    setPlaybackProgress(0)
     setPhase("idle")
     setFileCount(0)
     setResults([])
@@ -349,6 +402,13 @@ export function Hero() {
       style={{ backgroundImage: `url(${heroBg})` }}
     >
       <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/40 to-black" />
+
+      <audio
+        ref={audioRef}
+        onTimeUpdate={handleAudioTimeUpdate}
+        onEnded={handleAudioEnded}
+        className="hidden"
+      />
 
       <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-col items-center text-center">
         <div className="mb-6 inline-flex items-center gap-1 rounded-full bg-white/10 px-4 py-1 backdrop-blur-sm">
@@ -560,15 +620,35 @@ export function Hero() {
                     </span>
                     {String(i + 1).padStart(2, "0")}
                   </div>
-                  <div className="col-span-3 flex min-w-0 flex-col pr-2">
-                    <span className="truncate text-body-md font-bold text-white">
-                      {track.name}
-                    </span>
-                    {track.originalFilename && (
-                      <span className="truncate text-body-sm text-white/50">
-                        was: {track.originalFilename}
-                      </span>
+                  <div className="col-span-3 flex min-w-0 items-center gap-2 pr-2">
+                    {!track.failed && zipFiles?.[track.name] && (
+                      <button
+                        onClick={() => togglePlay(track)}
+                        aria-label={playingTrack === track.name ? "Pause" : "Play"}
+                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">
+                          {playingTrack === track.name ? "pause" : "play_arrow"}
+                        </span>
+                      </button>
                     )}
+                    <div className="flex min-w-0 flex-1 flex-col gap-1">
+                      <span className="truncate text-body-md font-bold text-white">
+                        {track.name}
+                      </span>
+                      {track.originalFilename && (
+                        <span className="truncate text-body-sm text-white/50">
+                          was: {track.originalFilename}
+                        </span>
+                      )}
+                      {!track.failed && zipFiles?.[track.name] && (
+                        <TrackWaveform
+                          bytes={zipFiles[track.name]}
+                          progress={playingTrack === track.name ? playbackProgress : 0}
+                          className="h-4"
+                        />
+                      )}
+                    </div>
                   </div>
                   <div className="col-span-1 text-center font-mono text-meta-numeric font-bold text-secondary-container">
                     {track.bpm !== null ? Math.round(track.bpm) : "—"}
