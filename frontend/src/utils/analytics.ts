@@ -23,12 +23,17 @@ function gtag(...args: unknown[]) {
   window.dataLayer.push(args)
 }
 
-let scriptLoaded = false
-
-function loadScript() {
-  if (!GA_MEASUREMENT_ID || scriptLoaded) return
-  scriptLoaded = true
-
+// Runs as soon as this module is first imported, rather than from a React
+// effect -- module evaluation always happens before any component mounts,
+// so this can't race a sibling component's own mount effect for who sets
+// window.gtag first. It used to run from CookieConsentBanner's effect via
+// initAnalytics(), which meant trackPageView()/trackEvent() calls from a
+// component whose effect happened to fire first (order isn't guaranteed
+// between siblings) silently no-opped on window.gtag being undefined yet.
+// React 19 StrictMode's dev-only double-invoke of effects masked this in
+// development (the second pass usually won the race) but it reproduced
+// every time in a production build, where effects run only once.
+if (GA_MEASUREMENT_ID) {
   window.gtag = gtag
   gtag("consent", "default", { analytics_storage: "denied" })
   gtag("js", new Date())
@@ -49,11 +54,11 @@ export function getStoredConsent(): Consent | null {
   }
 }
 
-/** Call once on app startup. Loads gtag.js (consent still defaulted to
- * denied) and re-applies a previously stored consent choice, if any. */
+/** Call once on app startup to re-apply a previously stored consent choice,
+ * if any (gtag.js itself is already loaded by the time this runs -- see
+ * above). */
 export function initAnalytics() {
   if (!GA_MEASUREMENT_ID) return
-  loadScript()
   if (getStoredConsent() === "granted") {
     window.gtag?.("consent", "update", { analytics_storage: "granted" })
   }
@@ -67,7 +72,6 @@ export function setAnalyticsConsent(consent: Consent) {
     // private-browsing / storage disabled -- consent still applies for this
     // page load via the in-memory gtag call below, just won't persist.
   }
-  loadScript()
   window.gtag?.("consent", "update", {
     analytics_storage: consent === "granted" ? "granted" : "denied",
   })
