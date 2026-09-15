@@ -79,6 +79,21 @@ def verification_email_html(action_link: str) -> str:
     )
 
 
+def welcome_email_html(app_url: str) -> str:
+    return _base_email(
+        preheader="Your email is verified -- you're ready to organize your crate.",
+        heading="Welcome to CratePrep",
+        body_html=(
+            "You're verified and ready to go. Drop in a batch of tracks and "
+            "CratePrep will clean up filenames, tag genres, and get your "
+            "crate DJ-ready in minutes -- 10 tracks a month free, no card "
+            "required."
+        ),
+        button_text="Start Organizing",
+        button_url=app_url,
+    )
+
+
 def payment_failed_email_html(manage_billing_url: str) -> str:
     return _base_email(
         preheader="We couldn't process your CratePrep Pro payment.",

@@ -36,6 +36,7 @@ DEFAULT_SETTINGS = {
     "subscription_status": None,
     "tracks_processed_this_period": 0,
     "usage_period_start": None,
+    "welcome_email_sent": False,
 }
 
 # Not user-editable via the regular PUT /profile endpoint -- "plan" and the
@@ -52,6 +53,7 @@ READ_ONLY_FIELDS = {
     "subscription_status",
     "tracks_processed_this_period",
     "usage_period_start",
+    "welcome_email_sent",
 }
 
 
@@ -89,6 +91,10 @@ def save_settings(uid: str, settings: dict) -> dict:
 
 def delete_settings(uid: str) -> None:
     _users_collection().document(uid).delete()
+
+
+def mark_welcome_email_sent(uid: str) -> None:
+    _users_collection().document(uid).set({"welcome_email_sent": True}, merge=True)
 
 
 def _current_period_key() -> str:

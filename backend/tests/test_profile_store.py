@@ -105,3 +105,17 @@ def test_enhanced_detection_defaults_false_and_roundtrips(fake_collection):
     assert profile_store.get_settings("new-uid")["enhanced_detection"] is False
     profile_store.save_settings("uid-1", {"enhanced_detection": True})
     assert profile_store.get_settings("uid-1")["enhanced_detection"] is True
+
+
+def test_welcome_email_sent_defaults_false(fake_collection):
+    assert profile_store.get_settings("new-uid")["welcome_email_sent"] is False
+
+
+def test_welcome_email_sent_is_read_only_via_regular_save(fake_collection):
+    profile_store.save_settings("uid-1", {"welcome_email_sent": True})
+    assert profile_store.get_settings("uid-1")["welcome_email_sent"] is False
+
+
+def test_mark_welcome_email_sent(fake_collection):
+    profile_store.mark_welcome_email_sent("uid-1")
+    assert profile_store.get_settings("uid-1")["welcome_email_sent"] is True

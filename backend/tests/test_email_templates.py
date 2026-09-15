@@ -3,6 +3,7 @@ from app.email_templates import (
     password_reset_email_html,
     payment_failed_email_html,
     verification_email_html,
+    welcome_email_html,
 )
 
 
@@ -56,6 +57,13 @@ def test_new_feedback_email_escapes_user_submitted_content():
 def test_new_feedback_email_shows_anonymous_when_no_email_given():
     html = new_feedback_email_html("feedback", None, "hi", None, "https://crateprep.app/admin")
     assert "anonymous" in html
+
+
+def test_welcome_email_embeds_the_app_link():
+    html = welcome_email_html("https://crateprep.app/")
+    assert "https://crateprep.app/" in html
+    assert "Start Organizing" in html
+    assert "Welcome to CratePrep" in html
 
 
 def test_templates_produce_distinct_content():

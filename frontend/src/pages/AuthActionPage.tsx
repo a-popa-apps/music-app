@@ -1,8 +1,14 @@
-import { applyActionCode, confirmPasswordReset, verifyPasswordResetCode } from "firebase/auth"
+import {
+  applyActionCode,
+  checkActionCode,
+  confirmPasswordReset,
+  verifyPasswordResetCode,
+} from "firebase/auth"
 import { useEffect, useState } from "react"
 import { useNavigate, useSearchParams } from "react-router-dom"
 import { Header } from "../components/Header"
 import { auth } from "../firebase"
+import { sendWelcomeEmail } from "../services/api"
 import { checkPwnedPassword } from "../utils/checkPwnedPassword"
 
 const REDIRECT_DELAY_SECONDS = 4
@@ -39,11 +45,17 @@ export function AuthActionPage() {
     async function run() {
       try {
         if (mode === "verifyEmail") {
+          // Fetched before applying the code (applying consumes it) since
+          // this browser isn't necessarily signed in as the account being
+          // verified -- the welcome email needs the address regardless.
+          const info = await checkActionCode(auth, oobCode!).catch(() => null)
           await applyActionCode(auth, oobCode!)
           // Refresh the local user object if this browser happens to be
           // signed in as the account being verified -- harmless no-op
           // otherwise.
           await auth.currentUser?.reload().catch(() => {})
+          const email = info?.data.email
+          if (email) void sendWelcomeEmail(email)
           if (!cancelled) setStatus("verified")
         } else if (mode === "resetPassword") {
           const email = await verifyPasswordResetCode(auth, oobCode!)

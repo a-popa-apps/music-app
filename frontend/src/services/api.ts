@@ -29,6 +29,21 @@ export async function forgotPassword(email: string): Promise<void> {
   if (!res.ok) throw new Error(`Failed to request password reset: ${res.status}`)
 }
 
+// Best-effort -- called right after a user completes email verification.
+// Never throws: a failure here shouldn't block or alarm someone who just
+// successfully verified their email.
+export async function sendWelcomeEmail(email: string): Promise<void> {
+  try {
+    await fetch(`${BACKEND_URL}/auth/welcome-email`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    })
+  } catch {
+    // ignore
+  }
+}
+
 export interface ProfileSettings {
   name: string
   country: string

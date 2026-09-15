@@ -29,6 +29,7 @@ from .auth import (
     generate_verification_link,
     get_app,
     get_current_user,
+    get_user_by_email,
     get_user_record,
 )
 from .billing import (
@@ -43,12 +44,19 @@ from .email_templates import (
     new_feedback_email_html,
     password_reset_email_html,
     verification_email_html,
+    welcome_email_html,
 )
 from .feedback_store import create_feedback, list_feedback, mark_feedback_read
 from .feedback_summary import generate_feedback_summary
 from .history_store import add_history_entries, clear_history, list_history
 from .process_audio import MAX_FILES_FREE, MAX_FILES_PRO, build_zip, validate_files
-from .profile_store import check_and_reserve_usage, delete_settings, get_settings, save_settings
+from .profile_store import (
+    check_and_reserve_usage,
+    delete_settings,
+    get_settings,
+    mark_welcome_email_sent,
+    save_settings,
+)
 from .rate_limit import MAX_REQUESTS_FREE, MAX_REQUESTS_PRO, _client_ip, enforce_rate_limit
 
 # Optional -- no-op if SENTRY_DSN isn't set, same pattern as every other
@@ -318,6 +326,34 @@ def forgot_password(body: ForgotPasswordRequest, request: Request):
         send_email(body.email, "Reset your CratePrep password", password_reset_email_html(link))
 
     return {"sent": True}
+
+
+class WelcomeEmailRequest(BaseModel):
+    email: str
+
+
+@app.post("/auth/welcome-email")
+def send_welcome_email(body: WelcomeEmailRequest, request: Request):
+    """Public and unauthenticated by nature -- called right after a user
+    completes email verification via the Firebase client SDK on
+    AuthActionPage, which happens before they're necessarily signed in on
+    this device/browser. Rate-limited by IP; a no-op unless the given email
+    belongs to an actually-verified account that hasn't received this email
+    yet, so it can't be used to spam arbitrary or unverified addresses, or
+    to re-send the same user a welcome email over and over."""
+    enforce_rate_limit(request, max_requests=MAX_REQUESTS_FREE)
+
+    user = get_user_by_email(body.email)
+    if user is None or not user.email_verified:
+        return {"sent": False}
+
+    if get_settings(user.uid).get("welcome_email_sent"):
+        return {"sent": False}
+
+    sent = send_email(user.email, "Welcome to CratePrep!", welcome_email_html(_frontend_base_url(request)))
+    if sent:
+        mark_welcome_email_sent(user.uid)
+    return {"sent": sent}
 
 
 class CheckoutRequest(BaseModel):

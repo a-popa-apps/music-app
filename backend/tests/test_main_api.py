@@ -552,3 +552,88 @@ def test_forgot_password_sends_email_when_account_exists(client, monkeypatch):
     assert res.status_code == 200
     assert res.json() == {"sent": True}
     assert captured["to"] == "dj@example.com"
+
+
+def test_welcome_email_no_ops_when_account_does_not_exist(client, monkeypatch):
+    monkeypatch.setattr(main, "get_user_by_email", lambda email: None)
+    sent = []
+    monkeypatch.setattr(main, "send_email", lambda *a, **k: sent.append(1) or True)
+
+    res = client.post("/auth/welcome-email", json={"email": "nobody@example.com"})
+
+    assert res.status_code == 200
+    assert res.json() == {"sent": False}
+    assert sent == []
+
+
+def test_welcome_email_no_ops_when_not_verified(client, monkeypatch):
+    monkeypatch.setattr(
+        main,
+        "get_user_by_email",
+        lambda email: SimpleNamespace(uid="uid-1", email="dj@example.com", email_verified=False),
+    )
+    sent = []
+    monkeypatch.setattr(main, "send_email", lambda *a, **k: sent.append(1) or True)
+
+    res = client.post("/auth/welcome-email", json={"email": "dj@example.com"})
+
+    assert res.status_code == 200
+    assert res.json() == {"sent": False}
+    assert sent == []
+
+
+def test_welcome_email_no_ops_when_already_sent(client, monkeypatch):
+    monkeypatch.setattr(
+        main,
+        "get_user_by_email",
+        lambda email: SimpleNamespace(uid="uid-1", email="dj@example.com", email_verified=True),
+    )
+    monkeypatch.setattr(main, "get_settings", lambda uid: {"welcome_email_sent": True})
+    sent = []
+    monkeypatch.setattr(main, "send_email", lambda *a, **k: sent.append(1) or True)
+
+    res = client.post("/auth/welcome-email", json={"email": "dj@example.com"})
+
+    assert res.status_code == 200
+    assert res.json() == {"sent": False}
+    assert sent == []
+
+
+def test_welcome_email_sends_and_marks_when_first_time_verified(client, monkeypatch):
+    monkeypatch.setattr(
+        main,
+        "get_user_by_email",
+        lambda email: SimpleNamespace(uid="uid-1", email="dj@example.com", email_verified=True),
+    )
+    monkeypatch.setattr(main, "get_settings", lambda uid: {"welcome_email_sent": False})
+    captured = {}
+    monkeypatch.setattr(
+        main, "send_email", lambda to, subject, html: captured.update(to=to, subject=subject) or True
+    )
+    marked = []
+    monkeypatch.setattr(main, "mark_welcome_email_sent", lambda uid: marked.append(uid))
+
+    res = client.post("/auth/welcome-email", json={"email": "dj@example.com"})
+
+    assert res.status_code == 200
+    assert res.json() == {"sent": True}
+    assert captured["to"] == "dj@example.com"
+    assert marked == ["uid-1"]
+
+
+def test_welcome_email_does_not_mark_sent_when_delivery_fails(client, monkeypatch):
+    monkeypatch.setattr(
+        main,
+        "get_user_by_email",
+        lambda email: SimpleNamespace(uid="uid-1", email="dj@example.com", email_verified=True),
+    )
+    monkeypatch.setattr(main, "get_settings", lambda uid: {"welcome_email_sent": False})
+    monkeypatch.setattr(main, "send_email", lambda *a, **k: False)
+    marked = []
+    monkeypatch.setattr(main, "mark_welcome_email_sent", lambda uid: marked.append(uid))
+
+    res = client.post("/auth/welcome-email", json={"email": "dj@example.com"})
+
+    assert res.status_code == 200
+    assert res.json() == {"sent": False}
+    assert marked == []

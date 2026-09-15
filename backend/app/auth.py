@@ -69,6 +69,16 @@ def get_user_record(uid: str) -> firebase_auth.UserRecord | None:
         return None
 
 
+def get_user_by_email(email: str) -> firebase_auth.UserRecord | None:
+    app = get_app()
+    if app is None:
+        return None
+    try:
+        return firebase_auth.get_user_by_email(email, app=app)
+    except firebase_auth.UserNotFoundError:
+        return None
+
+
 def _action_code_settings(continue_url: str) -> firebase_auth.ActionCodeSettings:
     # handle_code_in_app=True makes the generated link point directly at
     # continue_url with mode/oobCode as query params, instead of at
