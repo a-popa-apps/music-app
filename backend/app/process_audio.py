@@ -14,6 +14,7 @@ from fastapi.concurrency import run_in_threadpool
 
 from .ai_cleanup import ai_split_artist_title
 from .analysis_cache import content_hash, get_exact_match, store_exact_match
+from .analysis_process_pool import run_isolated
 from .audio_io import NEEDS_BROWSER_PREVIEW, get_duration_seconds, load_audio, make_preview_wav
 from .batch_summary import generate_batch_summary
 from .clean_filename import compose_name, guess_split, local_dash_split, prepare_stem
@@ -157,7 +158,82 @@ def _resolve_artist_title_genre(
     return None, None, None, debug
 
 
-def _analyze_and_tag(
+def _run_essentia_analysis(content: bytes, ext: str, enhanced_detection: bool, needs_preview: bool) -> dict:
+    """BPM/key/energy analysis, plus (if needs_preview) the browser-preview
+    WAV generation -- the only parts of this pipeline that touch essentia/
+    ffmpeg's native code, which is why this one function (not the whole
+    analyze-and-tag pipeline) is what runs in an isolated worker process
+    (see analysis_process_pool.py): a crash here would otherwise take the
+    whole server down, but tag-writing below is pure Python/mutagen and has
+    no such risk. Bundled into one call, not two, so `content` -- which can
+    be tens of MB -- only crosses the process boundary once per file, not
+    once per isolated step. Returns a plain dict; the only large value in
+    it is `preview_content` when present, which is unavoidable -- it's the
+    actual audio data a browser will play."""
+    try:
+        # Free/default mode only ever analyzes the first ANALYSIS_SECONDS
+        # (BPM, key, energy all already fast-path to a short window) --
+        # decoding just that slice instead of the whole track is the
+        # single biggest speed win available, since decode cost scales
+        # with track length. "Enhanced Detection" (Pro) still needs the
+        # full track for its full-track BPM pass and low-confidence key
+        # retry, so it decodes everything as before.
+        audio = load_audio(content, ext, max_seconds=None if enhanced_detection else ANALYSIS_SECONDS)
+    except Exception as e:
+        result = {"bpm": None, "key": None, "load_error": f"{type(e).__name__}: {e}"}
+    else:
+        result = {}
+
+        try:
+            result["bpm"] = detect_bpm(
+                audio,
+                full_track=enhanced_detection,
+                # Lets detect_bpm retry against the full track (only if its
+                # fast windowed read comes back low-confidence) without
+                # paying for a full decode upfront -- enhanced_detection
+                # already decoded the full track above, so there's nothing
+                # to retry with there.
+                full_audio_loader=(
+                    None if enhanced_detection else lambda: load_audio(content, ext, max_seconds=None)
+                ),
+            )
+        except Exception as e:
+            result["bpm"] = None
+            result["bpm_error"] = f"{type(e).__name__}: {e}"
+
+        try:
+            result.update(detect_key(audio, enhanced=enhanced_detection))
+        except Exception as e:
+            result["key"] = None
+            result["key_error"] = f"{type(e).__name__}: {e}"
+
+        try:
+            result["energy"] = detect_energy(audio, full_track=enhanced_detection)
+        except Exception as e:
+            result["energy"] = None
+            result["energy_error"] = f"{type(e).__name__}: {e}"
+
+    if needs_preview:
+        try:
+            result["preview_content"] = make_preview_wav(content, ext)
+        except Exception as e:
+            result["preview_error"] = f"{type(e).__name__}: {e}"
+
+    return result
+
+
+def _run_preview_only(content: bytes, ext: str) -> dict:
+    """Just the browser-preview WAV generation, for an exact-match cache
+    hit -- BPM/key/energy are already known, but the preview is never
+    cached (it would need blob storage, not Firestore, for files this
+    size), so it still needs regenerating from the real bytes."""
+    try:
+        return {"preview_content": make_preview_wav(content, ext)}
+    except Exception as e:
+        return {"preview_error": f"{type(e).__name__}: {e}"}
+
+
+async def _analyze_and_tag(
     content: bytes,
     ext: str,
     stem: str,
@@ -180,6 +256,9 @@ def _analyze_and_tag(
     # shares genre/artwork -- safe across different rips -- never BPM/key).
     file_hash = content_hash(content)
     cached = get_exact_match(file_hash)
+
+    needs_preview = ext in NEEDS_BROWSER_PREVIEW
+    preview_content: bytes | None = None
 
     if cached:
         # WARNING level purely so this shows up in Render's default log
@@ -207,6 +286,12 @@ def _analyze_and_tag(
         artist, title, genre = entry["artist"], entry["title"], entry["genre"]
         bpm, camelot, tonality = entry["bpm"], entry["camelot"], entry["tonality"]
         artwork_url = cached.get("artwork_url")
+
+        if needs_preview:
+            preview_result = await run_isolated(PROCESS_CONCURRENCY, _run_preview_only, content, ext)
+            preview_content = preview_result.get("preview_content")
+            if "preview_error" in preview_result:
+                entry["preview_error"] = preview_result["preview_error"]
     else:
         artist, title, genre, name_debug = _resolve_artist_title_genre(
             stem, deep_search, embedded_tags=embedded_tags, ai_cleanup=ai_cleanup
@@ -216,29 +301,29 @@ def _analyze_and_tag(
         # in name_debug.
         artwork_url = name_debug.pop("artwork_url", None)
 
-        try:
-            # Free/default mode only ever analyzes the first ANALYSIS_SECONDS
-            # (BPM, key, energy all already fast-path to a short window) --
-            # decoding just that slice instead of the whole track is the
-            # single biggest speed win available, since decode cost scales
-            # with track length. "Enhanced Detection" (Pro) still needs the
-            # full track for its full-track BPM pass and low-confidence key
-            # retry, so it decodes everything as before.
-            audio = load_audio(
-                content, ext, max_seconds=None if enhanced_detection else ANALYSIS_SECONDS
-            )
-        except Exception as e:
+        # Analysis and preview generation are bundled into one isolated
+        # call (see _run_essentia_analysis) rather than two, so `content`
+        # -- which can be tens of MB -- only crosses the process boundary
+        # once here, not once per essentia-touching step.
+        analysis = await run_isolated(
+            PROCESS_CONCURRENCY, _run_essentia_analysis, content, ext, enhanced_detection, needs_preview
+        )
+
+        if "load_error" in analysis:
             entry = {
                 "bpm": None,
                 "key": None,
                 "genre": genre,
                 "artist": artist,
                 "title": title,
-                "load_error": f"{type(e).__name__}: {e}",
+                "load_error": analysis["load_error"],
                 **name_debug,
             }
             final_name = compose_name(artist, title, stem, version_tag, ext)
             return content, entry, final_name, None
+
+        preview_content = analysis.pop("preview_content", None)
+        preview_error = analysis.pop("preview_error", None)
 
         entry = {
             # From the file's own header, not len(audio)/SAMPLE_RATE -- audio
@@ -248,44 +333,13 @@ def _analyze_and_tag(
             "artist": artist,
             "title": title,
             **name_debug,
+            **analysis,
         }
-        bpm = None
-        camelot = None
-        tonality = None
-
-        try:
-            bpm = detect_bpm(
-                audio,
-                full_track=enhanced_detection,
-                # Lets detect_bpm retry against the full track (only if its fast
-                # windowed read comes back low-confidence) without paying for a
-                # full decode upfront -- enhanced_detection already decoded the
-                # full track above, so there's nothing to retry with there.
-                full_audio_loader=(
-                    None if enhanced_detection else lambda: load_audio(content, ext, max_seconds=None)
-                ),
-            )
-            entry["bpm"] = bpm
-        except Exception as e:
-            entry["bpm"] = None
-            entry["bpm_error"] = f"{type(e).__name__}: {e}"
-
-        try:
-            key_result = detect_key(audio, enhanced=enhanced_detection)
-            entry.update(key_result)
-            camelot = key_result["camelot"]
-            tonality = key_result["tonality"]
-        except Exception as e:
-            entry["key"] = None
-            entry["key_error"] = f"{type(e).__name__}: {e}"
-
-        try:
-            entry["energy"] = detect_energy(audio, full_track=enhanced_detection)
-        except Exception as e:
-            entry["energy"] = None
-            entry["energy_error"] = f"{type(e).__name__}: {e}"
-
-        del audio
+        if preview_error:
+            entry["preview_error"] = preview_error
+        bpm = analysis.get("bpm")
+        camelot = analysis.get("camelot")
+        tonality = analysis.get("tonality")
         entry["genre"] = genre
 
         logger.warning(
@@ -328,13 +382,6 @@ def _analyze_and_tag(
         tagged_content = content
         entry["tag_error"] = f"{type(e).__name__}: {e}"
 
-    preview_content: bytes | None = None
-    if ext in NEEDS_BROWSER_PREVIEW:
-        try:
-            preview_content = make_preview_wav(content, ext)
-        except Exception as e:
-            entry["preview_error"] = f"{type(e).__name__}: {e}"
-
     return tagged_content, entry, final_name, preview_content
 
 
@@ -364,8 +411,11 @@ async def _analyze_one(
     ai_cleanup: bool,
 ) -> tuple[bytes, dict, str, bytes | None]:
     try:
-        return await run_in_threadpool(
-            _analyze_and_tag,
+        # _analyze_and_tag itself isolates the specific essentia/ffmpeg
+        # calls that can crash the whole process (see run_isolated calls
+        # inside it) -- everything else here (cache lookups, genre
+        # lookups, tag-writing) is safe to run directly.
+        return await _analyze_and_tag(
             content,
             ext,
             stem,

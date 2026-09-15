@@ -2,7 +2,24 @@ from __future__ import annotations
 
 import pytest
 
-from app import ai_budget, ai_client, rate_limit
+from app import ai_budget, ai_client, process_audio, rate_limit
+
+
+@pytest.fixture(autouse=True)
+def _run_analysis_inline(monkeypatch):
+    """run_isolated normally hands work to a real worker process (see
+    analysis_process_pool.py) so an essentia/ffmpeg segfault on one file
+    can't take the whole server down -- a real production concern, not a
+    testing one. A spawned worker re-imports process_audio fresh, so it
+    never sees a test's monkeypatch.setattr(process_audio, ...) calls on
+    functions like detect_bpm/_resolve_artist_title_genre. Bypassing the
+    pool here keeps tests fast and lets that monkeypatching work as
+    written, while production still gets real crash isolation."""
+
+    async def _inline(max_workers, func, *args):
+        return func(*args)
+
+    monkeypatch.setattr(process_audio, "run_isolated", _inline)
 
 
 @pytest.fixture(autouse=True)

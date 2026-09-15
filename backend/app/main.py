@@ -24,6 +24,7 @@ from .admin_store import (
     set_discount_code_active,
     set_user_plan,
 )
+from .analysis_process_pool import ensure_started
 from .anon_trial_store import ANON_TRIAL_LIMIT, check_and_reserve_trial
 from .auth import (
     delete_user,
@@ -40,7 +41,6 @@ from .billing import (
     get_billing_stats,
     handle_webhook_event,
 )
-from .detect_bpm import warm_up
 from .email_service import notify_admins, send_email
 from .email_templates import (
     new_feedback_email_html,
@@ -62,6 +62,7 @@ from .history_store import add_history_entries, clear_history, list_history
 from .process_audio import (
     MAX_FILES_FREE,
     MAX_FILES_PRO,
+    PROCESS_CONCURRENCY,
     build_corrected_zip,
     build_zip,
     validate_files,
@@ -106,8 +107,13 @@ app.add_middleware(
 
 
 @app.on_event("startup")
-def startup():
-    warm_up()
+async def startup():
+    # Analysis now runs in isolated worker processes (see
+    # analysis_process_pool.py), not in this process, so warming up
+    # essentia here would just be wasted work -- this instead starts the
+    # actual worker pool and waits for every worker to warm up, so the
+    # first real upload after a deploy doesn't pay that cold-start cost.
+    await ensure_started(PROCESS_CONCURRENCY)
 
 
 @app.get("/health")

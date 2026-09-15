@@ -167,6 +167,56 @@ def test_build_zip_generates_browser_preview_for_aiff_but_not_wav():
             assert w.getnframes() > 0
 
 
+def test_aiff_analysis_and_preview_share_a_single_isolated_call(monkeypatch):
+    # Both BPM/key/energy analysis and preview generation touch essentia's
+    # native code and run in an isolated worker process (see
+    # analysis_process_pool.py) so a crash there can't take the whole
+    # server down. They're bundled into one isolated call rather than two
+    # specifically so the file's bytes -- which can be tens of MB -- only
+    # cross the process boundary once per file, not once per essentia step.
+    real_run_isolated = process_audio.run_isolated
+    calls = []
+
+    async def spy(max_workers, func, *args):
+        calls.append(func.__name__)
+        return await real_run_isolated(max_workers, func, *args)
+
+    monkeypatch.setattr(process_audio, "run_isolated", spy)
+
+    files = [_upload("Artist - Title.aiff", _make_aiff(200))]
+    asyncio.run(process_audio.build_zip(files))
+
+    assert calls == ["_run_essentia_analysis"]
+
+
+def test_cached_aiff_regenerates_preview_via_its_own_isolated_call(monkeypatch):
+    # On an exact-match cache hit, BPM/key/energy are already known (no
+    # analysis needed), but the preview isn't cached and still needs
+    # regenerating -- via its own single isolated call, not the combined
+    # analysis+preview one (there's no analysis to bundle it with here).
+    store: dict = {}
+    monkeypatch.setattr(process_audio, "get_exact_match", lambda h: store.get(h))
+    monkeypatch.setattr(process_audio, "store_exact_match", lambda h, entry: store.__setitem__(h, entry))
+
+    content = _make_aiff(200)
+    asyncio.run(process_audio.build_zip([_upload("Artist - Title.aiff", content)]))
+
+    real_run_isolated = process_audio.run_isolated
+    calls = []
+
+    async def spy(max_workers, func, *args):
+        calls.append(func.__name__)
+        return await real_run_isolated(max_workers, func, *args)
+
+    monkeypatch.setattr(process_audio, "run_isolated", spy)
+
+    _, manifest = asyncio.run(process_audio.build_zip([_upload("Artist - Title.aiff", content)]))
+
+    assert calls == ["_run_preview_only"]
+    entry = next(iter(manifest.values()))
+    assert entry.get("preview_filename")
+
+
 def test_build_zip_enhanced_detection_threads_through_without_error():
     files = [_upload("Artist - Title.wav", _make_wav(200))]
     zip_bytes, manifest = asyncio.run(process_audio.build_zip(files, enhanced_detection=True))
