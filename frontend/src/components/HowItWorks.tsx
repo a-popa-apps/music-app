@@ -29,16 +29,16 @@ export function HowItWorks() {
   return (
     <section id="how-it-works" className="relative w-full overflow-hidden bg-black px-4 py-16 lg:px-12">
       <div className="relative z-10 mx-auto flex max-w-7xl flex-col gap-12">
-        <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
+        <div className="flex flex-col gap-4">
           <div>
             <span className="font-mono text-meta-badge font-bold uppercase tracking-wider text-secondary-container">
               Workflow Architecture
             </span>
-            <h2 className="mt-1 text-headline-xl tracking-tight text-white">
+            <h2 className="mt-1 text-headline-xl tracking-tight text-white lg:whitespace-nowrap">
               Three deliberate steps. Zero manual curation.
             </h2>
           </div>
-          <p className="max-w-md text-body-md text-white/70">
+          <p className="max-w-2xl text-body-md text-white/70">
             Architected for touring DJs who download 80 promo tracks two
             hours before call time.
           </p>

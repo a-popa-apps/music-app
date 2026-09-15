@@ -123,7 +123,11 @@ export function Header({ dark = false }: { dark?: boolean }) {
       }`}
     >
       <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-4 px-4 lg:px-12">
-        <Link to="/" className="flex items-center gap-2">
+        <Link
+          to="/"
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          className="flex items-center gap-2"
+        >
           <span
             className={`font-mono text-headline-sm font-bold tracking-tight ${
               overHero ? "text-white" : "text-on-surface"
@@ -187,7 +191,7 @@ export function Header({ dark = false }: { dark?: boolean }) {
                 <button
                   onClick={handleGoPro}
                   disabled={goProLoading}
-                  className="hidden items-center justify-center rounded-full bg-secondary-container px-6 py-2 text-body-sm font-semibold text-on-secondary-container shadow-[0_4px_16px_rgba(255,107,53,0.4)] transition-transform hover:scale-[1.03] active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 md:inline-flex"
+                  className="hidden items-center justify-center rounded-full bg-secondary-container px-6 py-2 text-body-sm font-semibold text-white shadow-[0_4px_16px_rgba(255,107,53,0.4)] transition-transform hover:scale-[1.03] active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 md:inline-flex"
                 >
                   {goProLoading ? "Loading..." : "Go Pro"}
                 </button>
