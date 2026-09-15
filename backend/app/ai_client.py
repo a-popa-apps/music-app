@@ -12,12 +12,14 @@ from .email_templates import ai_limit_alert_email_html
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
-# gemini-2.5-flash-lite -- Google's cheapest/fastest multimodal model,
+# gemini-3.5-flash-lite -- Google's cheapest/fastest multimodal model,
 # comfortably within the Gemini API's free tier for tasks this small
-# (structured single-field extraction, short summaries). Never append a
-# dated snapshot suffix here, same reasoning as pinning any other
-# provider's model id to a moving target instead of a fixed release.
-GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash-lite")
+# (structured single-field extraction, short summaries). gemini-2.5-flash-
+# lite (the prior default) turned out to be a 404 for new API keys --
+# Google's own error message pointed here. Never append a dated snapshot
+# suffix, same reasoning as pinning any other provider's model id to a
+# moving target instead of a fixed release.
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.5-flash-lite")
 
 FRONTEND_URL = os.environ.get("FRONTEND_URL", "https://music-app-sage-sigma.vercel.app")
 
