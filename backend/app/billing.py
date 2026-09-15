@@ -21,7 +21,7 @@ REVENUE_WINDOW_DAYS = 30
 # from (unlike every other endpoint here, which reads it off the request --
 # see main.py's _frontend_base_url) -- this is the one place that needs a
 # fixed fallback for links embedded in a webhook-triggered email.
-FRONTEND_URL = os.environ.get("FRONTEND_URL", "https://music-app-sage-sigma.vercel.app")
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "https://crateprep.app")
 
 # A payment failure, not a deliberate cancellation -- worth a heads-up email
 # so a Pro subscriber doesn't silently lose access without knowing why.

@@ -21,7 +21,7 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 # moving target instead of a fixed release.
 GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.5-flash-lite")
 
-FRONTEND_URL = os.environ.get("FRONTEND_URL", "https://music-app-sage-sigma.vercel.app")
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "https://crateprep.app")
 
 _API_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 

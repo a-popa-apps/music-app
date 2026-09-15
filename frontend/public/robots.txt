@@ -6,4 +6,4 @@ Disallow: /profile
 Disallow: /history
 Disallow: /admin
 
-Sitemap: https://music-app-sage-sigma.vercel.app/sitemap.xml
+Sitemap: https://crateprep.app/sitemap.xml

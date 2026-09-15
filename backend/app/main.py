@@ -84,7 +84,9 @@ if os.environ.get("SENTRY_DSN"):
 app = FastAPI(title="CratePrep Backend")
 
 ALLOWED_ORIGINS = [
-    "https://music-app-sage-sigma.vercel.app",
+    "https://crateprep.app",
+    "https://www.crateprep.app",
+    "https://music-app-sage-sigma.vercel.app",  # old domain, still aliased on Vercel
     "http://localhost:5173",  # vite dev server
     "http://localhost:4173",  # vite preview server
 ]

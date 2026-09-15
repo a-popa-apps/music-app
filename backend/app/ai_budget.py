@@ -23,7 +23,7 @@ DAILY_AI_CALL_LIMIT = int(os.environ.get("DAILY_AI_CALL_LIMIT", "500"))
 # Stripe webhooks/background triggers have no browser Origin to derive a
 # frontend URL from -- same fixed fallback billing.py already uses for
 # links embedded in a webhook-triggered email.
-FRONTEND_URL = os.environ.get("FRONTEND_URL", "https://music-app-sage-sigma.vercel.app")
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "https://crateprep.app")
 
 _calls: dict[str, int] = defaultdict(int)
 
