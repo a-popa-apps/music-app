@@ -12,6 +12,17 @@ logger = logging.getLogger(__name__)
 _pool: ProcessPoolExecutor | None = None
 _pool_workers: int | None = None
 
+# Recycles a worker after this many tasks -- a real, still-unexplained
+# per-file memory creep was already flagged (via local simulation, before
+# this pool existed) and never root-caused; now that the actual essentia
+# work runs in a long-lived worker process instead of being torn down
+# with each request, if that creep is inside essentia/ffmpeg's own native
+# state rather than Python's, it would otherwise accumulate for as long
+# as a single worker stays alive. Cheap insurance either way: a fresh
+# worker (paying only the warm-up cost, not a whole request) periodically
+# resets whatever's actually accumulating.
+MAX_TASKS_PER_WORKER = 15
+
 
 def _warm_up_worker() -> None:
     # Runs once per worker process, right when it starts -- pays essentia's
@@ -34,7 +45,12 @@ def _new_pool(max_workers: int) -> ProcessPoolExecutor:
     # fresh instead, at the cost of each one re-importing the app (paid
     # once at pool startup, via the warm-up below, not per file).
     ctx = multiprocessing.get_context("spawn")
-    return ProcessPoolExecutor(max_workers=max_workers, mp_context=ctx, initializer=_warm_up_worker)
+    return ProcessPoolExecutor(
+        max_workers=max_workers,
+        mp_context=ctx,
+        initializer=_warm_up_worker,
+        max_tasks_per_child=MAX_TASKS_PER_WORKER,
+    )
 
 
 async def ensure_started(max_workers: int) -> None:
