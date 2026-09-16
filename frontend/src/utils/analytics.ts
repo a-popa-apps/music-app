@@ -71,6 +71,27 @@ if (GA_MEASUREMENT_ID) {
   document.head.appendChild(script)
 }
 
+// A first-time visitor's very first trackPageView() call (see below) fires
+// the instant the app mounts, well before they've had a chance to click
+// the consent banner -- so at that moment getStoredConsent() is still null
+// (undecided), not yet "granted" or "denied". Sending it anyway would have
+// gtag.js process it under the "denied" default and silently drop it, and
+// Consent Mode never retroactively resends a dropped hit once consent is
+// later granted -- there is no natural second page_view to fall back on
+// for a single-page visit, since config() above passes send_page_view:
+// false specifically to avoid double-counting route changes. So instead of
+// sending immediately, an undecided page view is held here and flushed the
+// moment the visitor actually answers the banner.
+let pendingPageViewPath: string | null = null
+
+function sendPageView(path: string) {
+  window.gtag?.("event", "page_view", {
+    page_path: path,
+    page_location: window.location.href,
+    page_title: document.title,
+  })
+}
+
 export function setAnalyticsConsent(consent: Consent) {
   if (!GA_MEASUREMENT_ID) return
   try {
@@ -82,6 +103,10 @@ export function setAnalyticsConsent(consent: Consent) {
   window.gtag?.("consent", "update", {
     analytics_storage: consent === "granted" ? "granted" : "denied",
   })
+  if (consent === "granted" && pendingPageViewPath) {
+    sendPageView(pendingPageViewPath)
+  }
+  pendingPageViewPath = null
 }
 
 export function trackEvent(name: string, params?: Record<string, unknown>) {
@@ -94,9 +119,11 @@ export function trackEvent(name: string, params?: Record<string, unknown>) {
  * page_view events, avoiding a double-count on first load. */
 export function trackPageView(path: string) {
   if (!GA_MEASUREMENT_ID) return
-  window.gtag?.("event", "page_view", {
-    page_path: path,
-    page_location: window.location.href,
-    page_title: document.title,
-  })
+  const consent = getStoredConsent()
+  if (consent === null) {
+    pendingPageViewPath = path
+    return
+  }
+  if (consent === "denied") return
+  sendPageView(path)
 }
