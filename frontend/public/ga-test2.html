@@ -1,0 +1,31 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>GA bare test 2 -- send_page_view:false + manual event</title>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-T5F04J3WV9"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+      // This is the one thing that differs from ga-test.html (which works):
+      // send_page_view disabled, followed by a manual page_view event --
+      // exactly what analytics.ts does, still with zero consent-gating or
+      // React involved, to isolate whether *this specific pattern* is what
+      // breaks delivery.
+      gtag("config", "G-T5F04J3WV9", { send_page_view: false });
+      gtag("event", "page_view", {
+        page_path: "/ga-test2.html",
+        page_location: window.location.href,
+        page_title: document.title,
+      });
+    </script>
+  </head>
+  <body>
+    <h1>GA bare test 2</h1>
+    <p>send_page_view:false + a manual page_view event call, no consent gating, no React.</p>
+  </body>
+</html>
