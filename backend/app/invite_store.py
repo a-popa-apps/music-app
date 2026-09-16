@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import re
 import uuid
 from datetime import datetime, timedelta, timezone
 
+import dns.exception
+import dns.resolver
 from firebase_admin import firestore
 
 from .auth import get_app, get_user_by_email
@@ -24,6 +27,21 @@ INVITE_EXPIRY_DAYS = 30
 # times in a row, not a hard anti-abuse measure on its own (that's what
 # MAX_USER_INVITES_PER_DAY is for).
 DUPLICATE_SEND_COOLDOWN_HOURS = 24
+
+_EMAIL_FORMAT = re.compile(r"^[^@\s]+@([^@\s.]+\.)+[^@\s.]{2,}$")
+
+# Resolved once per process rather than per call -- a resolver object
+# carries connection/cache state, and this checks a handful of emails per
+# request at most, not a hot path worth re-creating it every time.
+_resolver = dns.resolver.Resolver()
+_resolver.lifetime = 4  # seconds -- fails fast rather than hanging the request on a slow/unreachable DNS server
+
+# A short-lived process-local cache: the same domain (gmail.com, etc.) gets
+# invited from repeatedly, and a DNS lookup is the slowest part of sending
+# an invite by far -- no need to re-resolve the same domain within a single
+# instance's lifetime. Not persisted/shared across instances or restarts,
+# which is fine: worst case is one redundant lookup after a redeploy.
+_domain_cache: dict[str, bool] = {}
 
 
 class InviteLimitError(Exception):
@@ -86,6 +104,70 @@ def get_invite_by_token(token: str) -> dict | None:
     return invite
 
 
+def _has_mx_record(domain: str) -> bool | None:
+    """True/False once resolved, or None if the lookup itself is
+    inconclusive (a resolver-level error, not a definitive "no records")."""
+    try:
+        answer = _resolver.resolve(domain, "MX")
+    except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
+        return False
+    except dns.exception.DNSException:
+        return None
+    # RFC 7505's "null MX" (a single record, exchange ".", preference 0) is
+    # a domain explicitly declaring it accepts no mail at all -- distinct
+    # from "no MX record found", but functionally the same for "can this
+    # address receive an invite email": no.
+    records = list(answer)
+    if len(records) == 1 and str(records[0].exchange) == ".":
+        return False
+    return True
+
+
+def _has_a_record(domain: str) -> bool | None:
+    try:
+        _resolver.resolve(domain, "A")
+        return True
+    except (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer):
+        return False
+    except dns.exception.DNSException:
+        return None
+
+
+def _domain_has_mail_or_web_presence(domain: str) -> bool:
+    if domain in _domain_cache:
+        return _domain_cache[domain]
+
+    has_mx = _has_mx_record(domain)
+    if has_mx:
+        result = True
+    elif has_mx is False:
+        # No (real) mail server -- some domains still deliver mail via
+        # their bare A/AAAA record instead (RFC 5321's implicit-MX
+        # fallback), so try that before giving up on the domain entirely.
+        has_a = _has_a_record(domain)
+        # None (an inconclusive lookup, e.g. a resolver hiccup) fails open
+        # here too, same reasoning as below -- an infrastructure blip on
+        # this end shouldn't block sending an invite over a possibly-fine
+        # address on theirs.
+        result = has_a is not False
+    else:
+        # has_mx is None: the MX lookup itself was inconclusive. Fail open
+        # rather than block a real invite over what's likely a transient
+        # DNS/network issue, not evidence the domain is fake.
+        result = True
+
+    _domain_cache[domain] = result
+    return result
+
+
+def _validate_email_or_raise(email: str) -> None:
+    if not _EMAIL_FORMAT.match(email):
+        raise ValueError("That doesn't look like a valid email address.")
+    domain = email.rsplit("@", 1)[1]
+    if not _domain_has_mail_or_web_presence(domain):
+        raise ValueError(f'The domain "{domain}" doesn\'t look like a real, working domain.')
+
+
 def create_invite(
     email: str,
     name: str | None,
@@ -101,6 +183,7 @@ def create_invite(
     Resend call and email-template choice already live for every other
     transactional email in this app."""
     normalized_email = email.strip().lower()
+    _validate_email_or_raise(normalized_email)
 
     if source == "user":
         if normalized_email == invited_by_email.strip().lower():

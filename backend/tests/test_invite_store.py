@@ -11,6 +11,11 @@ def fake_invites(monkeypatch):
     collection = FakeCollection()
     monkeypatch.setattr(invite_store, "_invites_collection", lambda: collection)
     monkeypatch.setattr(invite_store, "get_user_by_email", lambda email: None)
+    # Real DNS validation is tested separately (test_validate_email_or_raise_*
+    # below, with dns.resolver mocked) -- every other test here is about the
+    # Firestore/rate-limit/status logic and shouldn't depend on, or be slowed
+    # down by, a real network lookup for "example.com".
+    monkeypatch.setattr(invite_store, "_validate_email_or_raise", lambda email: None)
     return collection
 
 
@@ -282,3 +287,121 @@ def test_redeem_invite_rejects_revoked_invite(fake_invites):
     )
     invite_store.revoke_invite(created["invite_id"])
     assert invite_store.redeem_invite(created["token"], "uid-1") is None
+
+
+class _FakeAnswer:
+    def __init__(self, exchange: str):
+        self.exchange = exchange
+
+    def __str__(self):
+        return self.exchange
+
+
+class _FakeResolver:
+    """Stands in for invite_store._resolver -- lets tests control exactly
+    what each record-type lookup returns/raises without touching real DNS."""
+
+    def __init__(self, mx=None, mx_raises=None, a=None, a_raises=None):
+        self.mx = mx
+        self.mx_raises = mx_raises
+        self.a = a
+        self.a_raises = a_raises
+        self.calls: list[tuple[str, str]] = []
+
+    def resolve(self, domain: str, rtype: str):
+        self.calls.append((domain, rtype))
+        if rtype == "MX":
+            if self.mx_raises:
+                raise self.mx_raises
+            return [_FakeAnswer(e) for e in self.mx]
+        if rtype == "A":
+            if self.a_raises:
+                raise self.a_raises
+            return self.a
+        raise AssertionError(f"unexpected record type: {rtype}")
+
+
+@pytest.fixture
+def fresh_domain_cache(monkeypatch):
+    """Each validation test uses its own resolver behavior -- without a
+    fresh cache, an earlier test's cached result for the same domain would
+    silently short-circuit a later test that expects different behavior."""
+    monkeypatch.setattr(invite_store, "_domain_cache", {})
+
+
+def test_email_format_rejects_missing_at(fresh_domain_cache):
+    with pytest.raises(ValueError):
+        invite_store._validate_email_or_raise("not-an-email")
+
+
+def test_email_format_rejects_missing_domain_dot(fresh_domain_cache):
+    with pytest.raises(ValueError):
+        invite_store._validate_email_or_raise("person@localhost")
+
+
+def test_email_format_rejects_embedded_whitespace(fresh_domain_cache):
+    with pytest.raises(ValueError):
+        invite_store._validate_email_or_raise("person @example.com")
+
+
+def test_validate_email_accepts_domain_with_mx_record(fresh_domain_cache, monkeypatch):
+    fake = _FakeResolver(mx=["mail.realcompany.test"])
+    monkeypatch.setattr(invite_store, "_resolver", fake)
+    invite_store._validate_email_or_raise("person@realcompany.test")  # does not raise
+
+
+def test_validate_email_falls_back_to_a_record_when_no_mx(fresh_domain_cache, monkeypatch):
+    fake = _FakeResolver(mx_raises=invite_store.dns.resolver.NXDOMAIN(), a=["1.2.3.4"])
+    monkeypatch.setattr(invite_store, "_resolver", fake)
+    invite_store._validate_email_or_raise("person@webonly.test")  # does not raise
+    assert ("webonly.test", "MX") in fake.calls
+    assert ("webonly.test", "A") in fake.calls
+
+
+def test_validate_email_rejects_domain_with_no_mx_or_a(fresh_domain_cache, monkeypatch):
+    fake = _FakeResolver(mx_raises=invite_store.dns.resolver.NXDOMAIN(), a_raises=invite_store.dns.resolver.NXDOMAIN())
+    monkeypatch.setattr(invite_store, "_resolver", fake)
+    with pytest.raises(ValueError):
+        invite_store._validate_email_or_raise("person@totally-fake-domain-xyz.test")
+
+
+def test_validate_email_treats_null_mx_as_no_mail_but_still_checks_a(fresh_domain_cache, monkeypatch):
+    # RFC 7505 null MX -- explicitly "this domain accepts no mail" -- should
+    # not be treated the same as "has a working mail server".
+    fake = _FakeResolver(mx=["."], a=["1.2.3.4"])
+    monkeypatch.setattr(invite_store, "_resolver", fake)
+    invite_store._validate_email_or_raise("person@nomail.test")
+    assert ("nomail.test", "A") in fake.calls
+
+
+def test_validate_email_null_mx_and_no_a_record_is_rejected(fresh_domain_cache, monkeypatch):
+    fake = _FakeResolver(mx=["."], a_raises=invite_store.dns.resolver.NXDOMAIN())
+    monkeypatch.setattr(invite_store, "_resolver", fake)
+    with pytest.raises(ValueError):
+        invite_store._validate_email_or_raise("person@nomail-noweb.test")
+
+
+def test_validate_email_fails_open_on_inconclusive_dns_error(fresh_domain_cache, monkeypatch):
+    # A resolver-level hiccup (not a definitive NXDOMAIN/NoAnswer) shouldn't
+    # block a real invite over what's likely infrastructure flakiness on
+    # this end, not evidence the address is fake.
+    fake = _FakeResolver(mx_raises=invite_store.dns.exception.Timeout())
+    monkeypatch.setattr(invite_store, "_resolver", fake)
+    invite_store._validate_email_or_raise("person@slow-dns.test")  # does not raise
+
+
+def test_validate_email_caches_dns_result_per_domain(fresh_domain_cache, monkeypatch):
+    fake = _FakeResolver(mx=["mail.realcompany.test"])
+    monkeypatch.setattr(invite_store, "_resolver", fake)
+    invite_store._validate_email_or_raise("first@realcompany.test")
+    invite_store._validate_email_or_raise("second@realcompany.test")
+    assert len(fake.calls) == 1
+
+
+def test_create_invite_rejects_invalid_email_format(fresh_domain_cache):
+    # No fake_invites fixture (which stubs out validation) here on purpose --
+    # format validation raises before create_invite ever touches Firestore.
+    with pytest.raises(ValueError):
+        invite_store.create_invite(
+            "not-an-email", None, source="admin", invited_by_uid="u", invited_by_email="u@x.com", inviter_label="u"
+        )
