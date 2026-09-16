@@ -344,6 +344,109 @@ export async function setDiscountCodeActive(
   return res.json()
 }
 
+export interface Invite {
+  invite_id: string
+  email: string
+  name: string | null
+  source: "admin" | "user"
+  invited_by: string
+  invited_by_email: string
+  inviter_label: string
+  admin_note: string | null
+  token: string
+  status: "pending" | "accepted" | "revoked" | "expired" | "existing_user"
+  sent_at: string
+  accepted_at: string | null
+  accepted_uid: string | null
+}
+
+export interface InvitePreview {
+  valid: boolean
+  email?: string
+  name?: string | null
+  inviter_label?: string
+}
+
+async function _parseInviteError(response: Response, fallback: string): Promise<never> {
+  let message = fallback
+  try {
+    const body = await response.json()
+    if (typeof body?.detail === "string") message = body.detail
+  } catch {
+    // non-JSON error body, fall back to the generic message
+  }
+  throw new ApiError(response.status, message)
+}
+
+export async function getAdminInvites(idToken: string): Promise<Invite[]> {
+  const res = await fetch(`${BACKEND_URL}/admin/invites`, { headers: adminHeaders(idToken) })
+  if (!res.ok) throw new Error(`Failed to load invites: ${res.status}`)
+  return res.json()
+}
+
+export async function createAdminInvite(
+  idToken: string,
+  email: string,
+  name: string | undefined,
+  adminNote: string | undefined
+): Promise<Invite> {
+  const res = await fetch(`${BACKEND_URL}/admin/invites`, {
+    method: "POST",
+    headers: adminHeaders(idToken),
+    body: JSON.stringify({ email, name: name || null, admin_note: adminNote || null }),
+  })
+  if (!res.ok) return _parseInviteError(res, `Failed to create invite: ${res.status}`)
+  return res.json()
+}
+
+export async function revokeInvite(idToken: string, inviteId: string): Promise<Invite> {
+  const res = await fetch(`${BACKEND_URL}/admin/invites/${inviteId}`, {
+    method: "PATCH",
+    headers: adminHeaders(idToken),
+    body: JSON.stringify({ status: "revoked" }),
+  })
+  if (!res.ok) return _parseInviteError(res, `Failed to revoke invite: ${res.status}`)
+  return res.json()
+}
+
+export async function getMyInvites(idToken: string): Promise<Invite[]> {
+  const res = await fetch(`${BACKEND_URL}/invites/mine`, {
+    headers: { Authorization: `Bearer ${idToken}` },
+  })
+  if (!res.ok) throw new Error(`Failed to load invites: ${res.status}`)
+  return res.json()
+}
+
+export async function sendInvite(idToken: string, email: string, name: string | undefined): Promise<Invite> {
+  const res = await fetch(`${BACKEND_URL}/invites`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${idToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ email, name: name || null }),
+  })
+  if (!res.ok) return _parseInviteError(res, `Failed to send invite: ${res.status}`)
+  return res.json()
+}
+
+export async function getInvitePreview(token: string): Promise<InvitePreview> {
+  const res = await fetch(`${BACKEND_URL}/invites/${token}`)
+  if (!res.ok) return { valid: false }
+  return res.json()
+}
+
+// Best-effort -- called right after a new account finishes signing up with
+// an invite token present. Never throws: a failure here shouldn't block or
+// alarm someone who just successfully signed up.
+export async function redeemInvite(idToken: string, token: string): Promise<void> {
+  try {
+    await fetch(`${BACKEND_URL}/invites/${token}/redeem`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${idToken}` },
+    })
+  } catch {
+    // ignore
+  }
+}
+
 export class ApiError extends Error {
   status: number
   constructor(status: number, message: string) {

@@ -227,3 +227,31 @@ def password_reset_email_html(action_link: str) -> str:
         button_text="Reset Password",
         button_url=action_link,
     )
+
+
+def invite_email_html(
+    name: str | None, inviter_label: str, invite_url: str, admin_note: str | None = None
+) -> str:
+    # name/inviter_label/admin_note all trace back to free-text a person
+    # typed into a form (an admin's or a regular user's) -- escaped before
+    # embedding for the same reason new_feedback_email_html escapes
+    # submitter-controlled text: this lands in a stranger's inbox, and
+    # nothing here should let it carry markup it didn't ask for.
+    greeting = f"Hey {html.escape(name)}," if name else "Hey there,"
+    body_lines = [
+        f"{greeting} {html.escape(inviter_label)} thinks you'd like CratePrep — "
+        "a browser-based tool that cleans up messy downloaded tracks: clean "
+        "filenames, verified BPM and key, tagged and ready for Rekordbox, "
+        "Serato, or Traktor."
+    ]
+    if admin_note:
+        body_lines.append(f'&ldquo;{html.escape(admin_note)}&rdquo;')
+    body_lines.append("No install, and your first 5 tracks don't even need a signup.")
+
+    return _base_email(
+        preheader=f"{inviter_label} invited you to try CratePrep.",
+        heading="You've been invited to CratePrep",
+        body_html="<br /><br />".join(body_lines),
+        button_text="Try CratePrep",
+        button_url=invite_url,
+    )

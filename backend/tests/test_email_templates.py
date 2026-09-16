@@ -1,4 +1,5 @@
 from app.email_templates import (
+    invite_email_html,
     new_feedback_email_html,
     password_changed_email_html,
     password_reset_email_html,
@@ -108,3 +109,35 @@ def test_password_changed_email_embeds_reset_link():
 def test_templates_produce_distinct_content():
     link = "https://crateprep.app/auth/action?oobCode=same"
     assert verification_email_html(link) != password_reset_email_html(link)
+
+
+def test_invite_email_greets_by_name_when_given():
+    html = invite_email_html("Sam", "Alex", "https://crateprep.app/auth?invite=tok")
+    assert "Hey Sam," in html
+    assert "Alex thinks you'd like CratePrep" in html
+    assert "https://crateprep.app/auth?invite=tok" in html
+    assert "Try CratePrep" in html
+
+
+def test_invite_email_uses_generic_greeting_without_name():
+    html = invite_email_html(None, "Alex", "https://crateprep.app/auth?invite=tok")
+    assert "Hey there," in html
+    assert "Hey None" not in html
+
+
+def test_invite_email_includes_admin_note_when_given():
+    html = invite_email_html("Sam", "The CratePrep team", "https://crateprep.app/auth?invite=tok", "Thought of you!")
+    assert "Thought of you!" in html
+
+
+def test_invite_email_escapes_name_inviter_and_note():
+    html = invite_email_html(
+        "<script>alert(1)</script>",
+        "<b>Evil</b>",
+        "https://crateprep.app/auth?invite=tok",
+        "\"><img src=x>",
+    )
+    assert "<script>" not in html
+    assert "<img src=x>" not in html
+    assert "&lt;script&gt;" in html
+    assert "&lt;b&gt;Evil&lt;/b&gt;" in html

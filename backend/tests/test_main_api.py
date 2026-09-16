@@ -916,3 +916,288 @@ def test_retag_ignores_filename_template_for_free_user(client, monkeypatch):
 
     assert res.status_code == 200
     assert captured["filename_template"] is None
+
+
+def test_admin_list_invites_requires_auth(client):
+    assert client.get("/admin/invites").status_code == 401
+
+
+def test_admin_list_invites_forbidden_for_non_admin(client, monkeypatch):
+    monkeypatch.setattr(main, "get_current_user", lambda request: "uid-1")
+    monkeypatch.setattr(main, "get_settings", lambda uid: {"is_admin": False})
+    assert client.get("/admin/invites").status_code == 403
+
+
+def test_admin_list_invites_allowed_for_admin(client, monkeypatch):
+    monkeypatch.setattr(main, "get_current_user", lambda request: "admin-uid")
+    monkeypatch.setattr(main, "get_settings", lambda uid: {"is_admin": True})
+    monkeypatch.setattr(main, "list_all_invites", lambda: [{"email": "a@example.com", "source": "admin"}])
+    res = client.get("/admin/invites")
+    assert res.status_code == 200
+    assert res.json() == [{"email": "a@example.com", "source": "admin"}]
+
+
+def test_admin_create_invite_requires_auth(client):
+    assert client.post("/admin/invites", json={"email": "a@example.com"}).status_code == 401
+
+
+def test_admin_create_invite_forbidden_for_non_admin(client, monkeypatch):
+    monkeypatch.setattr(main, "get_current_user", lambda request: "uid-1")
+    monkeypatch.setattr(main, "get_settings", lambda uid: {"is_admin": False})
+    assert client.post("/admin/invites", json={"email": "a@example.com"}).status_code == 403
+
+
+def test_admin_create_invite_allowed_for_admin_sends_email(client, monkeypatch):
+    monkeypatch.setattr(main, "get_current_user", lambda request: "admin-uid")
+    monkeypatch.setattr(main, "get_settings", lambda uid: {"is_admin": True})
+    monkeypatch.setattr(main, "get_user_record", lambda uid: SimpleNamespace(email="admin@example.com"))
+
+    captured_create = {}
+
+    def fake_create_invite(email, name, source, invited_by_uid, invited_by_email, inviter_label, admin_note=None):
+        captured_create.update(
+            email=email,
+            name=name,
+            source=source,
+            invited_by_uid=invited_by_uid,
+            invited_by_email=invited_by_email,
+            inviter_label=inviter_label,
+            admin_note=admin_note,
+        )
+        return {
+            "invite_id": "inv-1",
+            "email": email,
+            "name": name,
+            "status": "pending",
+            "token": "tok-1",
+            "inviter_label": inviter_label,
+            "admin_note": admin_note,
+        }
+
+    monkeypatch.setattr(main, "create_invite", fake_create_invite)
+
+    sent_emails = []
+    monkeypatch.setattr(
+        main, "send_email", lambda to, subject, html: sent_emails.append((to, subject, html)) or True
+    )
+
+    res = client.post(
+        "/admin/invites", json={"email": "friend@example.com", "name": "Sam", "admin_note": "Thought of you!"}
+    )
+
+    assert res.status_code == 200
+    assert captured_create["source"] == "admin"
+    assert captured_create["invited_by_uid"] == "admin-uid"
+    assert captured_create["invited_by_email"] == "admin@example.com"
+    assert captured_create["inviter_label"] == "The CratePrep team"
+    assert captured_create["admin_note"] == "Thought of you!"
+    assert len(sent_emails) == 1
+    assert sent_emails[0][0] == "friend@example.com"
+
+
+def test_admin_create_invite_skips_email_for_existing_user_status(client, monkeypatch):
+    monkeypatch.setattr(main, "get_current_user", lambda request: "admin-uid")
+    monkeypatch.setattr(main, "get_settings", lambda uid: {"is_admin": True})
+    monkeypatch.setattr(main, "get_user_record", lambda uid: SimpleNamespace(email="admin@example.com"))
+    monkeypatch.setattr(
+        main,
+        "create_invite",
+        lambda *a, **k: {
+            "invite_id": "inv-1",
+            "email": "friend@example.com",
+            "name": None,
+            "status": "existing_user",
+            "token": "tok-1",
+            "inviter_label": "The CratePrep team",
+            "admin_note": None,
+        },
+    )
+    sent_emails = []
+    monkeypatch.setattr(main, "send_email", lambda to, subject, html: sent_emails.append(to) or True)
+
+    res = client.post("/admin/invites", json={"email": "friend@example.com"})
+
+    assert res.status_code == 200
+    assert res.json()["status"] == "existing_user"
+    assert sent_emails == []
+
+
+def test_admin_create_invite_returns_400_for_invalid_input(client, monkeypatch):
+    monkeypatch.setattr(main, "get_current_user", lambda request: "admin-uid")
+    monkeypatch.setattr(main, "get_settings", lambda uid: {"is_admin": True})
+    monkeypatch.setattr(main, "get_user_record", lambda uid: SimpleNamespace(email="admin@example.com"))
+
+    def raise_value_error(*a, **k):
+        raise ValueError("bad input")
+
+    monkeypatch.setattr(main, "create_invite", raise_value_error)
+    res = client.post("/admin/invites", json={"email": "friend@example.com"})
+    assert res.status_code == 400
+
+
+def test_admin_revoke_invite_requires_auth(client):
+    assert client.patch("/admin/invites/inv-1", json={"status": "revoked"}).status_code == 401
+
+
+def test_admin_revoke_invite_forbidden_for_non_admin(client, monkeypatch):
+    monkeypatch.setattr(main, "get_current_user", lambda request: "uid-1")
+    monkeypatch.setattr(main, "get_settings", lambda uid: {"is_admin": False})
+    assert client.patch("/admin/invites/inv-1", json={"status": "revoked"}).status_code == 403
+
+
+def test_admin_revoke_invite_rejects_non_revoke_status(client, monkeypatch):
+    monkeypatch.setattr(main, "get_current_user", lambda request: "admin-uid")
+    monkeypatch.setattr(main, "get_settings", lambda uid: {"is_admin": True})
+    res = client.patch("/admin/invites/inv-1", json={"status": "accepted"})
+    assert res.status_code == 400
+
+
+def test_admin_revoke_invite_allowed_for_admin(client, monkeypatch):
+    monkeypatch.setattr(main, "get_current_user", lambda request: "admin-uid")
+    monkeypatch.setattr(main, "get_settings", lambda uid: {"is_admin": True})
+    monkeypatch.setattr(main, "revoke_invite", lambda invite_id: {"invite_id": invite_id, "status": "revoked"})
+    res = client.patch("/admin/invites/inv-1", json={"status": "revoked"})
+    assert res.status_code == 200
+    assert res.json()["status"] == "revoked"
+
+
+def test_admin_revoke_invite_404s_for_unknown_id(client, monkeypatch):
+    monkeypatch.setattr(main, "get_current_user", lambda request: "admin-uid")
+    monkeypatch.setattr(main, "get_settings", lambda uid: {"is_admin": True})
+
+    def raise_value_error(invite_id):
+        raise ValueError("not found")
+
+    monkeypatch.setattr(main, "revoke_invite", raise_value_error)
+    res = client.patch("/admin/invites/inv-1", json={"status": "revoked"})
+    assert res.status_code == 400
+
+
+def test_read_my_invites_requires_auth(client):
+    assert client.get("/invites/mine").status_code == 401
+
+
+def test_read_my_invites_returns_only_callers_invites(client, monkeypatch):
+    monkeypatch.setattr(main, "get_current_user", lambda request: "uid-1")
+    monkeypatch.setattr(main, "list_invites_for_uid", lambda uid: [{"email": "a@example.com", "invited_by": uid}])
+    res = client.get("/invites/mine")
+    assert res.status_code == 200
+    assert res.json() == [{"email": "a@example.com", "invited_by": "uid-1"}]
+
+
+def test_send_invite_requires_auth(client):
+    assert client.post("/invites", json={"email": "a@example.com"}).status_code == 401
+
+
+def test_send_invite_uses_profile_name_as_inviter_label(client, monkeypatch):
+    monkeypatch.setattr(main, "get_current_user", lambda request: "uid-1")
+    monkeypatch.setattr(main, "get_user_record", lambda uid: SimpleNamespace(email="me@example.com"))
+    monkeypatch.setattr(main, "get_settings", lambda uid: {"name": "Sam"})
+
+    captured = {}
+
+    def fake_create_invite(email, name, source, invited_by_uid, invited_by_email, inviter_label, admin_note=None):
+        captured["inviter_label"] = inviter_label
+        captured["source"] = source
+        captured["invited_by_email"] = invited_by_email
+        return {"email": email, "name": name, "status": "pending", "token": "tok", "inviter_label": inviter_label}
+
+    monkeypatch.setattr(main, "create_invite", fake_create_invite)
+    monkeypatch.setattr(main, "send_email", lambda *a, **k: True)
+
+    res = client.post("/invites", json={"email": "friend@example.com"})
+
+    assert res.status_code == 200
+    assert captured["inviter_label"] == "Sam"
+    assert captured["source"] == "user"
+    assert captured["invited_by_email"] == "me@example.com"
+
+
+def test_send_invite_falls_back_to_email_when_no_profile_name(client, monkeypatch):
+    monkeypatch.setattr(main, "get_current_user", lambda request: "uid-1")
+    monkeypatch.setattr(main, "get_user_record", lambda uid: SimpleNamespace(email="me@example.com"))
+    monkeypatch.setattr(main, "get_settings", lambda uid: {"name": ""})
+
+    captured = {}
+
+    def fake_create_invite(email, name, source, invited_by_uid, invited_by_email, inviter_label, admin_note=None):
+        captured["inviter_label"] = inviter_label
+        return {"email": email, "name": name, "status": "pending", "token": "tok", "inviter_label": inviter_label}
+
+    monkeypatch.setattr(main, "create_invite", fake_create_invite)
+    monkeypatch.setattr(main, "send_email", lambda *a, **k: True)
+
+    client.post("/invites", json={"email": "friend@example.com"})
+    assert captured["inviter_label"] == "me@example.com"
+
+
+def test_send_invite_rate_limited_returns_429(client, monkeypatch):
+    monkeypatch.setattr(main, "get_current_user", lambda request: "uid-1")
+    monkeypatch.setattr(main, "get_user_record", lambda uid: SimpleNamespace(email="me@example.com"))
+    monkeypatch.setattr(main, "get_settings", lambda uid: {"name": "Sam"})
+
+    def raise_limit(*a, **k):
+        raise main.InviteLimitError("too many")
+
+    monkeypatch.setattr(main, "create_invite", raise_limit)
+    res = client.post("/invites", json={"email": "friend@example.com"})
+    assert res.status_code == 429
+
+
+def test_send_invite_self_invite_returns_400(client, monkeypatch):
+    monkeypatch.setattr(main, "get_current_user", lambda request: "uid-1")
+    monkeypatch.setattr(main, "get_user_record", lambda uid: SimpleNamespace(email="me@example.com"))
+    monkeypatch.setattr(main, "get_settings", lambda uid: {"name": "Sam"})
+
+    def raise_value_error(*a, **k):
+        raise ValueError("You can't invite yourself.")
+
+    monkeypatch.setattr(main, "create_invite", raise_value_error)
+    res = client.post("/invites", json={"email": "me@example.com"})
+    assert res.status_code == 400
+
+
+def test_read_invite_valid_token(client, monkeypatch):
+    monkeypatch.setattr(
+        main,
+        "get_invite_by_token",
+        lambda token: {"status": "pending", "email": "friend@example.com", "name": "Sam", "inviter_label": "Alex"},
+    )
+    res = client.get("/invites/some-token")
+    assert res.status_code == 200
+    assert res.json() == {
+        "valid": True,
+        "email": "friend@example.com",
+        "name": "Sam",
+        "inviter_label": "Alex",
+    }
+
+
+def test_read_invite_unknown_token_returns_valid_false(client, monkeypatch):
+    monkeypatch.setattr(main, "get_invite_by_token", lambda token: None)
+    res = client.get("/invites/does-not-exist")
+    assert res.status_code == 200
+    assert res.json() == {"valid": False}
+
+
+def test_read_invite_non_pending_token_returns_valid_false(client, monkeypatch):
+    monkeypatch.setattr(
+        main, "get_invite_by_token", lambda token: {"status": "accepted", "email": "friend@example.com"}
+    )
+    res = client.get("/invites/already-used")
+    assert res.json() == {"valid": False}
+
+
+def test_redeem_invite_requires_auth(client):
+    assert client.post("/invites/some-token/redeem").status_code == 401
+
+
+def test_redeem_invite_calls_store_with_authenticated_uid(client, monkeypatch):
+    monkeypatch.setattr(main, "get_current_user", lambda request: "new-user-uid")
+    captured = {}
+    monkeypatch.setattr(
+        main, "redeem_invite", lambda token, uid: captured.update(token=token, uid=uid) or {"status": "accepted"}
+    )
+    res = client.post("/invites/some-token/redeem")
+    assert res.status_code == 200
+    assert captured == {"token": "some-token", "uid": "new-user-uid"}

@@ -4,15 +4,18 @@ import { Header } from "../components/Header"
 import { useAuth } from "../hooks/useAuth"
 import { useIsAdmin } from "../hooks/useIsAdmin"
 import {
+  createAdminInvite,
   createDiscountCode,
   deleteFeedback,
   deleteFeedbackBatch,
   deleteUserAsAdmin,
+  getAdminInvites,
   getAdminStats,
   getAdminUsers,
   getBillingStats,
   getDiscountCodes,
   getFeedback,
+  revokeInvite,
   setDiscountCodeActive,
   setFeedbackRead,
   setUserAdmin,
@@ -23,9 +26,10 @@ import {
   type BillingStats,
   type DiscountCode,
   type FeedbackSubmission,
+  type Invite,
 } from "../services/api"
 
-const TABS = ["Stats", "Users", "Discounts", "Billing", "Feedback"] as const
+const TABS = ["Stats", "Users", "Discounts", "Billing", "Feedback", "Invites"] as const
 type Tab = (typeof TABS)[number]
 
 const PERCENT_OPTIONS = [25, 50, 75, 100]
@@ -389,6 +393,182 @@ function DiscountCodesTab({
                           }`}
                         />
                       </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
+    </div>
+  )
+}
+
+const INVITE_STATUS_STYLES: Record<Invite["status"], string> = {
+  pending: "bg-blue-500/20 text-blue-300",
+  accepted: "bg-green-500/20 text-green-300",
+  revoked: "bg-white/10 text-white/50",
+  expired: "bg-white/10 text-white/50",
+  existing_user: "bg-yellow-500/20 text-yellow-300",
+}
+
+const INVITE_STATUS_LABELS: Record<Invite["status"], string> = {
+  pending: "Pending",
+  accepted: "Accepted",
+  revoked: "Revoked",
+  expired: "Expired",
+  existing_user: "Already a member",
+}
+
+function InviteStatusBadge({ status }: { status: Invite["status"] }) {
+  return (
+    <span className={`rounded-full px-2.5 py-1 text-body-sm font-semibold ${INVITE_STATUS_STYLES[status]}`}>
+      {INVITE_STATUS_LABELS[status]}
+    </span>
+  )
+}
+
+function InvitesTab({
+  token,
+  invites,
+  error,
+  onReload,
+}: {
+  token: string
+  invites: Invite[] | null
+  error: string | null
+  onReload: () => void
+}) {
+  const [name, setName] = useState("")
+  const [email, setEmail] = useState("")
+  const [adminNote, setAdminNote] = useState("")
+  const [sending, setSending] = useState(false)
+  const [sendError, setSendError] = useState<string | null>(null)
+
+  async function handleSend() {
+    if (!email.trim()) return
+    setSending(true)
+    setSendError(null)
+    try {
+      await createAdminInvite(token, email.trim(), name.trim() || undefined, adminNote.trim() || undefined)
+      setName("")
+      setEmail("")
+      setAdminNote("")
+      onReload()
+    } catch {
+      setSendError("Couldn't send invite.")
+    } finally {
+      setSending(false)
+    }
+  }
+
+  async function handleRevoke(invite: Invite) {
+    try {
+      await revokeInvite(token, invite.invite_id)
+      onReload()
+    } catch {
+      setSendError("Couldn't revoke invite.")
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-6">
+      <Card>
+        <h3 className="text-headline-sm text-white">Send an invite</h3>
+        <div className="flex flex-wrap items-end gap-4">
+          <label className="flex flex-col gap-1">
+            <span className="text-body-sm font-semibold text-white">Name (optional)</span>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Sam"
+              className="w-48 rounded border border-white/20 bg-white/5 px-3 py-2 text-body-md text-white placeholder:text-white/30"
+            />
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className="text-body-sm font-semibold text-white">Email</span>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="sam@example.com"
+              className="w-64 rounded border border-white/20 bg-white/5 px-3 py-2 text-body-md text-white placeholder:text-white/30"
+            />
+          </label>
+          <button
+            onClick={handleSend}
+            disabled={sending || !email.trim()}
+            className="rounded-full bg-secondary-container px-6 py-2 text-body-md font-semibold text-on-primary disabled:opacity-50"
+          >
+            {sending ? "Sending..." : "Send invite"}
+          </button>
+        </div>
+        <label className="flex flex-col gap-1">
+          <span className="text-body-sm font-semibold text-white">Personal note (optional)</span>
+          <textarea
+            value={adminNote}
+            onChange={(e) => setAdminNote(e.target.value)}
+            placeholder="Included as a quoted line in the invite email"
+            rows={2}
+            className="w-full rounded border border-white/20 bg-white/5 px-3 py-2 text-body-md text-white placeholder:text-white/30"
+          />
+        </label>
+        {(sendError || error) && <p className="text-body-sm text-red-400">{sendError ?? error}</p>}
+      </Card>
+
+      <Card>
+        <h3 className="text-headline-sm text-white">All invites</h3>
+        {!invites ? (
+          <p className="text-body-md text-white/60">Loading...</p>
+        ) : invites.length === 0 ? (
+          <p className="text-body-md text-white/60">No invites sent yet.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-body-sm">
+              <thead>
+                <tr className="border-b border-white/10 text-white/60">
+                  <th className="py-2 pr-4">Recipient</th>
+                  <th className="py-2 pr-4">Source</th>
+                  <th className="py-2 pr-4">Sent by</th>
+                  <th className="py-2 pr-4">Status</th>
+                  <th className="py-2 pr-4">Sent</th>
+                  <th className="py-2 pr-4"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {invites.map((invite) => (
+                  <tr key={invite.invite_id} className="border-b border-white/10">
+                    <td className="py-2 pr-4 text-white">
+                      {invite.name ? `${invite.name} ` : ""}
+                      <span className="text-white/60">{invite.email}</span>
+                    </td>
+                    <td className="py-2 pr-4">
+                      <span
+                        className={`rounded-full px-2.5 py-1 text-body-sm font-semibold ${
+                          invite.source === "admin" ? "bg-secondary-container/20 text-secondary-container" : "bg-white/10 text-white/70"
+                        }`}
+                      >
+                        {invite.source === "admin" ? "Admin" : "Referral"}
+                      </span>
+                    </td>
+                    <td className="py-2 pr-4 text-white/60">{invite.invited_by_email}</td>
+                    <td className="py-2 pr-4">
+                      <InviteStatusBadge status={invite.status} />
+                    </td>
+                    <td className="py-2 pr-4 text-white/60">
+                      {new Date(invite.sent_at).toLocaleDateString()}
+                    </td>
+                    <td className="py-2 pr-4">
+                      {invite.status === "pending" && (
+                        <button
+                          onClick={() => handleRevoke(invite)}
+                          className="text-body-sm font-semibold text-red-400 hover:text-red-300"
+                        >
+                          Revoke
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -770,6 +950,8 @@ export function AdminPage() {
   const [codesError, setCodesError] = useState<string | null>(null)
   const [feedback, setFeedback] = useState<FeedbackSubmission[] | null>(null)
   const [feedbackError, setFeedbackError] = useState<string | null>(null)
+  const [invites, setInvites] = useState<Invite[] | null>(null)
+  const [invitesError, setInvitesError] = useState<string | null>(null)
 
   const reloadUsers = useCallback(async () => {
     if (!token) return
@@ -821,6 +1003,16 @@ export function AdminPage() {
     }
   }, [token])
 
+  const reloadInvites = useCallback(async () => {
+    if (!token) return
+    try {
+      setInvites(await getAdminInvites(token))
+      setInvitesError(null)
+    } catch {
+      setInvitesError("Couldn't load invites.")
+    }
+  }, [token])
+
   useEffect(() => {
     if (user) user.getIdToken().then(setToken)
   }, [user])
@@ -832,6 +1024,7 @@ export function AdminPage() {
     reloadBilling()
     reloadCodes()
     reloadFeedback()
+    reloadInvites()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token])
 
@@ -917,6 +1110,9 @@ export function AdminPage() {
               error={feedbackError}
               onReload={reloadFeedback}
             />
+          )}
+          {tab === "Invites" && (
+            <InvitesTab token={token} invites={invites} error={invitesError} onReload={reloadInvites} />
           )}
         </div>
       </div>

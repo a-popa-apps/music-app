@@ -3,11 +3,13 @@ import { Link } from "react-router-dom"
 import { useAuth } from "../hooks/useAuth"
 import { useClickOutside } from "../hooks/useClickOutside"
 import type { ProfileSettings } from "../services/api"
+import { InviteModal } from "./InviteModal"
 
 export function AccountMenu({ profile }: { profile: ProfileSettings | null }) {
   const { user, logOut, resetPassword } = useAuth()
   const [open, setOpen] = useState(false)
   const [resetSent, setResetSent] = useState(false)
+  const [inviteOpen, setInviteOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   useClickOutside(containerRef, () => setOpen(false), open)
 
@@ -92,6 +94,16 @@ export function AccountMenu({ profile }: { profile: ProfileSettings | null }) {
             History
           </Link>
           <button
+            onClick={() => {
+              setInviteOpen(true)
+              setOpen(false)
+            }}
+            className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-body-md text-inverse-on-surface hover:bg-white/10"
+          >
+            <span className="material-symbols-outlined text-[18px]">person_add</span>
+            Invite a friend
+          </button>
+          <button
             onClick={handleChangePassword}
             className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-body-md text-inverse-on-surface hover:bg-white/10"
           >
@@ -107,6 +119,7 @@ export function AccountMenu({ profile }: { profile: ProfileSettings | null }) {
           </button>
         </div>
       )}
+      {inviteOpen && <InviteModal onClose={() => setInviteOpen(false)} />}
     </div>
   )
 }

@@ -44,6 +44,7 @@ from .billing import (
 )
 from .email_service import notify_admins, send_email
 from .email_templates import (
+    invite_email_html,
     new_feedback_email_html,
     password_changed_email_html,
     password_reset_email_html,
@@ -60,6 +61,15 @@ from .feedback_store import (
 )
 from .feedback_summary import generate_feedback_summary
 from .history_store import add_history_entries, clear_history, list_history
+from .invite_store import (
+    InviteLimitError,
+    create_invite,
+    get_invite_by_token,
+    list_all_invites,
+    list_invites_for_uid,
+    redeem_invite,
+    revoke_invite,
+)
 from .process_audio import (
     MAX_FILES_FREE,
     MAX_FILES_PRO,
@@ -293,6 +303,132 @@ def admin_set_discount_code_active(code: str, body: DiscountCodeActiveUpdate, re
         raise HTTPException(400, str(e))
     except Exception as e:
         raise HTTPException(502, f"Stripe error: {type(e).__name__}: {e}")
+
+
+class AdminInviteCreate(BaseModel):
+    email: str
+    name: str | None = None
+    admin_note: str | None = None
+
+
+class UserInviteCreate(BaseModel):
+    email: str
+    name: str | None = None
+
+
+class InviteRevoke(BaseModel):
+    status: str
+
+
+def _send_invite_email(request: Request, invite: dict) -> None:
+    if invite["status"] != "pending":
+        # "existing_user" (recipient already has an account) or a reused
+        # pending invite from the duplicate-send cooldown -- either way,
+        # nothing new to email.
+        return
+    invite_url = f"{_frontend_base_url(request)}/auth?invite={invite['token']}"
+    send_email(
+        invite["email"],
+        f"{invite['inviter_label']} invited you to CratePrep",
+        invite_email_html(invite["name"], invite["inviter_label"], invite_url, invite.get("admin_note")),
+    )
+
+
+@app.get("/admin/invites")
+def admin_list_invites(request: Request):
+    _require_admin(request)
+    return list_all_invites()
+
+
+@app.post("/admin/invites")
+def admin_create_invite(body: AdminInviteCreate, request: Request):
+    uid = _require_admin(request)
+    admin_record = get_user_record(uid)
+    admin_email = admin_record.email if admin_record and admin_record.email else uid
+    try:
+        invite = create_invite(
+            body.email,
+            body.name,
+            source="admin",
+            invited_by_uid=uid,
+            invited_by_email=admin_email,
+            inviter_label="The CratePrep team",
+            admin_note=body.admin_note,
+        )
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    _send_invite_email(request, invite)
+    return invite
+
+
+@app.patch("/admin/invites/{invite_id}")
+def admin_revoke_invite(invite_id: str, body: InviteRevoke, request: Request):
+    _require_admin(request)
+    if body.status != "revoked":
+        raise HTTPException(400, "Only revoking a pending invite is supported.")
+    try:
+        return revoke_invite(invite_id)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+
+@app.get("/invites/mine")
+def read_my_invites(request: Request):
+    uid = _require_user(request)
+    return list_invites_for_uid(uid)
+
+
+@app.post("/invites")
+def send_invite(body: UserInviteCreate, request: Request):
+    uid = _require_user(request)
+    user = get_user_record(uid)
+    if user is None or not user.email:
+        raise HTTPException(400, "Your account has no email on file.")
+
+    settings = get_settings(uid)
+    inviter_label = settings.get("name") or user.email
+
+    try:
+        invite = create_invite(
+            body.email,
+            body.name,
+            source="user",
+            invited_by_uid=uid,
+            invited_by_email=user.email,
+            inviter_label=inviter_label,
+        )
+    except InviteLimitError as e:
+        raise HTTPException(429, str(e))
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    _send_invite_email(request, invite)
+    return invite
+
+
+@app.get("/invites/{token}")
+def read_invite(token: str):
+    """Public and unauthenticated by design -- looked up from the signup
+    page (AuthPage, via the ?invite= link) before the visitor has any
+    account at all. Returns just enough to prefill the signup form and show
+    "so-and-so invited you" -- never the invite's internal id, status
+    history, or who else has been invited."""
+    invite = get_invite_by_token(token)
+    if invite is None or invite["status"] != "pending":
+        return {"valid": False}
+    return {"valid": True, "email": invite["email"], "name": invite["name"], "inviter_label": invite["inviter_label"]}
+
+
+@app.post("/invites/{token}/redeem")
+def redeem_invite_route(token: str, request: Request):
+    """Best-effort, called right after a new account finishes signing up on
+    AuthPage when an invite token was present -- same "never block or alarm
+    the user" spirit as sendWelcomeEmail/notifyPasswordChanged. Requires the
+    newly-created account's own token, so this can only ever mark an invite
+    accepted by the account that actually signed up, never an arbitrary
+    uid."""
+    uid = _require_user(request)
+    redeem_invite(token, uid)
+    return {"ok": True}
 
 
 class FeedbackReadUpdate(BaseModel):

@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { useAuth } from "../hooks/useAuth"
+import { redeemInvite } from "../services/api"
 import { trackEvent } from "../utils/analytics"
 import { checkPwnedPassword } from "../utils/checkPwnedPassword"
 
@@ -29,16 +30,37 @@ function firebaseErrorMessage(error: unknown): string {
 // in place from the landing page's Header, so signing in doesn't feel like
 // leaving the page you were on). `onSuccess` lets each caller decide what
 // "done" means -- navigate home for the route, just close for the modal.
-export function AuthForm({ onSuccess }: { onSuccess: () => void }) {
+//
+// invite* props are only ever set by AuthPage, when it was opened via an
+// ?invite= link -- AuthModal never has one, since that's opened from
+// somewhere already inside the app, not from an invite email.
+export function AuthForm({
+  onSuccess,
+  initialEmail,
+  inviteToken,
+  inviteBanner,
+}: {
+  onSuccess: () => void
+  initialEmail?: string
+  inviteToken?: string
+  inviteBanner?: string
+}) {
   const { signUp, logIn, signInWithGoogle, resendVerification } = useAuth()
 
-  const [mode, setMode] = useState<Mode>("login")
+  const [mode, setMode] = useState<Mode>(inviteToken ? "signup" : "login")
   const [view, setView] = useState<View>("form")
-  const [email, setEmail] = useState("")
+  const [email, setEmail] = useState(initialEmail ?? "")
   const [password, setPassword] = useState("")
   const [acceptedTerms, setAcceptedTerms] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+
+  // Best-effort, same "never block or alarm the user" spirit as every other
+  // post-auth call here (verification email, welcome email) -- a failure to
+  // redeem shouldn't stop someone who just successfully signed up.
+  async function redeemInviteIfAny(idToken: string) {
+    if (inviteToken) await redeemInvite(idToken, inviteToken)
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -53,7 +75,8 @@ export function AuthForm({ onSuccess }: { onSuccess: () => void }) {
           )
           return
         }
-        await signUp(email, password)
+        const user = await signUp(email, password)
+        await redeemInviteIfAny(await user.getIdToken())
         trackEvent("sign_up", { method: "email" })
         setView("check-inbox")
       } else {
@@ -75,7 +98,8 @@ export function AuthForm({ onSuccess }: { onSuccess: () => void }) {
   async function handleGoogle() {
     setError(null)
     try {
-      const { isNewUser } = await signInWithGoogle()
+      const { user, isNewUser } = await signInWithGoogle()
+      if (isNewUser) await redeemInviteIfAny(await user.getIdToken())
       trackEvent(isNewUser ? "sign_up" : "login", { method: "google" })
       onSuccess()
     } catch {
@@ -127,6 +151,14 @@ export function AuthForm({ onSuccess }: { onSuccess: () => void }) {
 
   return (
     <>
+      {inviteBanner && (
+        <div className="mb-6 flex items-center gap-2 rounded border border-secondary-container/30 bg-secondary-container/10 px-4 py-3 text-body-sm text-white">
+          <span className="material-symbols-outlined text-[18px] text-secondary-container">
+            celebration
+          </span>
+          {inviteBanner}
+        </div>
+      )}
       <div className="mb-6 flex rounded-full bg-white/5 p-1">
         <button
           onClick={() => setMode("login")}

@@ -47,6 +47,9 @@ class _FakeQuery:
             raise NotImplementedError(f"FakeCollection.where only supports '==', got {op!r}")
         return _FakeQuery([d for d in self._docs if d.get(field) == value])
 
+    def limit(self, count: int) -> "_FakeQuery":
+        return _FakeQuery(self._docs[:count])
+
     def stream(self):
         return [_FakeSnapshot(data) for data in self._docs]
 
