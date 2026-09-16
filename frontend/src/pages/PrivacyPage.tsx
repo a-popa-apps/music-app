@@ -16,7 +16,7 @@ export function PrivacyPage() {
         },
         {
           heading: "3. Third-Party Services",
-          body: "We use Firebase (Google) for account authentication and to store your profile settings. To help detect a track's genre, we send the cleaned artist/title text (never the audio file itself) to Spotify's and Discogs' public APIs. If you enable AI-assisted features (filename cleanup, batch summaries, feedback triage), the relevant text is sent to Google's Gemini API to generate that feature's output. Stripe processes payments for Pro subscriptions and never sees your audio files.",
+          body: "We use Firebase (Google) for account authentication and to store your profile settings. To help detect a track's genre, we send the cleaned artist/title text (never the audio file itself) to Spotify's and Discogs' public APIs. If you opt in via our cookie consent banner, we use Google Analytics to understand overall usage (pages visited, features used) — it doesn't run unless you accept, and never sees your audio files or filenames. If you enable AI-assisted features (filename cleanup, batch summaries, feedback triage), the relevant text is sent to Google's Gemini API to generate that feature's output. Stripe processes payments for Pro subscriptions and never sees your audio files.",
         },
         {
           heading: "4. Data Retention",
@@ -28,7 +28,7 @@ export function PrivacyPage() {
         },
         {
           heading: "6. Cookies and Local Storage",
-          body: "We use strictly necessary cookies and local storage to keep you signed in, via Firebase Authentication. We don't use any analytics, advertising, or ad-tracking cookies, and we don't sell or share data with ad networks. See our Cookie Policy for details.",
+          body: "We use strictly necessary cookies and local storage to keep you signed in, via Firebase Authentication. If you accept our cookie consent banner, we also use Google Analytics cookies to understand overall usage — this is entirely optional and off by default until you accept. We don't use any advertising or ad-tracking cookies, and we don't sell or share data with ad networks. See our Cookie Policy for details.",
         },
         {
           heading: "7. Children's Privacy",

@@ -1,4 +1,6 @@
-import { Route, Routes } from "react-router-dom"
+import { useEffect } from "react"
+import { Route, Routes, useLocation } from "react-router-dom"
+import { CookieConsentBanner } from "./components/CookieConsentBanner"
 import { FAQ } from "./components/FAQ"
 import { Features } from "./components/Features"
 import { FeedbackWidget } from "./components/FeedbackWidget"
@@ -18,6 +20,20 @@ import { NotFound } from "./pages/NotFound"
 import { PrivacyPage } from "./pages/PrivacyPage"
 import { ProfileDetails } from "./pages/ProfileDetails"
 import { TermsPage } from "./pages/TermsPage"
+import { trackPageView } from "./utils/analytics"
+
+// GA's config() call passes send_page_view: false (see analytics.ts), so
+// this is what actually reports page views -- both the initial load and
+// every client-side route change, which a plain page_view config call
+// would otherwise miss entirely in a single-page app. No-ops until
+// analytics consent has been granted.
+function PageViewTracker() {
+  const location = useLocation()
+  useEffect(() => {
+    trackPageView(location.pathname)
+  }, [location.pathname])
+  return null
+}
 
 function Landing() {
   return (
@@ -52,7 +68,9 @@ function App() {
         <Route path="/cookie-policy" element={<CookiePolicyPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
+      <PageViewTracker />
       <FeedbackWidget />
+      <CookieConsentBanner />
     </>
   )
 }
