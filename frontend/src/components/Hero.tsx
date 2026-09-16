@@ -1,6 +1,6 @@
 import { unzipSync, zipSync, type Unzipped } from "fflate"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { useDropzone } from "react-dropzone"
+import { useDropzone, type FileRejection } from "react-dropzone"
 import { useNavigate } from "react-router-dom"
 import heroBg from "../assets/hero-bg.jpg"
 import { useAuth } from "../hooks/useAuth"
@@ -183,6 +183,10 @@ export function Hero() {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [billingLoading, setBillingLoading] = useState(false)
   const [statusIndex, setStatusIndex] = useState(0)
+  // Files react-dropzone silently excluded from the drop (wrong
+  // extension/type) -- shown so a batch quietly coming up short of what
+  // was actually dropped has a visible explanation instead of none.
+  const [skippedFiles, setSkippedFiles] = useState<string[]>([])
 
   useEffect(() => {
     if (phase !== "processing") return
@@ -303,7 +307,14 @@ export function Hero() {
   }
 
   const onDrop = useCallback(
-    (acceptedFiles: File[]) => {
+    (acceptedFiles: File[], fileRejections: FileRejection[]) => {
+      // react-dropzone would otherwise silently exclude non-matching files
+      // from acceptedFiles with zero indication why -- some browsers report
+      // no MIME type at all for less common extensions (.aif in
+      // particular), so a batch coming up short of what was actually
+      // dropped needs a visible explanation instead of none.
+      setSkippedFiles(fileRejections.map((r) => r.file.name))
+
       if (acceptedFiles.length === 0) return
       const loggedIn = user && isVerified
       if (!loggedIn && acceptedFiles.length > ANON_TRIAL_LIMIT) {
@@ -323,7 +334,7 @@ export function Hero() {
     onDrop,
     disabled: phase === "processing",
     accept: {
-      "audio/*": [".mp3", ".wav", ".aiff", ".flac"],
+      "audio/*": [".mp3", ".wav", ".flac", ".aiff", ".aif", ".ogg", ".aac"],
     },
   })
 
@@ -420,6 +431,7 @@ export function Hero() {
     setShowUpgradeModal(false)
     setEditingTrack(null)
     setRetagError(null)
+    setSkippedFiles([])
   }
 
   function startEdit(track: ProcessedTrack) {
@@ -599,6 +611,15 @@ export function Hero() {
         </p>
 
         <div className="w-full text-left">
+          {skippedFiles.length > 0 && (
+            <div className="mb-4 flex items-start gap-2 rounded border border-yellow-400/30 bg-yellow-400/10 p-4 text-body-sm text-white/80">
+              <span className="material-symbols-outlined text-[18px] text-yellow-300">warning</span>
+              <span>
+                Skipped {skippedFiles.length} file{skippedFiles.length === 1 ? "" : "s"} your browser
+                didn't recognize as audio: {skippedFiles.join(", ")}
+              </span>
+            </div>
+          )}
           {phase === "idle" && (
             <div
               {...getRootProps()}
