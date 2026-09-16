@@ -1,23 +1,14 @@
-// Google Analytics 4, gated on VITE_GA_MEASUREMENT_ID -- no-op if unset,
-// same pattern as every other optional integration in this app.
-//
-// Deliberately NOT using Google's Consent Mode v2 pattern (gtag.js loaded
-// immediately with analytics_storage defaulted to "denied", flipped to
-// "granted" on accept): a previous implementation followed that pattern
-// exactly, including fixing two real consent-vs-mount-order races, and
-// verified via direct dataLayer inspection that the commands were queued
-// in the correct order -- and GA4 still never received a single hit, on
-// any device, with no way to confirm whether gtag.js's own internal
-// consent-gating was ever actually the thing at fault. Rather than trust
-// that black box again, consent is now enforced entirely on this side:
-// gtag.js is never loaded and nothing is ever pushed to a dataLayer until
-// the visitor has explicitly granted consent. No consent, no script, no
-// network request -- there's no internal "denied" state for a hit to get
-// silently dropped from in the first place.
-
-const GA_MEASUREMENT_ID = import.meta.env.VITE_GA_MEASUREMENT_ID as string | undefined
+// Google Analytics 4. The gtag.js snippet itself is loaded statically in
+// index.html's <head> (not from here) -- see the comment there for why:
+// a dynamically-created <script> tag, injected only after this bundle
+// mounted and consent resolved, reproducibly never delivered a single hit
+// in production, while an identical static snippet always did. This
+// module only manages consent state and sends events through the
+// already-globally-defined window.gtag.
 
 const CONSENT_STORAGE_KEY = "crateprep-analytics-consent"
+
+const GA_ENABLED = Boolean(import.meta.env.VITE_GA_MEASUREMENT_ID)
 
 type Consent = "granted" | "denied"
 
@@ -26,27 +17,6 @@ declare global {
     dataLayer?: unknown[]
     gtag?: (...args: unknown[]) => void
   }
-}
-
-let initialized = false
-
-function gtag(...args: unknown[]) {
-  window.dataLayer = window.dataLayer || []
-  window.dataLayer.push(args)
-}
-
-function initGtag() {
-  if (initialized || !GA_MEASUREMENT_ID) return
-  initialized = true
-
-  window.gtag = gtag
-  gtag("js", new Date())
-  gtag("config", GA_MEASUREMENT_ID, { send_page_view: false })
-
-  const script = document.createElement("script")
-  script.async = true
-  script.src = `https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`
-  document.head.appendChild(script)
 }
 
 export function getStoredConsent(): Consent | null {
@@ -58,48 +28,56 @@ export function getStoredConsent(): Consent | null {
   }
 }
 
-// Runs at module load, before any component mounts: a returning visitor
-// who already granted consent gets GA initialized immediately, so their
-// page view isn't lost waiting for a banner interaction that already
-// happened on a previous visit.
-if (getStoredConsent() === "granted") {
-  initGtag()
-}
+// index.html's inline script already re-applies a previously granted
+// consent before any component mounts, so a returning visitor's page view
+// (below) sends normally. A first-time visitor's initial trackPageView()
+// call fires before they've had any chance to click the consent banner,
+// though, so consent is still "denied" at that moment and gtag.js drops
+// the hit -- and since config() disables the automatic page_view, there's
+// no natural second one to fall back on for a single-page visit. Held
+// here and flushed the instant they actually grant consent.
+let pendingPageViewPath: string | null = null
 
-export function setAnalyticsConsent(consent: Consent) {
-  if (!GA_MEASUREMENT_ID) return
-  try {
-    window.localStorage.setItem(CONSENT_STORAGE_KEY, consent)
-  } catch {
-    // private-browsing / storage disabled -- consent still applies for this
-    // page load via initGtag() below, just won't persist.
-  }
-  if (consent !== "granted") return
-
-  // A first-time visitor's PageViewTracker effect (see App.tsx) already
-  // ran once for the current route before they had a chance to accept the
-  // banner, and trackPageView() below no-ops until `initialized` is true --
-  // so that initial view never got sent. Send it now, immediately after
-  // initializing, rather than waiting for a route change that might never
-  // come during this visit.
-  initGtag()
-  trackPageView(window.location.pathname)
-}
-
-export function trackEvent(name: string, params?: Record<string, unknown>) {
-  if (!initialized) return
-  window.gtag?.("event", name, params)
-}
-
-/** Sent manually on the initial load (once consent is granted) and every
- * client-side route change -- config() above passes send_page_view: false
- * so this is the only source of page_view events, avoiding a double-count
- * on first load. No-ops entirely until consent has been granted. */
-export function trackPageView(path: string) {
-  if (!initialized) return
+function sendPageView(path: string) {
   window.gtag?.("event", "page_view", {
     page_path: path,
     page_location: window.location.href,
     page_title: document.title,
   })
+}
+
+export function setAnalyticsConsent(consent: Consent) {
+  if (!GA_ENABLED) return
+  try {
+    window.localStorage.setItem(CONSENT_STORAGE_KEY, consent)
+  } catch {
+    // private-browsing / storage disabled -- consent still applies for this
+    // page load via the gtag call below, just won't persist.
+  }
+  window.gtag?.("consent", "update", {
+    analytics_storage: consent === "granted" ? "granted" : "denied",
+  })
+  if (consent === "granted" && pendingPageViewPath) {
+    sendPageView(pendingPageViewPath)
+  }
+  pendingPageViewPath = null
+}
+
+export function trackEvent(name: string, params?: Record<string, unknown>) {
+  if (!GA_ENABLED) return
+  window.gtag?.("event", name, params)
+}
+
+/** Sent manually on the initial load and every client-side route change --
+ * index.html's config() call passes send_page_view: false so this is the
+ * only source of page_view events, avoiding a double-count on first load. */
+export function trackPageView(path: string) {
+  if (!GA_ENABLED) return
+  const consent = getStoredConsent()
+  if (consent === null) {
+    pendingPageViewPath = path
+    return
+  }
+  if (consent === "denied") return
+  sendPageView(path)
 }

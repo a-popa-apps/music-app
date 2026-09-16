@@ -2,6 +2,35 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <!-- Google tag (gtag.js) -- loaded statically here, as high in <head> as
+    possible, rather than injected dynamically by the React bundle. A
+    dynamically-created <script> tag (appended by analytics.ts only after
+    the app mounted and consent resolved) reproducibly never delivered a
+    single hit in production despite every layer checking out correct --
+    consent state, the dataLayer queue, even gtag.js's own internal
+    push-processing hook, all verified working -- while this exact static
+    placement did. Root cause was never confirmed, but static placement is
+    the one variable that fixed it. Consent Mode v2 still gates actual
+    measurement: analytics_storage defaults to "denied" and only flips to
+    "granted" once the cookie-consent banner is accepted (see
+    CookieConsentBanner.tsx / analytics.ts), so no analytics cookie is set
+    without consent -- Vite substitutes %VITE_GA_MEASUREMENT_ID% with the
+    real env var at build time, and empty/unset just makes gtag.js a no-op. -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=%VITE_GA_MEASUREMENT_ID%"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() { dataLayer.push(arguments); }
+      gtag("js", new Date());
+      gtag("consent", "default", { analytics_storage: "denied" });
+      (function () {
+        try {
+          if (localStorage.getItem("crateprep-analytics-consent") === "granted") {
+            gtag("consent", "update", { analytics_storage: "granted" });
+          }
+        } catch (e) {}
+      })();
+      gtag("config", "%VITE_GA_MEASUREMENT_ID%", { send_page_view: false });
+    </script>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
