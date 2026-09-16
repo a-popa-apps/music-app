@@ -7,7 +7,6 @@ import { useAuth } from "../hooks/useAuth"
 import { trackEvent } from "../utils/analytics"
 import {
   createBillingPortalSession,
-  createCheckoutSession,
   deleteAccount,
   getProfile,
   saveProfile,
@@ -157,18 +156,12 @@ export function ProfileDetails() {
     }
   }
 
-  async function handleUpgrade() {
-    if (!user) return
-    setBillingLoading(true)
-    setError(null)
-    try {
-      const token = await user.getIdToken()
-      const url = await createCheckoutSession(token, "monthly")
-      window.location.href = url
-    } catch {
-      setError("Couldn't start checkout. Try again.")
-      setBillingLoading(false)
-    }
+  // Sends to the landing page's Pricing section (with its Monthly/Annual
+  // toggle) instead of starting checkout directly -- this used to hardcode
+  // billing_cycle to "monthly" and skip the choice entirely, the same bug
+  // fixed for Header.tsx's own "Go Pro" button.
+  function handleUpgrade() {
+    window.location.href = "/#pricing"
   }
 
   async function handleManageBilling() {
