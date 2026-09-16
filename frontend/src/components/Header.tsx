@@ -4,8 +4,6 @@ import { AccountMenu } from "./AccountMenu"
 import { AuthModal } from "./AuthModal"
 import { useAuth } from "../hooks/useAuth"
 import { useProfile } from "../hooks/useProfile"
-import { createCheckoutSession } from "../services/api"
-import { trackEvent } from "../utils/analytics"
 
 const NAV_LINKS = [
   { label: "How it works", href: "/#how-it-works" },
@@ -33,8 +31,6 @@ export function Header({ dark = false }: { dark?: boolean }) {
   const overHero = dark || (location.pathname === "/" && !scrolled)
   const headerRef = useRef<HTMLElement>(null)
   const [activeSection, setActiveSection] = useState<string | null>(null)
-  const [goProLoading, setGoProLoading] = useState(false)
-  const [goProError, setGoProError] = useState<string | null>(null)
   const [authModalOpen, setAuthModalOpen] = useState(false)
 
   useEffect(() => {
@@ -75,24 +71,6 @@ export function Header({ dark = false }: { dark?: boolean }) {
     elements.forEach((el) => observer.observe(el))
     return () => observer.disconnect()
   }, [location.pathname])
-
-  async function handleGoPro() {
-    if (!user || !isVerified) {
-      setAuthModalOpen(true)
-      return
-    }
-    setGoProLoading(true)
-    setGoProError(null)
-    try {
-      const token = await user.getIdToken()
-      trackEvent("begin_checkout", { billing_cycle: "annual", source: "header" })
-      const url = await createCheckoutSession(token, "annual")
-      window.location.href = url
-    } catch (err) {
-      setGoProError(err instanceof Error ? err.message : "Something went wrong. Please try again.")
-      setGoProLoading(false)
-    }
-  }
 
   // Close the mobile menu on an outside tap/click or on scroll, matching
   // the usual dropdown-menu convention (nothing else on this page does
@@ -193,18 +171,12 @@ export function Header({ dark = false }: { dark?: boolean }) {
               )}
               {!isPro && (
                 <div className="relative hidden md:block">
-                  <button
-                    onClick={handleGoPro}
-                    disabled={goProLoading}
-                    className="hidden items-center justify-center rounded-full bg-secondary-container px-6 py-2 text-body-sm font-semibold text-white shadow-[0_4px_16px_rgba(255,107,53,0.4)] transition-transform hover:scale-[1.03] active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 md:inline-flex"
+                  <a
+                    href="/#pricing"
+                    className="hidden items-center justify-center rounded-full bg-secondary-container px-6 py-2 text-body-sm font-semibold text-white shadow-[0_4px_16px_rgba(255,107,53,0.4)] transition-transform hover:scale-[1.03] active:scale-95 md:inline-flex"
                   >
-                    {goProLoading ? "Loading..." : "Go Pro"}
-                  </button>
-                  {goProError && (
-                    <p className="absolute right-0 top-full mt-2 w-64 rounded border border-red-400/30 bg-black/90 px-3 py-2 text-body-sm text-red-400 shadow-lg">
-                      {goProError}
-                    </p>
-                  )}
+                    Go Pro
+                  </a>
                 </div>
               )}
             </>
