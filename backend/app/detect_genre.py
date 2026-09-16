@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import base64
 import json
 import logging
@@ -8,6 +9,8 @@ import re
 import time
 import urllib.parse
 import urllib.request
+
+from starlette.concurrency import run_in_threadpool
 
 from .analysis_cache import get_genre_lookup, store_genre_lookup
 
@@ -224,7 +227,7 @@ def _deezer_track_lookup(query: str) -> dict | None:
         return None
 
 
-def lookup_track(query: str) -> dict | None:
+async def lookup_track(query: str) -> dict | None:
     """Search a chain of catalogs for a dash-less filename, returning the
     first plausible artist/title split (genre and artwork when available)
     instead of guessing. Spotify and Discogs first (best genre data); iTunes
@@ -234,17 +237,33 @@ def lookup_track(query: str) -> dict | None:
     reliably, so they live in detect_genre's genre-only fallback chain
     instead, not here.)
 
-    Keeps trying later sources for artwork alone once artist/title/genre are
-    already resolved -- Discogs without an API token (or a release Discogs
-    simply has no cover scanned for) returns no cover_image at all, and
-    stopping at the first plausible match would otherwise throw away decent
-    artwork iTunes or Deezer had for the same track."""
+    All four are queried concurrently (each is a real network round-trip;
+    run_in_threadpool since none of these are natively async), not one
+    after another -- previously a track needing several fallbacks paid for
+    every one of them sequentially, and every single lookup blocked the
+    whole event loop (every other request on this instance) for however
+    long that chain took. Once all four are back, still merged in this
+    same fixed priority order so the result is identical to what the old
+    sequential version would have picked -- earlier sources win for
+    genre/artist/title, later ones only backfill artwork a match is
+    missing. The one real trade-off: this always makes all four calls now,
+    even on a query the first source alone would have fully answered --
+    can't be avoided while these are blocking calls (there's no way to
+    actually cancel one already running in a worker thread), and it's a
+    one-time cost per not-yet-cached track (see detect_genre's own cache),
+    not a per-user one."""
     if not query:
         return None
 
+    results = await asyncio.gather(
+        *(
+            run_in_threadpool(source, query)
+            for source in (_spotify_track_lookup, _discogs_track_lookup, _itunes_track_lookup, _deezer_track_lookup)
+        )
+    )
+
     match = None
-    for source in (_spotify_track_lookup, _discogs_track_lookup, _itunes_track_lookup, _deezer_track_lookup):
-        result = source(query)
+    for result in results:
         if result is None:
             continue
         if match is None:
@@ -440,7 +459,7 @@ def _lastfm_genre_lookup(artist: str, title: str) -> dict | None:
         return None
 
 
-def detect_genre(artist: str | None, title: str | None, deep_search: bool = False) -> dict:
+async def detect_genre(artist: str | None, title: str | None, deep_search: bool = False) -> dict:
     """Genre (and artwork, when found) lookup for when artist/title are
     already known (e.g. from a local dash split). Checks a global cache
     (keyed by normalized artist+title, not the audio itself) first --
@@ -456,39 +475,48 @@ def detect_genre(artist: str | None, title: str | None, deep_search: bool = Fals
         logger.warning("CACHE HIT (genre) %s - %s -> %s", artist, title, cached.get("genre"))
         return cached
 
-    result = _lookup_genre(artist, title, deep_search)
+    result = await _lookup_genre(artist, title, deep_search)
     logger.warning("CACHE MISS (genre) %s - %s -> %s", artist, title, result.get("genre"))
     store_genre_lookup(artist, title, result["genre"], result["artwork_url"])
     return result
 
 
-def _lookup_genre(artist: str, title: str, deep_search: bool) -> dict:
+async def _lookup_genre(artist: str, title: str, deep_search: bool) -> dict:
     """Reuses lookup_track's plausibility-checked search first
     (Spotify/Discogs/iTunes/Deezer), then MusicBrainz/TheAudioDB/Last.fm
-    (cheap, single-call fallbacks) if still no genre, then the slower
-    deep_discogs_lookup last, only when deep_search is enabled and
-    everything else found nothing.
+    if still no genre -- also queried concurrently now, same reasoning as
+    lookup_track's own fallback chain -- then the slower deep_discogs_lookup
+    last, only when deep_search is enabled and everything else found
+    nothing (run_in_threadpool purely so its own several sequential Discogs
+    calls don't block the event loop for everyone else; it can't be
+    parallelized internally, each of its steps genuinely depends on the
+    previous one's result).
 
     Returns {"genre": str | None, "artwork_url": str | None} -- artwork
     is kept from the first source that had it even if a later source ends
     up supplying the genre instead."""
     artwork_url = None
 
-    match = lookup_track(f"{artist} {title}")
+    match = await lookup_track(f"{artist} {title}")
     if match:
         artwork_url = match.get("artwork_url")
         if match.get("genre"):
             return {"genre": match["genre"], "artwork_url": artwork_url}
 
-    for fallback in (_musicbrainz_genre_lookup, _theaudiodb_genre_lookup, _lastfm_genre_lookup):
-        result = fallback(artist, title)
+    fallback_results = await asyncio.gather(
+        *(
+            run_in_threadpool(fallback, artist, title)
+            for fallback in (_musicbrainz_genre_lookup, _theaudiodb_genre_lookup, _lastfm_genre_lookup)
+        )
+    )
+    for result in fallback_results:
         if result:
             artwork_url = artwork_url or result.get("artwork_url")
             if result.get("genre"):
                 return {"genre": result["genre"], "artwork_url": artwork_url}
 
     if deep_search:
-        deep_match = deep_discogs_lookup(artist, title)
+        deep_match = await run_in_threadpool(deep_discogs_lookup, artist, title)
         if deep_match:
             return {"genre": deep_match["genre"], "artwork_url": artwork_url}
 

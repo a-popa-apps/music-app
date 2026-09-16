@@ -97,7 +97,7 @@ def _capitalize_first(text: str | None) -> str | None:
     return text[0].upper() + text[1:] if text else text
 
 
-def _resolve_artist_title_genre(
+async def _resolve_artist_title_genre(
     stem: str,
     deep_search: bool = False,
     embedded_tags: dict | None = None,
@@ -129,7 +129,7 @@ def _resolve_artist_title_genre(
         if embedded_tags["genre"]:
             genre = embedded_tags["genre"]
         else:
-            lookup = detect_genre(artist, title, deep_search=deep_search)
+            lookup = await detect_genre(artist, title, deep_search=deep_search)
             genre = lookup["genre"]
             debug["artwork_url"] = lookup["artwork_url"]
         debug["name_source"] = "embedded_tags"
@@ -137,12 +137,12 @@ def _resolve_artist_title_genre(
 
     if dash_split:
         artist, title = dash_split
-        lookup = detect_genre(artist, title, deep_search=deep_search)
+        lookup = await detect_genre(artist, title, deep_search=deep_search)
         debug["name_source"] = "local_dash_split"
         debug["artwork_url"] = lookup["artwork_url"]
         return artist, title, lookup["genre"], debug
 
-    match = lookup_track(stem)
+    match = await lookup_track(stem)
     if match:
         debug["name_source"] = "catalog_match"
         debug["artwork_url"] = match.get("artwork_url")
@@ -152,7 +152,7 @@ def _resolve_artist_title_genre(
         split = ai_split_artist_title(stem)
         if split:
             artist, title = split
-            lookup = detect_genre(artist, title, deep_search=deep_search)
+            lookup = await detect_genre(artist, title, deep_search=deep_search)
             debug["name_source"] = "ai_cleanup"
             debug["artwork_url"] = lookup["artwork_url"]
             return artist, title, lookup["genre"], debug
@@ -161,7 +161,7 @@ def _resolve_artist_title_genre(
     if split:
         artist, title = split
         debug["name_source"] = "guessed"
-        lookup = detect_genre(artist, title, deep_search=deep_search)
+        lookup = await detect_genre(artist, title, deep_search=deep_search)
         debug["artwork_url"] = lookup["artwork_url"]
         return artist, title, lookup["genre"], debug
 
@@ -318,7 +318,7 @@ async def _analyze_and_tag(
                 elif preview_content is not None:
                     store_preview(file_hash, preview_content)
     else:
-        artist, title, genre, name_debug = _resolve_artist_title_genre(
+        artist, title, genre, name_debug = await _resolve_artist_title_genre(
             stem, deep_search, embedded_tags=embedded_tags, ai_cleanup=ai_cleanup
         )
         artist, title = _capitalize_first(artist), _capitalize_first(title)

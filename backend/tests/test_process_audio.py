@@ -16,6 +16,10 @@ from fastapi import UploadFile
 from app import preview_cache, process_audio
 
 
+async def _async_return(value):
+    return value
+
+
 def _make_wav(freq: float = 220, duration: float = 1, sr: int = 22050) -> bytes:
     buffer = io.BytesIO()
     n = int(sr * duration)
@@ -283,7 +287,7 @@ def test_build_zip_ai_cleanup_used_when_local_paths_fail(monkeypatch):
     # No dash, single ambiguous word that guess_split can't split and that
     # lookup_track (mocked here to simulate no catalog match) can't resolve
     # -- ai_cleanup should be consulted before falling back to guess_split.
-    monkeypatch.setattr(process_audio, "lookup_track", lambda stem: None)
+    monkeypatch.setattr(process_audio, "lookup_track", lambda stem: _async_return(None))
     monkeypatch.setattr(
         process_audio, "ai_split_artist_title", lambda stem: ("Bicep", "Glue")
     )
@@ -297,7 +301,7 @@ def test_build_zip_ai_cleanup_used_when_local_paths_fail(monkeypatch):
 
 
 def test_build_zip_ai_cleanup_disabled_by_default(monkeypatch):
-    monkeypatch.setattr(process_audio, "lookup_track", lambda stem: None)
+    monkeypatch.setattr(process_audio, "lookup_track", lambda stem: _async_return(None))
     monkeypatch.setattr(
         process_audio,
         "ai_split_artist_title",
@@ -456,12 +460,14 @@ def test_resolve_artist_title_prefers_filename_when_tags_conflict(monkeypatch):
     monkeypatch.setattr(
         process_audio,
         "detect_genre",
-        lambda artist, title, deep_search=False: {"genre": None, "artwork_url": None},
+        lambda artist, title, deep_search=False: _async_return({"genre": None, "artwork_url": None}),
     )
 
-    artist, title, genre, debug = process_audio._resolve_artist_title_genre(
-        "Real Artist - Real Title",
-        embedded_tags={"artist": "Wrong Artist", "title": "Real Title", "genre": None, "version_tag": None},
+    artist, title, genre, debug = asyncio.run(
+        process_audio._resolve_artist_title_genre(
+            "Real Artist - Real Title",
+            embedded_tags={"artist": "Wrong Artist", "title": "Real Title", "genre": None, "version_tag": None},
+        )
     )
 
     assert (artist, title) == ("Real Artist", "Real Title")
@@ -472,12 +478,14 @@ def test_resolve_artist_title_trusts_tags_when_they_agree_with_filename(monkeypa
     monkeypatch.setattr(
         process_audio,
         "detect_genre",
-        lambda artist, title, deep_search=False: {"genre": None, "artwork_url": None},
+        lambda artist, title, deep_search=False: _async_return({"genre": None, "artwork_url": None}),
     )
 
-    artist, title, genre, debug = process_audio._resolve_artist_title_genre(
-        "real artist - Real Title",
-        embedded_tags={"artist": "Real Artist", "title": "Real Title", "genre": "House", "version_tag": None},
+    artist, title, genre, debug = asyncio.run(
+        process_audio._resolve_artist_title_genre(
+            "real artist - Real Title",
+            embedded_tags={"artist": "Real Artist", "title": "Real Title", "genre": "House", "version_tag": None},
+        )
     )
 
     # Formatting differs (case) but it's the same artist -- no conflict, so
@@ -494,18 +502,20 @@ def test_resolve_artist_title_prefers_filename_with_comma_separator_and_track_nu
     monkeypatch.setattr(
         process_audio,
         "detect_genre",
-        lambda artist, title, deep_search=False: {"genre": None, "artwork_url": None},
+        lambda artist, title, deep_search=False: _async_return({"genre": None, "artwork_url": None}),
     )
 
     stem, _, _ = process_audio.prepare_stem("09 Slam , Life Between Life.mp3")
-    artist, title, genre, debug = process_audio._resolve_artist_title_genre(
-        stem,
-        embedded_tags={
-            "artist": "Wrong Tagged Artist",
-            "title": "Life Between Life",
-            "genre": None,
-            "version_tag": None,
-        },
+    artist, title, genre, debug = asyncio.run(
+        process_audio._resolve_artist_title_genre(
+            stem,
+            embedded_tags={
+                "artist": "Wrong Tagged Artist",
+                "title": "Life Between Life",
+                "genre": None,
+                "version_tag": None,
+            },
+        )
     )
 
     assert (artist, title) == ("Slam", "Life Between Life")
@@ -519,12 +529,14 @@ def test_resolve_artist_title_trusts_tags_when_filename_has_no_dash_split(monkey
     monkeypatch.setattr(
         process_audio,
         "detect_genre",
-        lambda artist, title, deep_search=False: {"genre": None, "artwork_url": None},
+        lambda artist, title, deep_search=False: _async_return({"genre": None, "artwork_url": None}),
     )
 
-    artist, title, genre, debug = process_audio._resolve_artist_title_genre(
-        "messydownloadfilenamev2final",
-        embedded_tags={"artist": "Real Artist", "title": "Real Title", "genre": None, "version_tag": None},
+    artist, title, genre, debug = asyncio.run(
+        process_audio._resolve_artist_title_genre(
+            "messydownloadfilenamev2final",
+            embedded_tags={"artist": "Real Artist", "title": "Real Title", "genre": None, "version_tag": None},
+        )
     )
 
     assert (artist, title) == ("Real Artist", "Real Title")
@@ -636,10 +648,12 @@ def test_build_zip_embeds_catalog_artwork_when_found(monkeypatch):
     monkeypatch.setattr(
         process_audio,
         "detect_genre",
-        lambda artist, title, deep_search=False: {
-            "genre": "House",
-            "artwork_url": "https://example.com/cover.jpg",
-        },
+        lambda artist, title, deep_search=False: _async_return(
+            {
+                "genre": "House",
+                "artwork_url": "https://example.com/cover.jpg",
+            }
+        ),
     )
     monkeypatch.setattr(
         process_audio, "fetch_artwork", lambda url: _FAKE_ARTWORK if url else None
@@ -671,7 +685,7 @@ def test_build_zip_has_no_artwork_tag_when_none_found(monkeypatch):
     monkeypatch.setattr(
         process_audio,
         "detect_genre",
-        lambda artist, title, deep_search=False: {"genre": None, "artwork_url": None},
+        lambda artist, title, deep_search=False: _async_return({"genre": None, "artwork_url": None}),
     )
 
     files = [_upload("Real Artist - Real Title.wav", _make_wav(200))]

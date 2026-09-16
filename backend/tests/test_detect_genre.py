@@ -1,3 +1,4 @@
+import asyncio
 import json
 
 import pytest
@@ -150,23 +151,29 @@ class TestLookupTrackChain:
 
         monkeypatch.setattr(detect_genre, "_deezer_track_lookup", fake_deezer)
 
-        result = detect_genre.lookup_track("some query")
+        result = asyncio.run(detect_genre.lookup_track("some query"))
         assert called["hit"] is True
         assert result["genre"] == "House"
 
-    def test_stops_immediately_once_first_match_already_has_artwork(self, monkeypatch):
+    def test_always_queries_all_sources_even_once_first_has_artwork(self, monkeypatch):
+        # Unlike the old sequential design, every source is queried
+        # concurrently (see lookup_track's docstring) -- there's no way to
+        # cancel a blocking call already dispatched to a worker thread, so
+        # call-frugality is traded for lower latency. This just confirms
+        # all four still get called and the merge priority is unchanged.
         monkeypatch.setattr(
             detect_genre,
             "_spotify_track_lookup",
             lambda q: {"artist": "A", "title": "B", "genre": "Techno", "artwork_url": "https://x/1.jpg"},
         )
-        never_called = []
-        monkeypatch.setattr(detect_genre, "_discogs_track_lookup", lambda q: never_called.append(1))
-        monkeypatch.setattr(detect_genre, "_itunes_track_lookup", lambda q: never_called.append(1))
-        monkeypatch.setattr(detect_genre, "_deezer_track_lookup", lambda q: never_called.append(1))
+        called = []
+        monkeypatch.setattr(detect_genre, "_discogs_track_lookup", lambda q: called.append("discogs"))
+        monkeypatch.setattr(detect_genre, "_itunes_track_lookup", lambda q: called.append("itunes"))
+        monkeypatch.setattr(detect_genre, "_deezer_track_lookup", lambda q: called.append("deezer"))
 
-        detect_genre.lookup_track("some query")
-        assert never_called == []
+        result = asyncio.run(detect_genre.lookup_track("some query"))
+        assert sorted(called) == ["deezer", "discogs", "itunes"]
+        assert result["genre"] == "Techno"
 
     def test_keeps_trying_later_sources_for_artwork_when_first_match_lacks_it(self, monkeypatch):
         # Mirrors a real gap found live: Discogs without a token (or a
@@ -188,14 +195,13 @@ class TestLookupTrackChain:
             "_itunes_track_lookup",
             lambda q: {"artist": "A", "title": "B", "genre": "Dance", "artwork_url": "https://x/itunes.jpg"},
         )
-        never_called = []
-        monkeypatch.setattr(detect_genre, "_deezer_track_lookup", lambda q: never_called.append(1))
+        called_deezer = []
+        monkeypatch.setattr(detect_genre, "_deezer_track_lookup", lambda q: called_deezer.append(1))
 
-        result = detect_genre.lookup_track("some query")
+        result = asyncio.run(detect_genre.lookup_track("some query"))
         # Genre stays Discogs' (first match wins for genre/artist/title),
         # but artwork gets backfilled from iTunes.
         assert result == {"artist": "A", "title": "B", "genre": "House", "artwork_url": "https://x/itunes.jpg"}
-        assert never_called == []  # artwork found -- Deezer never needed
 
     def test_returns_first_match_even_if_nobody_ever_has_artwork(self, monkeypatch):
         monkeypatch.setattr(detect_genre, "_spotify_track_lookup", lambda q: None)
@@ -207,11 +213,11 @@ class TestLookupTrackChain:
         monkeypatch.setattr(detect_genre, "_itunes_track_lookup", lambda q: None)
         monkeypatch.setattr(detect_genre, "_deezer_track_lookup", lambda q: None)
 
-        result = detect_genre.lookup_track("some query")
+        result = asyncio.run(detect_genre.lookup_track("some query"))
         assert result == {"artist": "A", "title": "B", "genre": "House", "artwork_url": None}
 
     def test_empty_query_returns_none(self):
-        assert detect_genre.lookup_track("") is None
+        assert asyncio.run(detect_genre.lookup_track("")) is None
 
 
 class TestMusicBrainzGenreLookup:
@@ -380,25 +386,33 @@ class TestFetchArtwork:
         assert detect_genre.fetch_artwork("https://example.com/art.jpg") is None
 
 
+async def _async_return(value):
+    return value
+
+
 class TestDetectGenre:
     def test_missing_artist_or_title_returns_empty_result(self):
-        assert detect_genre.detect_genre(None, "Title") == {"genre": None, "artwork_url": None}
-        assert detect_genre.detect_genre("Artist", None) == {"genre": None, "artwork_url": None}
+        assert asyncio.run(detect_genre.detect_genre(None, "Title")) == {"genre": None, "artwork_url": None}
+        assert asyncio.run(detect_genre.detect_genre("Artist", None)) == {"genre": None, "artwork_url": None}
 
     def test_uses_lookup_track_result_when_it_has_genre(self, monkeypatch):
         monkeypatch.setattr(
             detect_genre,
             "lookup_track",
-            lambda q: {"artist": "A", "title": "B", "genre": "Techno", "artwork_url": "https://x/1.jpg"},
+            lambda q: _async_return(
+                {"artist": "A", "title": "B", "genre": "Techno", "artwork_url": "https://x/1.jpg"}
+            ),
         )
-        result = detect_genre.detect_genre("A", "B")
+        result = asyncio.run(detect_genre.detect_genre("A", "B"))
         assert result == {"genre": "Techno", "artwork_url": "https://x/1.jpg"}
 
     def test_falls_through_to_secondary_sources_when_no_genre_found(self, monkeypatch):
         monkeypatch.setattr(
             detect_genre,
             "lookup_track",
-            lambda q: {"artist": "A", "title": "B", "genre": None, "artwork_url": "https://x/1.jpg"},
+            lambda q: _async_return(
+                {"artist": "A", "title": "B", "genre": None, "artwork_url": "https://x/1.jpg"}
+            ),
         )
         monkeypatch.setattr(detect_genre, "_musicbrainz_genre_lookup", lambda a, t: None)
         monkeypatch.setattr(
@@ -409,15 +423,20 @@ class TestDetectGenre:
             detect_genre, "_lastfm_genre_lookup", lambda a, t: called_lastfm.append(1)
         )
 
-        result = detect_genre.detect_genre("A", "B")
+        result = asyncio.run(detect_genre.detect_genre("A", "B"))
         # Genre comes from TheAudioDB, but the earlier lookup_track artwork
-        # is preserved since TheAudioDB didn't supply its own here.
+        # is preserved since TheAudioDB didn't supply its own here. Last.fm
+        # is queried concurrently alongside MusicBrainz/TheAudioDB now
+        # (rather than only if they both miss), so it IS called here even
+        # though its result ends up unused.
         assert result == {"genre": "House", "artwork_url": "https://x/1.jpg"}
-        assert called_lastfm == []  # never reached -- TheAudioDB already succeeded
+        assert called_lastfm == [1]
 
     def test_keeps_first_artwork_seen_even_if_later_source_has_none(self, monkeypatch):
         monkeypatch.setattr(
-            detect_genre, "lookup_track", lambda q: {"artist": "A", "title": "B", "genre": None, "artwork_url": None}
+            detect_genre,
+            "lookup_track",
+            lambda q: _async_return({"artist": "A", "title": "B", "genre": None, "artwork_url": None}),
         )
         monkeypatch.setattr(
             detect_genre,
@@ -427,13 +446,12 @@ class TestDetectGenre:
         monkeypatch.setattr(
             detect_genre, "_theaudiodb_genre_lookup", lambda a, t: {"genre": "House", "artwork_url": None}
         )
-        result = detect_genre.detect_genre("A", "B")
+        monkeypatch.setattr(detect_genre, "_lastfm_genre_lookup", lambda a, t: None)
+        result = asyncio.run(detect_genre.detect_genre("A", "B"))
         assert result == {"genre": "House", "artwork_url": "https://mb/art.jpg"}
 
     def test_deep_search_used_as_last_resort(self, monkeypatch):
-        monkeypatch.setattr(
-            detect_genre, "lookup_track", lambda q: None
-        )
+        monkeypatch.setattr(detect_genre, "lookup_track", lambda q: _async_return(None))
         monkeypatch.setattr(detect_genre, "_musicbrainz_genre_lookup", lambda a, t: None)
         monkeypatch.setattr(detect_genre, "_theaudiodb_genre_lookup", lambda a, t: None)
         monkeypatch.setattr(detect_genre, "_lastfm_genre_lookup", lambda a, t: None)
@@ -441,19 +459,22 @@ class TestDetectGenre:
             detect_genre, "deep_discogs_lookup", lambda a, t: {"artist": a, "title": t, "genre": "Deep House"}
         )
 
-        assert detect_genre.detect_genre("A", "B", deep_search=False) == {"genre": None, "artwork_url": None}
-        assert detect_genre.detect_genre("A", "B", deep_search=True) == {
+        assert asyncio.run(detect_genre.detect_genre("A", "B", deep_search=False)) == {
+            "genre": None,
+            "artwork_url": None,
+        }
+        assert asyncio.run(detect_genre.detect_genre("A", "B", deep_search=True)) == {
             "genre": "Deep House",
             "artwork_url": None,
         }
 
     def test_nothing_found_anywhere_returns_none_genre(self, monkeypatch):
-        monkeypatch.setattr(detect_genre, "lookup_track", lambda q: None)
+        monkeypatch.setattr(detect_genre, "lookup_track", lambda q: _async_return(None))
         monkeypatch.setattr(detect_genre, "_musicbrainz_genre_lookup", lambda a, t: None)
         monkeypatch.setattr(detect_genre, "_theaudiodb_genre_lookup", lambda a, t: None)
         monkeypatch.setattr(detect_genre, "_lastfm_genre_lookup", lambda a, t: None)
 
-        assert detect_genre.detect_genre("A", "B") == {"genre": None, "artwork_url": None}
+        assert asyncio.run(detect_genre.detect_genre("A", "B")) == {"genre": None, "artwork_url": None}
 
 
 class TestDetectGenreCache:
@@ -472,14 +493,15 @@ class TestDetectGenreCache:
         )
 
         calls = []
-        monkeypatch.setattr(
-            detect_genre,
-            "lookup_track",
-            lambda q: calls.append(q) or {"genre": "Techno", "artwork_url": "https://x/1.jpg"},
-        )
 
-        first = detect_genre.detect_genre("Rob Yancey", "Circe")
-        second = detect_genre.detect_genre("Rob Yancey", "Circe")
+        def fake_lookup_track(q):
+            calls.append(q)
+            return _async_return({"genre": "Techno", "artwork_url": "https://x/1.jpg"})
+
+        monkeypatch.setattr(detect_genre, "lookup_track", fake_lookup_track)
+
+        first = asyncio.run(detect_genre.detect_genre("Rob Yancey", "Circe"))
+        second = asyncio.run(detect_genre.detect_genre("Rob Yancey", "Circe"))
 
         assert first == second == {"genre": "Techno", "artwork_url": "https://x/1.jpg"}
         assert len(calls) == 1  # the network lookup only ran once
@@ -491,10 +513,12 @@ class TestDetectGenreCache:
             detect_genre, "store_genre_lookup", lambda a, t, g, u: stored.append((a, t, g, u))
         )
         monkeypatch.setattr(
-            detect_genre, "lookup_track", lambda q: {"genre": "Techno", "artwork_url": "https://x/1.jpg"}
+            detect_genre,
+            "lookup_track",
+            lambda q: _async_return({"genre": "Techno", "artwork_url": "https://x/1.jpg"}),
         )
 
-        detect_genre.detect_genre("A", "B")
+        asyncio.run(detect_genre.detect_genre("A", "B"))
 
         # store_genre_lookup itself (tested in test_analysis_cache.py) is
         # what decides whether an empty result is actually worth
