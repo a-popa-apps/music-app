@@ -837,7 +837,7 @@ export function Hero() {
                   </button>
                 </div>
                 <div className="col-span-1 hidden text-center lg:block">Genre Tag</div>
-                <div className="col-span-3 text-left lg:col-span-1">Status</div>
+                <div className="col-span-3 text-center lg:col-span-1">Status</div>
               </div>
 
               {results.map((track, i) => (
@@ -913,7 +913,7 @@ export function Hero() {
                       </span>
                     )}
                   </div>
-                  <div className="col-span-3 flex items-center justify-start gap-2 lg:col-span-1">
+                  <div className="col-span-3 flex items-center justify-center gap-2 lg:col-span-1">
                     <span
                       className={`inline-flex items-center gap-1 font-mono text-meta-badge font-bold uppercase ${
                         track.failed ? "text-red-300" : "text-secondary-container"
