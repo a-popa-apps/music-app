@@ -2,7 +2,6 @@ import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { useAuth } from "../hooks/useAuth"
 import { useProfile } from "../hooks/useProfile"
-import { trackEvent } from "../utils/analytics"
 import { createBillingPortalSession, createCheckoutSession } from "../services/api"
 
 const FREE_INCLUDED = [
@@ -51,7 +50,6 @@ export function Pricing() {
     setCheckoutError(null)
     try {
       const token = await user.getIdToken()
-      if (!isPro) trackEvent("begin_checkout", { billing_cycle: billing })
       const url = isPro
         ? await createBillingPortalSession(token)
         : await createCheckoutSession(token, billing)

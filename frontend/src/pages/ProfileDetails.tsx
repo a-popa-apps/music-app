@@ -1,10 +1,9 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useState } from "react"
 import { Navigate, useNavigate, useSearchParams } from "react-router-dom"
 import { Header } from "../components/Header"
 import { ProfileFieldsForm, Section } from "../components/ProfileFieldsForm"
 import { UpgradeModal } from "../components/UpgradeModal"
 import { useAuth } from "../hooks/useAuth"
-import { trackEvent } from "../utils/analytics"
 import {
   createBillingPortalSession,
   deleteAccount,
@@ -47,14 +46,6 @@ export function ProfileDetails() {
   const [billingLoading, setBillingLoading] = useState(false)
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const checkoutResult = searchParams.get("checkout")
-  const trackedCheckoutSuccess = useRef(false)
-
-  useEffect(() => {
-    if (checkoutResult === "success" && !trackedCheckoutSuccess.current) {
-      trackedCheckoutSuccess.current = true
-      trackEvent("purchase")
-    }
-  }, [checkoutResult])
 
   useEffect(() => {
     if (!user) return

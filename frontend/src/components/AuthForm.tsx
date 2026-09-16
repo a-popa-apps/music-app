@@ -1,7 +1,6 @@
 import { useState } from "react"
 import { useAuth } from "../hooks/useAuth"
 import { redeemInvite } from "../services/api"
-import { trackEvent } from "../utils/analytics"
 import { checkPwnedPassword } from "../utils/checkPwnedPassword"
 
 type Mode = "login" | "signup"
@@ -77,11 +76,9 @@ export function AuthForm({
         }
         const user = await signUp(email, password)
         await redeemInviteIfAny(await user.getIdToken())
-        trackEvent("sign_up", { method: "email" })
         setView("check-inbox")
       } else {
         const user = await logIn(email, password)
-        trackEvent("login", { method: "email" })
         if (user.emailVerified) {
           onSuccess()
         } else {
@@ -100,7 +97,6 @@ export function AuthForm({
     try {
       const { user, isNewUser } = await signInWithGoogle()
       if (isNewUser) await redeemInviteIfAny(await user.getIdToken())
-      trackEvent(isNewUser ? "sign_up" : "login", { method: "google" })
       onSuccess()
     } catch {
       setError("Google sign-in failed. Please try again.")
