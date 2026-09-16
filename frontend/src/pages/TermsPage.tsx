@@ -4,6 +4,7 @@ export function TermsPage() {
   return (
     <LegalPage
       title="Terms and Conditions"
+      path="/terms"
       sections={[
         {
           heading: "1. Acceptance of Terms",

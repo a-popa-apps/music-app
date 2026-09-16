@@ -4,6 +4,7 @@ export function CookiePolicyPage() {
   return (
     <LegalPage
       title="Cookie Policy"
+      path="/cookie-policy"
       sections={[
         {
           heading: "1. What Are Cookies",

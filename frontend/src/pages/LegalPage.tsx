@@ -1,12 +1,23 @@
 import type { ReactNode } from "react"
 import { Header } from "../components/Header"
+import { useDocumentHead } from "../hooks/useDocumentHead"
 
 interface Section {
   heading: string
   body: ReactNode
 }
 
-export function LegalPage({ title, sections }: { title: string; sections: Section[] }) {
+export function LegalPage({
+  title,
+  path,
+  sections,
+}: {
+  title: string
+  path: string
+  sections: Section[]
+}) {
+  useDocumentHead(title, `${title} for CratePrep, the browser-based BPM, key, and genre detection tool for DJs.`, path)
+
   return (
     <>
       <Header dark />

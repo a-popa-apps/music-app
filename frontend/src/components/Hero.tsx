@@ -2,7 +2,7 @@ import { unzipSync, zipSync, type Unzipped } from "fflate"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useDropzone, type FileRejection } from "react-dropzone"
 import { useNavigate } from "react-router-dom"
-import heroBg from "../assets/hero-bg.jpg"
+import heroBg from "../assets/hero-bg.webp"
 import { useAuth } from "../hooks/useAuth"
 import { useProfile } from "../hooks/useProfile"
 import {

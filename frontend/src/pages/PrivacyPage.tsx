@@ -4,6 +4,7 @@ export function PrivacyPage() {
   return (
     <LegalPage
       title="Privacy Policy"
+      path="/privacy"
       sections={[
         {
           heading: "1. Information We Collect",

@@ -43,11 +43,29 @@ const FAQS = [
   },
 ]
 
+// Generated straight from FAQS (the same content rendered below) so the
+// structured data can never drift out of sync with what's visibly on the
+// page -- Google explicitly disallows FAQPage markup for content that
+// isn't actually visible to the user.
+const FAQ_SCHEMA = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: FAQS.map((faq) => ({
+    "@type": "Question",
+    name: faq.question,
+    acceptedAnswer: {
+      "@type": "Answer",
+      text: faq.answer,
+    },
+  })),
+}
+
 export function FAQ() {
   const [openIndex, setOpenIndex] = useState<number | null>(null)
 
   return (
     <section id="faq" className="relative w-full overflow-hidden bg-black px-4 py-16 lg:px-12">
+      <script type="application/ld+json">{JSON.stringify(FAQ_SCHEMA)}</script>
       <div className="relative z-10 mx-auto flex max-w-4xl flex-col gap-12">
         <div className="flex flex-col gap-1 text-center">
           <span className="font-mono text-meta-badge font-bold uppercase tracking-wider text-secondary-container">

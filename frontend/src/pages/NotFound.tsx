@@ -1,7 +1,10 @@
 import { Link } from "react-router-dom"
 import { Header } from "../components/Header"
+import { useDocumentHead } from "../hooks/useDocumentHead"
 
 export function NotFound() {
+  useDocumentHead("Page Not Found", "This page doesn't exist on CratePrep.", "/404", true)
+
   return (
     <>
       <Header dark />
