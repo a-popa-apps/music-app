@@ -98,6 +98,26 @@ class TestLeadingTrackNumber:
         stem, _, _ = prepare_stem("21 Savage - Bank Account.mp3")
         assert stem == "21 Savage - Bank Account"
 
+    def test_strips_non_zero_padded_track_number_before_a_dash(self):
+        # Real user-reported case: local_dash_split previously took "107"
+        # itself as the artist, since the old zero-padding-only guard let a
+        # 3-digit non-zero-padded track number straight through.
+        stem, _, _ = prepare_stem("107 - Wilted Woman - Lon Lon Night Vision.mp3")
+        assert stem == "Wilted Woman - Lon Lon Night Vision"
+        assert local_dash_split(stem) == ("Wilted Woman", "Lon Lon Night Vision")
+
+    def test_strips_two_digit_non_zero_padded_track_number_before_a_dash(self):
+        stem, _, _ = prepare_stem("11 - Sluts'n'Strings & 909 - Summerbreeze.flac")
+        assert local_dash_split(stem) == ("Sluts'n'Strings & 909", "Summerbreeze")
+
+    def test_does_not_strip_a_number_not_followed_by_a_dash(self):
+        # "50 Cent" isn't zero-padded and isn't followed by a dash -- must
+        # stay part of the artist name either way.
+        stem, _, _ = prepare_stem("50 Cent - In Da Club.mp3")
+        assert stem == "50 Cent - In Da Club"
+        stem, _, _ = prepare_stem("2 Chainz - Riot.mp3")
+        assert stem == "2 Chainz - Riot"
+
 
 class TestGuessSplit:
     def test_two_words(self):

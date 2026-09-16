@@ -43,10 +43,19 @@ WHITESPACE_RUN = re.compile(r"\s{2,}")
 EDGE_JUNK = re.compile(r"^[\s\-_.,]+|[\s\-_.,]+$")
 CATALOG_CODE_AT_END = re.compile(r"\s+[A-Za-z]{2,6}\d{2,5}$")
 LEADING_VINYL_CODE = re.compile(r"^[A-Da-d]{1,2}\d{1,2}[\s.\-_]+")
-# Zero-padded track numbers only ("01", "09") -- real artist names that start
-# with digits (21 Savage, 50 Cent, 2 Chainz) never have a leading zero, so
-# this doesn't collide with them the way a bare "^\d+" strip would.
-LEADING_TRACK_NUMBER = re.compile(r"^0\d{1,2}[\s.\-_]+")
+# Two patterns, since one guard doesn't safely cover both real cases:
+#   1. A zero-padded number ("01", "09") followed by *any* separator,
+#      including a bare space ("01 Song.mp3") -- real artist names that
+#      start with digits (21 Savage, 50 Cent, 2 Chainz) never have a
+#      leading zero, so this doesn't collide with them the way a bare
+#      "^\d+" strip would.
+#   2. A non-zero-padded number ("10", "11", "107") specifically followed
+#      by a dash separator ("107 - Artist - Title.mp3", a real reported
+#      case) -- safe without the zero-padding guard because a real artist
+#      name never starts with a bare "<number> -" of its own (a number
+#      that's actually part of the name is followed directly by a word,
+#      e.g. "21 Savage", not by a dash).
+LEADING_TRACK_NUMBER = re.compile(r"^(?:0\d{1,2}[\s.\-_]+|\d{1,3}\s*[-–—]\s+)")
 TRAILING_LABEL_CREDIT = re.compile(
     r"\s*[-–—]\s*[^-–—]{1,50}\bRecord(?:s|ings)?\b\.?\s*$", re.IGNORECASE
 )

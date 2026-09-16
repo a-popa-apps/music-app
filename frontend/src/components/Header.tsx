@@ -277,7 +277,7 @@ export function Header({ dark = false }: { dark?: boolean }) {
                 onClick={() => setMenuOpen(false)}
                 className={`py-1 text-body-md font-semibold ${overHero ? "text-white" : "text-on-surface"}`}
               >
-                Profile Details
+                Profile
               </Link>
               <Link
                 to="/history"

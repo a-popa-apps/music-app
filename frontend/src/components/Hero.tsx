@@ -679,11 +679,11 @@ export function Hero() {
             <div className="flex w-full flex-col items-center gap-4 rounded border-2 border-white/20 bg-white/10 p-12 text-center backdrop-blur-md">
               <Waveform className="h-9" />
               <h3 className="text-headline-sm text-white">
-                Uploading {fileCount} file{fileCount === 1 ? "" : "s"}...
+                Uploading {fileCount} file{fileCount === 1 ? "" : "s"}...{" "}
+                {Math.round(uploadFraction * 100)}%
               </h3>
               <p className="text-body-md text-white/70">
-                {Math.round(uploadFraction * 100)}% uploaded -- larger lossless batches can take a
-                while to send before analysis even starts.
+                Larger lossless batches can take a while to send before analysis even starts.
               </p>
               <div className="h-2 w-full max-w-md overflow-hidden rounded-full bg-white/20">
                 <div
@@ -815,7 +815,7 @@ export function Hero() {
               )}
               <div className="grid grid-cols-12 items-center bg-white/5 px-6 py-2 font-mono text-meta-badge uppercase tracking-wider text-white/70">
                 <div className="col-span-1 text-center">#</div>
-                <div className="col-span-5">Track Title &amp; Artist</div>
+                <div className="col-span-5 lg:col-span-6">Track Title &amp; Artist</div>
                 <div className="col-span-1 text-center">BPM</div>
                 <div className="col-span-1 text-center">Key</div>
                 <div className="col-span-1 text-center">
@@ -837,7 +837,7 @@ export function Hero() {
                   </button>
                 </div>
                 <div className="col-span-1 hidden text-center lg:block">Genre Tag</div>
-                <div className="col-span-3 text-left lg:col-span-2">Status</div>
+                <div className="col-span-3 text-left lg:col-span-1">Status</div>
               </div>
 
               {results.map((track, i) => (
@@ -857,7 +857,7 @@ export function Hero() {
                     </span>
                     {String(i + 1).padStart(2, "0")}
                   </div>
-                  <div className="col-span-5 flex min-w-0 items-center gap-2 pr-2">
+                  <div className="col-span-5 flex min-w-0 items-center gap-2 pr-2 lg:col-span-6">
                     {!track.failed && zipFiles?.[track.name] && (
                       <button
                         onClick={() => togglePlay(track)}
@@ -913,7 +913,7 @@ export function Hero() {
                       </span>
                     )}
                   </div>
-                  <div className="col-span-3 flex items-center justify-start gap-2 lg:col-span-2">
+                  <div className="col-span-3 flex items-center justify-start gap-2 lg:col-span-1">
                     <span
                       className={`inline-flex items-center gap-1 font-mono text-meta-badge font-bold uppercase ${
                         track.failed ? "text-red-300" : "text-secondary-container"

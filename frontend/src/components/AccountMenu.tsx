@@ -81,7 +81,7 @@ export function AccountMenu({ profile }: { profile: ProfileSettings | null }) {
             <span className="material-symbols-outlined text-[18px]">
               manage_accounts
             </span>
-            Profile Details
+            Profile
           </Link>
           <Link
             to="/history"
