@@ -33,6 +33,7 @@ export function Pricing() {
   const navigate = useNavigate()
   const [billing, setBilling] = useState<"monthly" | "annual">("annual")
   const [checkoutLoading, setCheckoutLoading] = useState(false)
+  const [checkoutError, setCheckoutError] = useState<string | null>(null)
   const price = billing === "annual" ? 5 : 8
   const cadence =
     billing === "annual" ? "/ month (billed annually)" : "/ month"
@@ -47,6 +48,7 @@ export function Pricing() {
       return
     }
     setCheckoutLoading(true)
+    setCheckoutError(null)
     try {
       const token = await user.getIdToken()
       if (!isPro) trackEvent("begin_checkout", { billing_cycle: billing })
@@ -54,7 +56,8 @@ export function Pricing() {
         ? await createBillingPortalSession(token)
         : await createCheckoutSession(token, billing)
       window.location.href = url
-    } catch {
+    } catch (err) {
+      setCheckoutError(err instanceof Error ? err.message : "Something went wrong. Please try again.")
       setCheckoutLoading(false)
     }
   }
@@ -190,6 +193,9 @@ export function Pricing() {
                 >
                   {checkoutLoading ? "Loading..." : isPro ? "Manage Billing" : "Get CratePrep Pro"}
                 </button>
+                {checkoutError && (
+                  <p className="mt-3 text-center text-body-sm text-red-400">{checkoutError}</p>
+                )}
               </div>
             </div>
           </div>
