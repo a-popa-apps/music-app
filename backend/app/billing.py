@@ -96,7 +96,7 @@ def create_checkout_session(uid: str, billing_cycle: str, success_url: str, canc
         mode="subscription",
         line_items=[{"price": price_id, "quantity": 1}],
         allow_promotion_codes=True,
-        subscription_data={"trial_period_days": TRIAL_DAYS, "metadata": {"uid": uid}},
+        subscription_data={"metadata": {"uid": uid}},
         metadata={"uid": uid},
         success_url=success_url,
         cancel_url=cancel_url,
