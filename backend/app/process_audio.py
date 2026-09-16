@@ -23,6 +23,7 @@ from .detect_energy import detect_energy
 from .detect_genre import detect_genre, fetch_artwork, lookup_track
 from .detect_key import detect_key
 from .playlist import build_playlist
+from .preview_cache import get_cached_preview, store_preview
 from .read_tags import read_embedded_tags
 from .write_tags import write_tags
 
@@ -288,10 +289,21 @@ async def _analyze_and_tag(
         artwork_url = cached.get("artwork_url")
 
         if needs_preview:
-            preview_result = await run_isolated(PROCESS_CONCURRENCY, _run_preview_only, content, ext)
-            preview_content = preview_result.get("preview_content")
-            if "preview_error" in preview_result:
-                entry["preview_error"] = preview_result["preview_error"]
+            # The exact-match cache above only ever covers BPM/key/energy/
+            # genre -- it never skips this, since a preview is regenerated
+            # from scratch (full decode + ffmpeg re-encode) on every request
+            # regardless of that cache. This local-disk cache is what
+            # actually makes a same-file retry (e.g. re-uploading a batch
+            # right after a crash) fast for AIFF files, which otherwise pay
+            # this full cost again even on an exact-match hit.
+            preview_content = get_cached_preview(file_hash)
+            if preview_content is None:
+                preview_result = await run_isolated(PROCESS_CONCURRENCY, _run_preview_only, content, ext)
+                preview_content = preview_result.get("preview_content")
+                if "preview_error" in preview_result:
+                    entry["preview_error"] = preview_result["preview_error"]
+                elif preview_content is not None:
+                    store_preview(file_hash, preview_content)
     else:
         artist, title, genre, name_debug = _resolve_artist_title_genre(
             stem, deep_search, embedded_tags=embedded_tags, ai_cleanup=ai_cleanup
@@ -337,6 +349,8 @@ async def _analyze_and_tag(
         }
         if preview_error:
             entry["preview_error"] = preview_error
+        elif preview_content is not None:
+            store_preview(file_hash, preview_content)
         bpm = analysis.get("bpm")
         camelot = analysis.get("camelot")
         tonality = analysis.get("tonality")

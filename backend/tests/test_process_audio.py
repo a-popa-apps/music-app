@@ -13,7 +13,7 @@ pytest.importorskip("essentia")
 
 from fastapi import UploadFile
 
-from app import process_audio
+from app import preview_cache, process_audio
 
 
 def _make_wav(freq: float = 220, duration: float = 1, sr: int = 22050) -> bytes:
@@ -189,11 +189,48 @@ def test_aiff_analysis_and_preview_share_a_single_isolated_call(monkeypatch):
     assert calls == ["_run_essentia_analysis"]
 
 
-def test_cached_aiff_regenerates_preview_via_its_own_isolated_call(monkeypatch):
+def test_cached_aiff_with_a_cold_preview_cache_regenerates_via_its_own_isolated_call(monkeypatch):
     # On an exact-match cache hit, BPM/key/energy are already known (no
-    # analysis needed), but the preview isn't cached and still needs
-    # regenerating -- via its own single isolated call, not the combined
-    # analysis+preview one (there's no analysis to bundle it with here).
+    # analysis needed). The preview has its own separate, local-disk-only
+    # cache (see preview_cache.py) that can be cold even when the
+    # Firestore exact-match cache is warm -- e.g. after an instance
+    # restart wipes the disk cache but Firestore's entry persists forever.
+    # That case still needs its own single isolated call to regenerate the
+    # preview, not the combined analysis+preview one (there's no analysis
+    # to bundle it with here).
+    store: dict = {}
+    monkeypatch.setattr(process_audio, "get_exact_match", lambda h: store.get(h))
+    monkeypatch.setattr(process_audio, "store_exact_match", lambda h, entry: store.__setitem__(h, entry))
+
+    content = _make_aiff(200)
+    asyncio.run(process_audio.build_zip([_upload("Artist - Title.aiff", content)]))
+
+    # Simulate the preview disk cache being cold (e.g. a fresh instance)
+    # while the exact-match cache above stays warm.
+    monkeypatch.setattr(preview_cache, "CACHE_DIR", preview_cache.CACHE_DIR + "-cold")
+
+    real_run_isolated = process_audio.run_isolated
+    calls = []
+
+    async def spy(max_workers, func, *args):
+        calls.append(func.__name__)
+        return await real_run_isolated(max_workers, func, *args)
+
+    monkeypatch.setattr(process_audio, "run_isolated", spy)
+
+    _, manifest = asyncio.run(process_audio.build_zip([_upload("Artist - Title.aiff", content)]))
+
+    assert calls == ["_run_preview_only"]
+    entry = next(iter(manifest.values()))
+    assert entry.get("preview_filename")
+
+
+def test_cached_aiff_with_a_warm_preview_cache_skips_isolated_call_entirely(monkeypatch):
+    # This is the actual point of preview_cache.py: a same-file retry
+    # (e.g. re-uploading a batch right after a crash) should skip not just
+    # the essentia analysis (via the exact-match cache) but also the full
+    # decode+re-encode that preview generation would otherwise redo on
+    # every single request regardless of that cache.
     store: dict = {}
     monkeypatch.setattr(process_audio, "get_exact_match", lambda h: store.get(h))
     monkeypatch.setattr(process_audio, "store_exact_match", lambda h, entry: store.__setitem__(h, entry))
@@ -212,7 +249,7 @@ def test_cached_aiff_regenerates_preview_via_its_own_isolated_call(monkeypatch):
 
     _, manifest = asyncio.run(process_audio.build_zip([_upload("Artist - Title.aiff", content)]))
 
-    assert calls == ["_run_preview_only"]
+    assert calls == []
     entry = next(iter(manifest.values()))
     assert entry.get("preview_filename")
 
