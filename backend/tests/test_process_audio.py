@@ -87,6 +87,19 @@ def test_build_zip_processes_multiple_files_in_order():
     assert len(names) == 5
 
 
+def test_build_zip_capitalizes_lowercase_artist_and_title():
+    # A filename ripped as all-lowercase (a common real case: exported from
+    # some source that didn't preserve casing) should still show up with a
+    # capitalized artist/title in the results table, not verbatim lowercase.
+    files = [_upload("kaytranada - lite spots.wav", _make_wav(220))]
+
+    _, manifest = asyncio.run(process_audio.build_zip(files))
+
+    entry = next(iter(manifest.values()))
+    assert entry["artist"] == "Kaytranada"
+    assert entry["title"] == "Lite spots"
+
+
 def test_build_zip_reuses_cached_analysis_for_identical_bytes(monkeypatch):
     # Two different uploads of the exact same file (e.g. two different
     # users) shouldn't pay for essentia analysis or genre lookups twice --

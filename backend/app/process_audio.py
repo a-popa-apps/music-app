@@ -88,6 +88,15 @@ def _normalized_artist(text: str) -> str:
     return re.sub(r"[^a-z0-9]", "", text.lower())
 
 
+def _capitalize_first(text: str | None) -> str | None:
+    # Only the first character -- filenames/catalog matches routinely come
+    # back all-lowercase (a ripped-from-filename guess, a lowercase tag),
+    # but forcing every word to title case would also mangle deliberate
+    # stylization elsewhere in the string (DJ Q-Bert, will.i.am's later
+    # letters, etc.), which this doesn't touch.
+    return text[0].upper() + text[1:] if text else text
+
+
 def _resolve_artist_title_genre(
     stem: str,
     deep_search: bool = False,
@@ -273,9 +282,13 @@ async def _analyze_and_tag(
             cached.get("bpm"),
         )
         entry: dict = {
+            # _capitalize_first here too, not just on the cache-miss path --
+            # an entry cached before this fix shipped can still have a
+            # lowercase artist/title, and there's no cache expiry to
+            # otherwise correct it.
             "duration_seconds": get_duration_seconds(content, ext),
-            "artist": cached.get("artist"),
-            "title": cached.get("title"),
+            "artist": _capitalize_first(cached.get("artist")),
+            "title": _capitalize_first(cached.get("title")),
             "name_source": cached.get("name_source"),
             "bpm": cached.get("bpm"),
             "key": cached.get("key"),
@@ -308,6 +321,7 @@ async def _analyze_and_tag(
         artist, title, genre, name_debug = _resolve_artist_title_genre(
             stem, deep_search, embedded_tags=embedded_tags, ai_cleanup=ai_cleanup
         )
+        artist, title = _capitalize_first(artist), _capitalize_first(title)
         # Internal-only -- used below to fetch and embed cover art, not
         # meant for the manifest/results table, so it doesn't ride along
         # in name_debug.

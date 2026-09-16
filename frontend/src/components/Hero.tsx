@@ -793,7 +793,7 @@ export function Hero() {
                   </button>
                 </div>
                 <div className="col-span-1 hidden text-center lg:block">Genre Tag</div>
-                <div className="col-span-3 text-right lg:col-span-2">Status</div>
+                <div className="col-span-3 text-left lg:col-span-2">Status</div>
               </div>
 
               {results.map((track, i) => (
@@ -803,7 +803,7 @@ export function Hero() {
                   onDragStart={() => handleRowDragStart(i)}
                   onDragOver={(e) => handleRowDragOver(e, i)}
                   onDragEnd={handleRowDragEnd}
-                  className={`grid grid-cols-12 items-center border-t border-white/10 px-6 py-4 transition-colors hover:bg-white/5 ${
+                  className={`grid grid-cols-12 items-center border-t border-white/10 px-6 py-2.5 transition-colors hover:bg-white/5 ${
                     draggingIndex === i ? "opacity-40" : ""
                   }`}
                 >
@@ -869,7 +869,7 @@ export function Hero() {
                       </span>
                     )}
                   </div>
-                  <div className="col-span-3 flex items-center justify-end gap-2 lg:col-span-2">
+                  <div className="col-span-3 flex items-center justify-start gap-2 lg:col-span-2">
                     <span
                       className={`inline-flex items-center gap-1 font-mono text-meta-badge font-bold uppercase ${
                         track.failed ? "text-red-300" : "text-secondary-container"
