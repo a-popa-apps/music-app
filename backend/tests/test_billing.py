@@ -4,6 +4,7 @@ import time
 from unittest.mock import MagicMock
 
 import pytest
+import stripe
 
 from app import billing, profile_store
 from tests.fake_firestore import FakeCollection
@@ -89,6 +90,43 @@ def test_create_checkout_session_creates_customer_once(fake_users, fake_stripe):
     # second call reuses the stored customer id instead of creating another
     billing.create_checkout_session("uid-1", "annual", "https://x/success", "https://x/cancel")
     fake_stripe.Customer.create.assert_called_once()
+
+
+def test_create_checkout_session_replaces_stale_customer_from_a_different_stripe_mode(fake_users, fake_stripe):
+    # Real incident this guards against: a customer id created under a test
+    # key (or vice versa) is permanently stored on the profile doc, but
+    # test/live are completely separate object spaces in Stripe -- Stripe
+    # rejects any request using that id under a key from the other mode
+    # with an InvalidRequestError, not a 404, and that used to bubble all
+    # the way up and break checkout outright.
+    profile_store.save_settings("uid-1", {})
+    billing._users_collection().document("uid-1").set({"stripe_customer_id": "cus_stale_test_mode"}, merge=True)
+
+    fake_stripe.Customer.retrieve.side_effect = stripe.error.InvalidRequestError(
+        "No such customer: 'cus_stale_test_mode'; a similar object exists in test mode, but a live mode key was "
+        "used to make this request.",
+        param="id",
+    )
+    fake_stripe.Customer.create.return_value = MagicMock(id="cus_fresh_live")
+    fake_stripe.checkout.Session.create.return_value = MagicMock(url="https://checkout.stripe.com/abc")
+
+    url = billing.create_checkout_session("uid-1", "monthly", "https://x/success", "https://x/cancel")
+
+    assert url == "https://checkout.stripe.com/abc"
+    fake_stripe.Customer.create.assert_called_once()
+    assert profile_store.get_settings("uid-1")["stripe_customer_id"] == "cus_fresh_live"
+
+
+def test_create_checkout_session_reuses_customer_that_still_resolves(fake_users, fake_stripe):
+    profile_store.save_settings("uid-1", {})
+    billing._users_collection().document("uid-1").set({"stripe_customer_id": "cus_still_good"}, merge=True)
+    fake_stripe.Customer.retrieve.return_value = MagicMock(id="cus_still_good")
+    fake_stripe.checkout.Session.create.return_value = MagicMock(url="https://checkout.stripe.com/abc")
+
+    billing.create_checkout_session("uid-1", "monthly", "https://x/success", "https://x/cancel")
+
+    fake_stripe.Customer.create.assert_not_called()
+    assert profile_store.get_settings("uid-1")["stripe_customer_id"] == "cus_still_good"
 
 
 def test_create_billing_portal_session_requires_customer(fake_users, fake_stripe):

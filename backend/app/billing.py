@@ -64,7 +64,16 @@ def _user_email(uid: str) -> str | None:
 def _get_or_create_customer(client, uid: str) -> str:
     customer_id = get_settings(uid).get("stripe_customer_id")
     if customer_id:
-        return customer_id
+        try:
+            client.Customer.retrieve(customer_id)
+            return customer_id
+        except stripe.error.InvalidRequestError:
+            # Stale id from a different Stripe mode -- e.g. this account's
+            # customer was created back when STRIPE_SECRET_KEY was a test
+            # key, and test/live are completely separate object spaces, so
+            # it will never resolve under a live key (or vice versa). Fall
+            # through and mint a fresh one instead of failing checkout.
+            pass
 
     customer = client.Customer.create(email=_user_email(uid), metadata={"uid": uid})
     _users_collection().document(uid).set({"stripe_customer_id": customer.id}, merge=True)
