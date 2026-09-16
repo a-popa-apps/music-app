@@ -352,28 +352,58 @@ export class ApiError extends Error {
   }
 }
 
-export async function uploadAndProcess(files: File[], idToken?: string): Promise<Blob> {
+// XMLHttpRequest, not fetch -- fetch has no way to observe request-body
+// upload progress. For a large batch of lossless files, the upload itself
+// (client -> Render) can take a lot longer than the actual analysis, and
+// onUploadProgress is what lets the UI show "uploading" instead of a
+// misleading "processing" the whole time.
+export function uploadAndProcess(
+  files: File[],
+  idToken?: string,
+  onUploadProgress?: (fraction: number) => void
+): Promise<Blob> {
   const formData = new FormData()
   files.forEach((file) => formData.append("files", file))
 
-  const response = await fetch(`${BACKEND_URL}/process`, {
-    method: "POST",
-    headers: idToken ? { Authorization: `Bearer ${idToken}` } : undefined,
-    body: formData,
-  })
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    xhr.open("POST", `${BACKEND_URL}/process`)
+    if (idToken) xhr.setRequestHeader("Authorization", `Bearer ${idToken}`)
+    xhr.responseType = "blob"
 
-  if (!response.ok) {
-    let message = `Processing failed: ${response.status}`
-    try {
-      const body = await response.json()
-      if (typeof body?.detail === "string") message = body.detail
-    } catch {
-      // non-JSON error body, fall back to the generic message
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) onUploadProgress?.(event.loaded / event.total)
     }
-    throw new ApiError(response.status, message)
-  }
+    // Body fully sent to the network -- the browser side of "uploading" is
+    // done even if the server hasn't started responding yet, so this is
+    // the more reliable "upload done" signal vs. waiting on the response.
+    xhr.upload.onloadend = () => onUploadProgress?.(1)
 
-  return response.blob()
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve(xhr.response as Blob)
+        return
+      }
+      const errorBlob = xhr.response as Blob
+      const reader = new FileReader()
+      const fail = (message: string) => reject(new ApiError(xhr.status, message))
+      reader.onload = () => {
+        let message = `Processing failed: ${xhr.status}`
+        try {
+          const body = JSON.parse(reader.result as string)
+          if (typeof body?.detail === "string") message = body.detail
+        } catch {
+          // non-JSON error body, fall back to the generic message
+        }
+        fail(message)
+      }
+      reader.onerror = () => fail(`Processing failed: ${xhr.status}`)
+      reader.readAsText(errorBlob)
+    }
+    xhr.onerror = () => reject(new ApiError(0, "Network error -- the upload didn't reach the server."))
+
+    xhr.send(formData)
+  })
 }
 
 export interface TrackCorrection {

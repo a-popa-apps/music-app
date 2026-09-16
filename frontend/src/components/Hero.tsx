@@ -183,19 +183,29 @@ export function Hero() {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [billingLoading, setBillingLoading] = useState(false)
   const [statusIndex, setStatusIndex] = useState(0)
+  // Separate from `phase === "processing"` -- a large batch of lossless
+  // files can take far longer to *upload* than the server takes to
+  // analyze it, and without this the UI showed "Processing..." (with the
+  // analysis-step messages below) for the entire upload too, which read as
+  // stuck/misleading rather than just slow.
+  const [isUploading, setIsUploading] = useState(false)
+  const [uploadFraction, setUploadFraction] = useState(0)
   // Files react-dropzone silently excluded from the drop (wrong
   // extension/type) -- shown so a batch quietly coming up short of what
   // was actually dropped has a visible explanation instead of none.
   const [skippedFiles, setSkippedFiles] = useState<string[]>([])
 
   useEffect(() => {
-    if (phase !== "processing") return
+    // Gated on !isUploading too -- these are the analysis pipeline's own
+    // steps, so cycling through them while the upload itself is still in
+    // flight would claim work hasn't even started yet.
+    if (phase !== "processing" || isUploading) return
     setStatusIndex(0)
     const id = setInterval(() => {
       setStatusIndex((i) => (i + 1) % PROCESSING_STATUSES.length)
     }, PROCESSING_STATUS_INTERVAL_MS)
     return () => clearInterval(id)
-  }, [phase])
+  }, [phase, isUploading])
   const dragIndex = useRef<number | null>(null)
   const [draggingIndex, setDraggingIndex] = useState<number | null>(null)
   const [energySort, setEnergySort] = useState<"asc" | "desc" | null>(null)
@@ -341,9 +351,14 @@ export function Hero() {
   async function processFiles(files: File[]) {
     setFileCount(files.length)
     setPhase("processing")
+    setIsUploading(true)
+    setUploadFraction(0)
     try {
       const idToken = user ? await user.getIdToken() : undefined
-      const blob = await uploadAndProcess(files, idToken)
+      const blob = await uploadAndProcess(files, idToken, (fraction) => {
+        setUploadFraction(fraction)
+        if (fraction >= 1) setIsUploading(false)
+      })
       const bytes = new Uint8Array(await blob.arrayBuffer())
       const unzipped = unzipSync(bytes)
       let parsed = parseManifest(unzipped)
@@ -368,6 +383,7 @@ export function Hero() {
         setErrorMessage(null)
         setIsQuotaError(false)
       }
+      setIsUploading(false)
       setPhase("error")
     }
   }
@@ -421,6 +437,8 @@ export function Hero() {
     setPlaybackProgress(0)
     setPhase("idle")
     setFileCount(0)
+    setIsUploading(false)
+    setUploadFraction(0)
     setResults([])
     setOriginalResults([])
     setZipFiles(null)
@@ -650,7 +668,26 @@ export function Hero() {
             </div>
           )}
 
-          {phase === "processing" && (
+          {phase === "processing" && isUploading && (
+            <div className="flex w-full flex-col items-center gap-4 rounded border-2 border-white/20 bg-white/10 p-12 text-center backdrop-blur-md">
+              <Waveform className="h-9" />
+              <h3 className="text-headline-sm text-white">
+                Uploading {fileCount} file{fileCount === 1 ? "" : "s"}...
+              </h3>
+              <p className="text-body-md text-white/70">
+                {Math.round(uploadFraction * 100)}% uploaded -- larger lossless batches can take a
+                while to send before analysis even starts.
+              </p>
+              <div className="h-2 w-full max-w-md overflow-hidden rounded-full bg-white/20">
+                <div
+                  className="h-full rounded-full bg-secondary-container transition-[width] duration-300"
+                  style={{ width: `${Math.max(uploadFraction * 100, 3)}%` }}
+                />
+              </div>
+            </div>
+          )}
+
+          {phase === "processing" && !isUploading && (
             <div className="flex w-full flex-col items-center gap-4 rounded border-2 border-white/20 bg-white/10 p-12 text-center backdrop-blur-md">
               <Waveform className="h-9" />
               <h3 className="text-headline-sm text-white">
