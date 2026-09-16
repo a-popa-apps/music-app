@@ -1,15 +1,17 @@
 import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
-import { getStoredConsent, initAnalytics, setAnalyticsConsent } from "../utils/analytics"
+import { getStoredConsent, setAnalyticsConsent } from "../utils/analytics"
 
 const GA_ENABLED = Boolean(import.meta.env.VITE_GA_MEASUREMENT_ID)
 
 export function CookieConsentBanner() {
   const [visible, setVisible] = useState(false)
 
+  // Stored consent is already re-applied to gtag at analytics.ts's module
+  // load, before this (or any other) component even mounts -- this effect
+  // only needs to decide whether the banner itself should show.
   useEffect(() => {
     if (!GA_ENABLED) return
-    initAnalytics()
     setVisible(getStoredConsent() === null)
   }, [])
 

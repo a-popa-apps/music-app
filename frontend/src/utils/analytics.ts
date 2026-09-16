@@ -23,28 +23,6 @@ function gtag(...args: unknown[]) {
   window.dataLayer.push(args)
 }
 
-// Runs as soon as this module is first imported, rather than from a React
-// effect -- module evaluation always happens before any component mounts,
-// so this can't race a sibling component's own mount effect for who sets
-// window.gtag first. It used to run from CookieConsentBanner's effect via
-// initAnalytics(), which meant trackPageView()/trackEvent() calls from a
-// component whose effect happened to fire first (order isn't guaranteed
-// between siblings) silently no-opped on window.gtag being undefined yet.
-// React 19 StrictMode's dev-only double-invoke of effects masked this in
-// development (the second pass usually won the race) but it reproduced
-// every time in a production build, where effects run only once.
-if (GA_MEASUREMENT_ID) {
-  window.gtag = gtag
-  gtag("consent", "default", { analytics_storage: "denied" })
-  gtag("js", new Date())
-  gtag("config", GA_MEASUREMENT_ID, { send_page_view: false })
-
-  const script = document.createElement("script")
-  script.async = true
-  script.src = `https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`
-  document.head.appendChild(script)
-}
-
 export function getStoredConsent(): Consent | null {
   try {
     const value = window.localStorage.getItem(CONSENT_STORAGE_KEY)
@@ -54,14 +32,43 @@ export function getStoredConsent(): Consent | null {
   }
 }
 
-/** Call once on app startup to re-apply a previously stored consent choice,
- * if any (gtag.js itself is already loaded by the time this runs -- see
- * above). */
-export function initAnalytics() {
-  if (!GA_MEASUREMENT_ID) return
+// Runs as soon as this module is first imported, rather than from a React
+// effect -- module evaluation always happens before any component mounts,
+// so this can't race a sibling component's own mount effect. window.gtag
+// itself used to be assigned from a React effect and that alone caused a
+// real bug (see below); a second, subtler version of the same race
+// survived even after that fix: the granted/denied consent re-apply used to
+// run from CookieConsentBanner's mount effect via initAnalytics(), and
+// App.tsx renders <PageViewTracker /> before <CookieConsentBanner /> --
+// React fires sibling effects in mount order, so trackPageView()'s very
+// first call was *always* processed by gtag.js while consent was still the
+// default "denied", before CookieConsentBanner's effect ever got a chance
+// to re-apply a stored "granted" choice. Since send_page_view: false makes
+// that initial call the only page_view a single-page visit ever sends, it
+// was silently dropped by Google's consent gating on every single load,
+// for every returning visitor, regardless of their actual stored consent.
+// Re-applying stored consent here, before any component mounts, removes
+// the dependency on mount order entirely.
+//
+// (The window.gtag assignment itself moved here for the same reason: a
+// component whose effect happened to fire first could previously call
+// trackPageView()/trackEvent() before window.gtag existed. React 19
+// StrictMode's dev-only double-invoke of effects masked this in
+// development -- the second pass usually won the race -- but it reproduced
+// every time in a production build, where effects run only once.)
+if (GA_MEASUREMENT_ID) {
+  window.gtag = gtag
+  gtag("consent", "default", { analytics_storage: "denied" })
   if (getStoredConsent() === "granted") {
-    window.gtag?.("consent", "update", { analytics_storage: "granted" })
+    gtag("consent", "update", { analytics_storage: "granted" })
   }
+  gtag("js", new Date())
+  gtag("config", GA_MEASUREMENT_ID, { send_page_view: false })
+
+  const script = document.createElement("script")
+  script.async = true
+  script.src = `https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`
+  document.head.appendChild(script)
 }
 
 export function setAnalyticsConsent(consent: Consent) {
