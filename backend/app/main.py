@@ -8,8 +8,9 @@ import mutagen
 import sentry_sdk
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
+from starlette.background import BackgroundTask
 from starlette.concurrency import run_in_threadpool
 
 from . import ai_budget
@@ -596,11 +597,12 @@ async def process(request: Request, files: list[UploadFile] = File(...)):
         except ValueError as e:
             raise HTTPException(402, str(e))
 
-        zip_bytes, _manifest = await build_zip(files)
-        return Response(
-            content=zip_bytes,
+        zip_path, _manifest = await build_zip(files)
+        return FileResponse(
+            zip_path,
             media_type="application/zip",
             headers={"Content-Disposition": "attachment; filename=crateprep-export.zip"},
+            background=BackgroundTask(os.remove, zip_path),
         )
 
     filename_template = None
@@ -653,7 +655,7 @@ async def process(request: Request, files: list[UploadFile] = File(...)):
                 ),
             )
 
-    zip_bytes, manifest = await build_zip(
+    zip_path, manifest = await build_zip(
         files,
         filename_template=filename_template,
         deep_search=deep_search,
@@ -668,10 +670,11 @@ async def process(request: Request, files: list[UploadFile] = File(...)):
     except Exception:
         pass  # don't let a history-write failure block returning the processed zip
 
-    return Response(
-        content=zip_bytes,
+    return FileResponse(
+        zip_path,
         media_type="application/zip",
         headers={"Content-Disposition": "attachment; filename=crateprep-export.zip"},
+        background=BackgroundTask(os.remove, zip_path),
     )
 
 
@@ -715,9 +718,10 @@ async def retag_process(
     if not isinstance(corrections_data, list) or len(corrections_data) != len(files):
         raise HTTPException(400, "corrections must be a list with one entry per file.")
 
-    zip_bytes = await build_corrected_zip(files, corrections_data, filename_template=filename_template)
-    return Response(
-        content=zip_bytes,
+    zip_path = await build_corrected_zip(files, corrections_data, filename_template=filename_template)
+    return FileResponse(
+        zip_path,
         media_type="application/zip",
         headers={"Content-Disposition": "attachment; filename=crateprep-export.zip"},
+        background=BackgroundTask(os.remove, zip_path),
     )

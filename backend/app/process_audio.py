@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import asyncio
 import gc
-import io
 import json
 import logging
 import os
 import re
+import tempfile
 import zipfile
 
 from fastapi import HTTPException, UploadFile
@@ -451,7 +451,7 @@ async def build_corrected_zip(
     files: list[UploadFile],
     corrections: list[dict],
     filename_template: str | None = None,
-) -> bytes:
+) -> str:
     """Re-tags an already-processed batch with user-supplied final values
     instead of running detection again -- used when someone corrects a
     wrong artist/title/genre/BPM in the results table before downloading.
@@ -465,12 +465,15 @@ async def build_corrected_zip(
     caller already spent their quota processing once; this only fixes
     what gets written. One file's failure doesn't lose the rest of the
     batch, mirroring build_zip's own resilience."""
-    buffer = io.BytesIO()
+    # Disk-backed for the same reason as build_zip -- see its own comment.
+    fd, zip_path = tempfile.mkstemp(suffix=".zip")
+    os.close(fd)
+
     seen_names: set[str] = set()
     playlist_tracks: list[tuple[str, float | None]] = []
     manifest = {}
 
-    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zip_file:
         for file, correction in zip(files, corrections):
             original_name = file.filename or "track"
             try:
@@ -521,12 +524,17 @@ async def build_corrected_zip(
                     "original_filename": original_name,
                 }
                 if ext in NEEDS_BROWSER_PREVIEW:
-                    try:
+                    # Isolated the same way as build_zip's own preview
+                    # generation -- this touches essentia/ffmpeg's native
+                    # code too, so a crash here must only kill one worker,
+                    # not the whole server (a direct make_preview_wav() call
+                    # here previously bypassed that protection entirely).
+                    preview_result = await run_isolated(PROCESS_CONCURRENCY, _run_preview_only, content, ext)
+                    preview_content = preview_result.get("preview_content")
+                    if preview_content is not None:
                         preview_name = f"{name}.preview.wav"
-                        zip_file.writestr(preview_name, make_preview_wav(content, ext))
+                        zip_file.writestr(preview_name, preview_content)
                         entry["preview_filename"] = preview_name
-                    except Exception:
-                        pass
                 manifest[name] = entry
                 playlist_tracks.append((name, duration))
             except Exception as e:
@@ -539,8 +547,7 @@ async def build_corrected_zip(
         zip_file.writestr("crateprep-manifest.json", json.dumps(manifest, indent=2))
         zip_file.writestr("crateprep-playlist.m3u8", build_playlist(playlist_tracks))
 
-    buffer.seek(0)
-    return buffer.read()
+    return zip_path
 
 
 async def build_zip(
@@ -549,24 +556,31 @@ async def build_zip(
     deep_search: bool = False,
     enhanced_detection: bool = False,
     ai_cleanup: bool = False,
-) -> tuple[bytes, dict]:
-    buffer = io.BytesIO()
+) -> tuple[str, dict]:
+    # Written straight to a temp file on disk, not an in-memory io.BytesIO --
+    # confirmed via real production crashes that persisted even after
+    # concurrent-decode work was serialized down to one file at a time: the
+    # growing zip itself (original lossless files plus their uncompressed
+    # browser-preview WAVs) is what was actually accumulating, since nothing
+    # was ever written out until the *entire* batch's zip was built. A
+    # 30-track lossless batch can easily add up to gigabytes held in RAM for
+    # the whole request; the same bytes on disk cost nothing the OS can't
+    # absorb. Returns the temp file's path -- the caller is responsible for
+    # streaming it back to the client and deleting it afterward.
+    fd, zip_path = tempfile.mkstemp(suffix=".zip")
+    os.close(fd)
+
     manifest = {}
     seen_names: set[str] = set()
     playlist_tracks: list[tuple[str, float | None]] = []
 
-    # Processed in fixed-size chunks (PROCESS_CONCURRENCY files at a time)
-    # rather than reading and analyzing the whole batch before writing
-    # anything -- that used to hold every file's raw bytes *and* every
-    # file's already-tagged bytes in memory simultaneously (on top of the
-    # growing zip buffer below) before the first byte was written out, so
-    # peak memory scaled with the size of the batch instead of with how
-    # many files are actually being worked on at once. A 50-track lossless
-    # batch could need gigabytes just for that; a chunk of
-    # PROCESS_CONCURRENCY files needs only a small, constant amount
-    # regardless of total batch size, while still analyzing that many
-    # files concurrently for throughput.
-    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+    # Still processed in fixed-size chunks (PROCESS_CONCURRENCY files at a
+    # time) rather than reading and analyzing the whole batch up front --
+    # that would hold every file's raw bytes *and* already-tagged bytes in
+    # memory simultaneously before any of it could be written to the zip
+    # above, so peak memory would still scale with total batch size rather
+    # than with how many files are actually being worked on at once.
+    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zip_file:
         for chunk_start in range(0, len(files), PROCESS_CONCURRENCY):
             chunk = files[chunk_start : chunk_start + PROCESS_CONCURRENCY]
 
@@ -633,5 +647,4 @@ async def build_zip(
         if summary:
             zip_file.writestr("crateprep-summary.json", json.dumps({"summary": summary}))
 
-    buffer.seek(0)
-    return buffer.read(), manifest
+    return zip_path, manifest

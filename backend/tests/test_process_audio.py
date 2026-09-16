@@ -67,7 +67,7 @@ def _upload(name: str, content: bytes) -> UploadFile:
 def test_build_zip_processes_multiple_files_in_order():
     files = [_upload(f"Artist{i} - Title{i}.wav", _make_wav(200 + i * 10)) for i in range(3)]
 
-    zip_bytes, manifest = asyncio.run(process_audio.build_zip(files))
+    zip_path, manifest = asyncio.run(process_audio.build_zip(files))
 
     assert len(manifest) == 3
     original_filenames = {entry.get("original_filename") for entry in manifest.values()}
@@ -81,7 +81,7 @@ def test_build_zip_processes_multiple_files_in_order():
         # post-batch quality summary depends on it always being present.
         assert entry["name_source"] == "local_dash_split"
 
-    with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
+    with zipfile.ZipFile(zip_path) as zf:
         names = zf.namelist()
     # 3 processed tracks + the manifest + the playlist
     assert len(names) == 5
@@ -146,7 +146,7 @@ def test_build_zip_generates_browser_preview_for_aiff_but_not_wav():
         _upload("Artist2 - Title2.wav", _make_wav(200)),
     ]
 
-    zip_bytes, manifest = asyncio.run(process_audio.build_zip(files))
+    zip_path, manifest = asyncio.run(process_audio.build_zip(files))
 
     by_original = {entry["original_filename"]: (name, entry) for name, entry in manifest.items()}
     aiff_name, aiff_entry = by_original["Artist - Title.aiff"]
@@ -155,7 +155,7 @@ def test_build_zip_generates_browser_preview_for_aiff_but_not_wav():
     assert aiff_entry.get("preview_filename") == f"{aiff_name}.preview.wav"
     assert "preview_filename" not in wav_entry
 
-    with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
+    with zipfile.ZipFile(zip_path) as zf:
         names = zf.namelist()
         assert aiff_entry["preview_filename"] in names
         preview_bytes = zf.read(aiff_entry["preview_filename"])
@@ -256,11 +256,11 @@ def test_cached_aiff_with_a_warm_preview_cache_skips_isolated_call_entirely(monk
 
 def test_build_zip_enhanced_detection_threads_through_without_error():
     files = [_upload("Artist - Title.wav", _make_wav(200))]
-    zip_bytes, manifest = asyncio.run(process_audio.build_zip(files, enhanced_detection=True))
+    zip_path, manifest = asyncio.run(process_audio.build_zip(files, enhanced_detection=True))
     entry = next(iter(manifest.values()))
     assert entry["bpm"] is not None
     assert entry["key"] is not None
-    with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
+    with zipfile.ZipFile(zip_path) as zf:
         names = zf.namelist()
     assert "crateprep-manifest.json" in names
     assert "crateprep-playlist.m3u8" in names
@@ -304,9 +304,9 @@ def test_build_zip_includes_batch_summary_when_available(monkeypatch):
     )
     files = [_upload(f"Artist{i} - Title{i}.wav", _make_wav(200 + i * 10)) for i in range(2)]
 
-    zip_bytes, _ = asyncio.run(process_audio.build_zip(files))
+    zip_path, _ = asyncio.run(process_audio.build_zip(files))
 
-    with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
+    with zipfile.ZipFile(zip_path) as zf:
         assert "crateprep-summary.json" in zf.namelist()
         summary = json.loads(zf.read("crateprep-summary.json"))
     assert summary == {"summary": "Mostly house, energy builds."}
@@ -316,9 +316,9 @@ def test_build_zip_omits_summary_file_when_none_returned(monkeypatch):
     monkeypatch.setattr(process_audio, "generate_batch_summary", lambda manifest: None)
     files = [_upload("Artist - Title.wav", _make_wav(200))]
 
-    zip_bytes, _ = asyncio.run(process_audio.build_zip(files))
+    zip_path, _ = asyncio.run(process_audio.build_zip(files))
 
-    with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
+    with zipfile.ZipFile(zip_path) as zf:
         assert "crateprep-summary.json" not in zf.namelist()
 
 
@@ -535,9 +535,9 @@ def test_build_corrected_zip_writes_supplied_values_not_detected_ones():
         }
     ]
 
-    zip_bytes = asyncio.run(process_audio.build_corrected_zip(files, corrections))
+    zip_path = asyncio.run(process_audio.build_corrected_zip(files, corrections))
 
-    with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
+    with zipfile.ZipFile(zip_path) as zf:
         manifest = json.loads(zf.read("crateprep-manifest.json"))
         [name] = [n for n in zf.namelist() if n.endswith(".wav")]
         tagged_content = zf.read(name)
@@ -572,9 +572,9 @@ def test_build_corrected_zip_matches_files_to_corrections_positionally():
         {"artist": "Artist B", "title": "Title B"},
     ]
 
-    zip_bytes = asyncio.run(process_audio.build_corrected_zip(files, corrections))
+    zip_path = asyncio.run(process_audio.build_corrected_zip(files, corrections))
 
-    with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
+    with zipfile.ZipFile(zip_path) as zf:
         manifest = json.loads(zf.read("crateprep-manifest.json"))
 
     original_filenames = {entry["original_filename"] for entry in manifest.values()}
@@ -588,13 +588,13 @@ def test_build_corrected_zip_applies_filename_template():
     files = [_upload("track.wav", _make_wav(200))]
     corrections = [{"artist": "The Artist", "title": "The Title", "bpm": 128.0, "camelot": "8A"}]
 
-    zip_bytes = asyncio.run(
+    zip_path = asyncio.run(
         process_audio.build_corrected_zip(
             files, corrections, filename_template="{bpm} - {artist} - {title}"
         )
     )
 
-    with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
+    with zipfile.ZipFile(zip_path) as zf:
         [name] = [n for n in zf.namelist() if n.endswith(".wav")]
 
     assert name.startswith("128 - The Artist - The Title")
@@ -607,9 +607,9 @@ def test_build_corrected_zip_dedupes_names_that_collide():
         {"artist": "Same Artist", "title": "Same Title"},
     ]
 
-    zip_bytes = asyncio.run(process_audio.build_corrected_zip(files, corrections))
+    zip_path = asyncio.run(process_audio.build_corrected_zip(files, corrections))
 
-    with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
+    with zipfile.ZipFile(zip_path) as zf:
         names = [n for n in zf.namelist() if n.endswith(".wav")]
 
     assert len(names) == 2
@@ -633,13 +633,13 @@ def test_build_zip_embeds_catalog_artwork_when_found(monkeypatch):
     )
 
     files = [_upload("Real Artist - Real Title.wav", _make_wav(200))]
-    zip_bytes, manifest = asyncio.run(process_audio.build_zip(files))
+    zip_path, manifest = asyncio.run(process_audio.build_zip(files))
 
     # Not a manifest field -- internal-only, used to embed the tag itself.
     [entry] = manifest.values()
     assert "artwork_url" not in entry
 
-    with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
+    with zipfile.ZipFile(zip_path) as zf:
         [wav_name] = [n for n in zf.namelist() if n.endswith(".wav")]
         tagged_bytes = zf.read(wav_name)
 
@@ -662,9 +662,9 @@ def test_build_zip_has_no_artwork_tag_when_none_found(monkeypatch):
     )
 
     files = [_upload("Real Artist - Real Title.wav", _make_wav(200))]
-    zip_bytes, _ = asyncio.run(process_audio.build_zip(files))
+    zip_path, _ = asyncio.run(process_audio.build_zip(files))
 
-    with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
+    with zipfile.ZipFile(zip_path) as zf:
         [wav_name] = [n for n in zf.namelist() if n.endswith(".wav")]
         tagged_bytes = zf.read(wav_name)
 

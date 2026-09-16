@@ -1,4 +1,6 @@
 import json
+import os
+import tempfile
 from types import SimpleNamespace
 
 import pytest
@@ -10,6 +12,17 @@ from fastapi.testclient import TestClient
 
 from app import main
 from app.process_audio import MAX_FILES_FREE, MAX_FILES_PRO, validate_files
+
+
+def _write_temp_zip(content: bytes) -> str:
+    """build_zip/build_corrected_zip return a path to a temp file on disk
+    (not bytes directly) -- see process_audio.py's own comment on why. Fakes
+    standing in for them here need to produce a real file for FileResponse
+    to actually serve."""
+    fd, path = tempfile.mkstemp(suffix=".zip")
+    with os.fdopen(fd, "wb") as f:
+        f.write(content)
+    return path
 
 
 @pytest.fixture
@@ -452,7 +465,7 @@ def test_process_requires_files_field(client):
 
 
 async def _fake_build_zip(files, **kwargs):
-    return b"zip bytes", {}
+    return _write_temp_zip(b"zip bytes"), {}
 
 
 def test_process_allows_anonymous_trial_within_limit(client, monkeypatch):
@@ -782,7 +795,7 @@ def test_password_changed_notice_always_returns_sent_true(client, monkeypatch):
 
 
 async def _fake_build_corrected_zip(files, corrections, filename_template=None):
-    return b"corrected zip bytes"
+    return _write_temp_zip(b"corrected zip bytes")
 
 
 def test_retag_requires_files_field(client):
@@ -841,7 +854,7 @@ def test_retag_passes_corrections_through_to_build_corrected_zip(client, monkeyp
     async def fake_build(files, corrections, filename_template=None):
         captured["corrections"] = corrections
         captured["filename_template"] = filename_template
-        return b"zip"
+        return _write_temp_zip(b"zip")
 
     monkeypatch.setattr(main, "build_corrected_zip", fake_build)
 
@@ -866,7 +879,7 @@ def test_retag_uses_filename_template_for_pro_user(client, monkeypatch):
 
     async def fake_build(files, corrections, filename_template=None):
         captured["filename_template"] = filename_template
-        return b"zip"
+        return _write_temp_zip(b"zip")
 
     monkeypatch.setattr(main, "build_corrected_zip", fake_build)
 
@@ -891,7 +904,7 @@ def test_retag_ignores_filename_template_for_free_user(client, monkeypatch):
 
     async def fake_build(files, corrections, filename_template=None):
         captured["filename_template"] = filename_template
-        return b"zip"
+        return _write_temp_zip(b"zip")
 
     monkeypatch.setattr(main, "build_corrected_zip", fake_build)
 
