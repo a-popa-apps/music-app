@@ -365,6 +365,18 @@ export function uploadAndProcess(
   const formData = new FormData()
   files.forEach((file) => formData.append("files", file))
 
+  // event.total (from the upload progress event) isn't a stable
+  // denominator for a multi-file FormData body -- confirmed in practice,
+  // some browsers report it against a partial/streaming estimate early on
+  // and correct it upward mid-upload, which makes the percentage jump up
+  // and then drop back down. The sum of the actual File sizes is fixed
+  // and known upfront, so dividing event.loaded (monotonically
+  // non-decreasing per spec) by that instead gives a smooth 0->100% climb
+  // regardless of what the browser reports as the total. Clamped to 1
+  // since the real wire size is slightly larger (multipart headers/
+  // boundaries), so loaded can end up a bit above this estimate.
+  const totalBytes = files.reduce((sum, file) => sum + file.size, 0)
+
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest()
     xhr.open("POST", `${BACKEND_URL}/process`)
@@ -372,7 +384,7 @@ export function uploadAndProcess(
     xhr.responseType = "blob"
 
     xhr.upload.onprogress = (event) => {
-      if (event.lengthComputable) onUploadProgress?.(event.loaded / event.total)
+      if (totalBytes > 0) onUploadProgress?.(Math.min(1, event.loaded / totalBytes))
     }
     // Body fully sent to the network -- the browser side of "uploading" is
     // done even if the server hasn't started responding yet, so this is

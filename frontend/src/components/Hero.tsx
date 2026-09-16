@@ -357,7 +357,14 @@ export function Hero() {
       const idToken = user ? await user.getIdToken() : undefined
       const blob = await uploadAndProcess(files, idToken, (fraction) => {
         setUploadFraction(fraction)
-        if (fraction >= 1) setIsUploading(false)
+        if (fraction >= 1) {
+          // A short delay, not an immediate flip -- otherwise this and the
+          // uploadFraction update above land in the same render and the
+          // bar swaps to the "Processing" screen before ever actually
+          // being seen at 100%, which read as it resetting partway rather
+          // than completing.
+          setTimeout(() => setIsUploading(false), 400)
+        }
       })
       const bytes = new Uint8Array(await blob.arrayBuffer())
       const unzipped = unzipSync(bytes)
