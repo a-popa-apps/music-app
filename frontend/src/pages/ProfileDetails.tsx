@@ -30,7 +30,7 @@ function quotaResetLabel(): string {
 }
 
 export function ProfileDetails() {
-  const { user, isVerified, loading: authLoading, logOut } = useAuth()
+  const { user, isVerified, loading: authLoading, logOut, resetPassword } = useAuth()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
 
@@ -40,6 +40,7 @@ export function ProfileDetails() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
+  const [resetSent, setResetSent] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [dangerZoneOpen, setDangerZoneOpen] = useState(false)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
@@ -184,6 +185,13 @@ export function ProfileDetails() {
     }
   }
 
+  async function handleChangePassword() {
+    if (!user?.email) return
+    await resetPassword(user.email)
+    setResetSent(true)
+    setTimeout(() => setResetSent(false), 2000)
+  }
+
   async function handleDeleteAccount() {
     if (!user) return
     setDeleting(true)
@@ -261,6 +269,24 @@ export function ProfileDetails() {
             email={user?.email ?? ""}
             onRequestUpgrade={() => setShowUpgradeModal(true)}
           />
+
+          <Section title="Password">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex flex-col gap-1">
+                <span className="text-body-md text-white">{user?.email}</span>
+                <span className="text-body-sm text-white/60">
+                  Sends a password reset link to your email.
+                </span>
+              </div>
+              <button
+                onClick={handleChangePassword}
+                disabled={resetSent}
+                className="whitespace-nowrap rounded-full border border-white/20 px-4 py-2 text-body-sm font-semibold text-white transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {resetSent ? "Email sent!" : "Change password"}
+              </button>
+            </div>
+          </Section>
 
           <Section title="Billing">
             <div className="flex items-center justify-between gap-4">
