@@ -515,12 +515,19 @@ function InvitesTab({
             className="w-full rounded border border-white/20 bg-white/5 px-3 py-2 text-body-md text-white placeholder:text-white/30"
           />
         </label>
-        {(sendError || error) && <p className="text-body-sm text-red-400">{sendError ?? error}</p>}
+        {sendError && <p className="text-body-sm text-red-400">{sendError}</p>}
       </Card>
 
       <Card>
         <h3 className="text-headline-sm text-white">All invites</h3>
-        {!invites ? (
+        {error && !invites ? (
+          <p className="text-body-md text-red-400">
+            {error}{" "}
+            <button onClick={onReload} className="underline hover:text-red-300">
+              Retry
+            </button>
+          </p>
+        ) : !invites ? (
           <p className="text-body-md text-white/60">Loading...</p>
         ) : invites.length === 0 ? (
           <p className="text-body-md text-white/60">No invites sent yet.</p>
