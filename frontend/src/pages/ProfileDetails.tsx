@@ -52,9 +52,17 @@ export function ProfileDetails() {
   useEffect(() => {
     if (checkoutResult === "success" && !trackedCheckoutSuccess.current) {
       trackedCheckoutSuccess.current = true
-      trackEvent("purchase")
+      const billingCycle = searchParams.get("billing_cycle")
+      // GA4's Monetization reports need value/currency to show actual
+      // revenue, not just a purchase count -- these amounts mirror
+      // Pricing.tsx's displayed prices (keep both in sync with the real
+      // Stripe prices if those ever change), since the checkout session
+      // itself doesn't hand anything back to success_url beyond what
+      // /billing/checkout explicitly appended (see main.py).
+      const value = billingCycle === "annual" ? 60 : billingCycle === "monthly" ? 8 : undefined
+      trackEvent("purchase", { value, currency: "usd", billing_cycle: billingCycle ?? undefined })
     }
-  }, [checkoutResult])
+  }, [checkoutResult, searchParams])
 
   useEffect(() => {
     if (!user) return

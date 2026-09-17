@@ -12,6 +12,7 @@ import {
   uploadAndProcess,
   type TrackCorrection,
 } from "../services/api"
+import { trackEvent } from "../utils/analytics"
 import { buildPlaylist } from "../utils/buildPlaylist"
 import { suggestSetOrder } from "../utils/suggestSetOrder"
 import { TrackWaveform } from "./TrackWaveform"
@@ -353,6 +354,18 @@ export function Hero() {
     setPhase("processing")
     setIsUploading(true)
     setUploadFraction(0)
+
+    // The one event every other funnel report (activation, free->Pro
+    // conversion, drop-off) actually depends on -- without this, GA has no
+    // visibility into the app's core action at all, only auth/billing.
+    const eventParams = {
+      track_count: files.length,
+      plan: profile?.plan ?? "free",
+      enhanced_detection: Boolean(isPro && profile?.enhanced_detection),
+      anonymous: !user,
+    }
+    trackEvent("process_started", eventParams)
+
     try {
       const idToken = user ? await user.getIdToken() : undefined
       const blob = await uploadAndProcess(files, idToken, (fraction) => {
@@ -379,10 +392,13 @@ export function Hero() {
       setOriginalResults(parsed)
       setAiSummary(parseBatchSummary(unzipped))
       setPhase("done")
+      trackEvent("process_completed", eventParams)
     } catch (err) {
+      let quotaError = false
       if (err instanceof ApiError) {
         setErrorMessage(err.message)
-        setIsQuotaError(err.status === 402)
+        quotaError = err.status === 402
+        setIsQuotaError(quotaError)
       } else {
         // Not an ApiError at all -- a real network failure (timeout,
         // connection refused), not a response the backend actually sent.
@@ -392,6 +408,7 @@ export function Hero() {
       }
       setIsUploading(false)
       setPhase("error")
+      trackEvent("process_failed", { ...eventParams, quota_error: quotaError })
     }
   }
 

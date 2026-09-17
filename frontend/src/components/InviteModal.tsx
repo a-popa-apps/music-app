@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import { createPortal } from "react-dom"
 import { useAuth } from "../hooks/useAuth"
 import { ApiError, getMyInvites, sendInvite, type Invite } from "../services/api"
+import { trackEvent } from "../utils/analytics"
 
 // Deliberately collapses "existing_user" into the same "Sent" label as
 // "pending" -- the whole point of that status server-side is to avoid
@@ -58,6 +59,7 @@ export function InviteModal({ onClose }: { onClose: () => void }) {
       setName("")
       setEmail("")
       setJustSent(true)
+      trackEvent("invite_sent")
       loadInvites()
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Couldn't send invite. Try again.")

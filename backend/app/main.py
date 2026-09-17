@@ -590,7 +590,11 @@ def billing_checkout(body: CheckoutRequest, request: Request):
         url = create_checkout_session(
             uid,
             body.billing_cycle,
-            success_url=f"{base}/profile?checkout=success",
+            # billing_cycle round-trips through Stripe's hosted checkout so
+            # the frontend can report an accurate purchase value to GA
+            # after redirect, without a second lookup -- Stripe doesn't
+            # pass anything back to success_url on its own.
+            success_url=f"{base}/profile?checkout=success&billing_cycle={body.billing_cycle}",
             cancel_url=f"{base}/profile?checkout=cancelled",
         )
         return {"url": url}
