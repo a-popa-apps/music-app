@@ -1,3 +1,4 @@
+import { Analytics } from "@vercel/analytics/react"
 import { useEffect } from "react"
 import { Route, Routes, useLocation } from "react-router-dom"
 import { CookieConsentBanner } from "./components/CookieConsentBanner"
@@ -71,6 +72,7 @@ function App() {
       <PageViewTracker />
       <FeedbackWidget />
       <CookieConsentBanner />
+      <Analytics />
     </>
   )
 }
