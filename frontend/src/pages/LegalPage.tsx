@@ -10,10 +10,12 @@ interface Section {
 export function LegalPage({
   title,
   path,
+  lastUpdated,
   sections,
 }: {
   title: string
   path: string
+  lastUpdated: string
   sections: Section[]
 }) {
   useDocumentHead(title, `${title} for CratePrep, the browser-based BPM, key, and genre detection tool for DJs.`, path)
@@ -23,14 +25,8 @@ export function LegalPage({
       <Header dark />
       <div className="min-h-screen w-full bg-black px-4 py-12 pt-32">
         <div className="mx-auto max-w-2xl">
-          <div className="mb-6 rounded border border-orange-400/30 bg-orange-500/10 px-4 py-3 text-body-sm text-orange-300">
-            <strong>Draft placeholder.</strong> This page is a structural
-            skeleton, not reviewed legal text. Replace this content with
-            real legal copy (ideally reviewed by a lawyer or a proper
-            policy generator) before any public launch.
-          </div>
-
-          <h1 className="mb-8 text-headline-lg text-white">{title}</h1>
+          <h1 className="mb-1 text-headline-lg text-white">{title}</h1>
+          <p className="mb-8 text-body-sm text-white/50">Last updated: {lastUpdated}</p>
 
           <div className="flex flex-col gap-6 rounded border border-white/10 bg-white/10 p-8 backdrop-blur-md">
             {sections.map((section) => (
