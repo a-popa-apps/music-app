@@ -1,4 +1,5 @@
 import type { ReactNode } from "react"
+import { Footer } from "../components/Footer"
 import { Header } from "../components/Header"
 import { useDocumentHead } from "../hooks/useDocumentHead"
 
@@ -40,6 +41,7 @@ export function LegalPage({
           </div>
         </div>
       </div>
+      <Footer />
     </>
   )
 }
