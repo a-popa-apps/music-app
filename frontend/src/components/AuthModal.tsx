@@ -10,7 +10,13 @@ import { AuthForm } from "./AuthForm"
 // (backdrop-filter), which creates a new containing block for
 // position:fixed descendants, so a plain nested `fixed inset-0` here would
 // size itself against the header bar instead of the viewport.
-export function AuthModal({ onClose }: { onClose: () => void }) {
+export function AuthModal({
+  onClose,
+  initialMode,
+}: {
+  onClose: () => void
+  initialMode?: "login" | "signup"
+}) {
   return createPortal(
     <div
       className="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
@@ -34,7 +40,7 @@ export function AuthModal({ onClose }: { onClose: () => void }) {
           </span>
         </div>
 
-        <AuthForm onSuccess={onClose} />
+        <AuthForm onSuccess={onClose} initialMode={initialMode} />
       </div>
     </div>,
     document.body

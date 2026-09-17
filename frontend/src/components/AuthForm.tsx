@@ -37,17 +37,19 @@ function firebaseErrorMessage(error: unknown): string {
 export function AuthForm({
   onSuccess,
   initialEmail,
+  initialMode,
   inviteToken,
   inviteBanner,
 }: {
   onSuccess: () => void
   initialEmail?: string
+  initialMode?: Mode
   inviteToken?: string
   inviteBanner?: string
 }) {
   const { signUp, logIn, signInWithGoogle, resendVerification } = useAuth()
 
-  const [mode, setMode] = useState<Mode>(inviteToken ? "signup" : "login")
+  const [mode, setMode] = useState<Mode>(initialMode ?? (inviteToken ? "signup" : "login"))
   const [view, setView] = useState<View>("form")
   const [email, setEmail] = useState(initialEmail ?? "")
   const [password, setPassword] = useState("")
