@@ -657,7 +657,7 @@ export function Hero() {
         <p className="mb-10 max-w-2xl text-body-lg text-white/80">
           Drop your messy downloads. Get back clean filenames and tracks
           tagged with verified BPM and keys, ready to drop straight into
-          whatever DJ software you use.
+          your playlists.
         </p>
 
         <div className="w-full text-left">
