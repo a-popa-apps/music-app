@@ -61,7 +61,10 @@ export function AuthForm({
   // post-auth call here (verification email, welcome email) -- a failure to
   // redeem shouldn't stop someone who just successfully signed up.
   async function redeemInviteIfAny(idToken: string) {
-    if (inviteToken) await redeemInvite(idToken, inviteToken)
+    if (inviteToken) {
+      await redeemInvite(idToken, inviteToken)
+      trackEvent("invite_redeemed")
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {

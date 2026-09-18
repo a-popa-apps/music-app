@@ -44,6 +44,7 @@ export function Pricing() {
 
   async function handleGetPro() {
     if (!user || !isVerified) {
+      trackEvent("cta_click", { location: "pricing_pro" })
       setAuthModalOpen(true)
       return
     }
@@ -117,7 +118,10 @@ export function Pricing() {
                     </div>
                   ) : (
                     <button
-                      onClick={() => setAuthModalOpen(true)}
+                      onClick={() => {
+                        trackEvent("cta_click", { location: "pricing_free" })
+                        setAuthModalOpen(true)
+                      }}
                       className="mt-auto w-full rounded-full border border-white/20 bg-white/10 px-6 py-4 text-center text-headline-sm font-semibold text-white transition-colors hover:bg-white/15"
                     >
                       Get Started Free

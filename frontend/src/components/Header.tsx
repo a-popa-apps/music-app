@@ -4,6 +4,7 @@ import { AccountMenu } from "./AccountMenu"
 import { AuthModal } from "./AuthModal"
 import { useAuth } from "../hooks/useAuth"
 import { useProfile } from "../hooks/useProfile"
+import { trackEvent } from "../utils/analytics"
 
 const NAV_LINKS = [
   { label: "How it works", href: "/#how-it-works" },
@@ -154,7 +155,10 @@ export function Header({ dark = false }: { dark?: boolean }) {
             <>
               {!loggedIn && (
                 <button
-                  onClick={() => setAuthModalOpen(true)}
+                  onClick={() => {
+                    trackEvent("cta_click", { location: "header_sign_in" })
+                    setAuthModalOpen(true)
+                  }}
                   className={`text-body-sm font-semibold transition-colors ${
                     overHero
                       ? "text-white/80 hover:text-white"
@@ -173,6 +177,7 @@ export function Header({ dark = false }: { dark?: boolean }) {
                 <div className="relative hidden md:block">
                   <a
                     href="/#pricing"
+                    onClick={() => trackEvent("cta_click", { location: "header_go_pro" })}
                     className="hidden items-center justify-center rounded-full bg-secondary-container px-6 py-2 text-body-sm font-semibold text-white shadow-[0_4px_16px_rgba(255,107,53,0.4)] transition-transform hover:scale-[1.03] active:scale-95 md:inline-flex"
                   >
                     Go Pro
@@ -280,6 +285,7 @@ export function Header({ dark = false }: { dark?: boolean }) {
           ) : (
             <button
               onClick={() => {
+                trackEvent("cta_click", { location: "header_sign_in" })
                 setMenuOpen(false)
                 setAuthModalOpen(true)
               }}

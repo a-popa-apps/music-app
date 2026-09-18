@@ -422,6 +422,14 @@ export function Hero() {
   function handleDownload() {
     if (!zipFiles) return
     const reordered = isReordered(results)
+    // The actual "got real value" moment -- process_completed only means the
+    // server finished, not that the user ever took their files.
+    trackEvent("download_export", {
+      track_count: results.length,
+      reordered,
+      plan: profile?.plan ?? "free",
+      anonymous: !user,
+    })
     const width = String(results.length).length
     const exportTracks = results.map((track, i) => ({
       ...track,
