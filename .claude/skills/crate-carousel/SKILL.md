@@ -53,6 +53,32 @@ this file is the frozen spec so future sessions don't have to.
   ```
   Wrap the icon+label in one `display:flex; align-items:center; gap:10px;`
   div. Omit entirely on the closer slide (nothing left to swipe to).
+- **Bottom row (`@crateprep` + swipe cue) placement -- two valid patterns,
+  do not mix them up.** Getting this wrong is a real bug that happened once:
+  the handle/swipe ended up flush against the slide edges instead of inset
+  to match the content. There are exactly two correct structures, chosen by
+  whether the content block above already fills the artboard via
+  `flex-grow:1` with its own `padding:88px`:
+  - **Hook / Soft-CTA / Closer** (content block is `flex-grow:1;
+    padding:88px;` and does NOT itself contain the bottom row): the bottom
+    row is a SIBLING div, placed after the content block, and MUST carry
+    its own explicit padding to recreate the 88px side inset --
+    `padding: 0 88px <bottom>px 88px;` where `<bottom>` is 56px (Hook,
+    Closer) or 48px (Soft-CTA). Never just `padding-top` here -- with no
+    left/right padding the handle and swipe cue render flush against the
+    left/right edges.
+  - **Middle tip slides**: the bottom row is NESTED inside the content div
+    (which already has `padding:88px` on all sides), placed as the last
+    child after the kicker and the body-block. It only needs
+    `padding-top: 48px;` for the gap above it -- the 88px side/bottom inset
+    comes for free from the parent's own padding. Do NOT pull it out to be
+    a sibling of content, and do NOT give it its own side padding on top of
+    the parent's (that would double the inset).
+  - If you're ever unsure which pattern a given slide needs, check whether
+    that slide's content block is `flex-grow:1` with the h1/caption
+    centered by a nested `body-block` div (-> tip pattern, nest the row) or
+    whether content is a plain centered block with nothing to nest into
+    (-> sibling pattern, give the row its own full padding).
 
 ## Effect layers (every artboard, in this exact stacking order, bottom to top)
 
@@ -179,6 +205,66 @@ download/re-upload, and returns the new canvas's own `/_blob/<id>` to
 reference. If that source canvas is ever deleted or inaccessible, fall back
 to the CSS-only light-leak (step 4 above works with zero external assets)
 and mention to the user that the photo-texture layer was skipped.
+
+## Exporting slides as numbered PNGs
+
+If the user asks for downloadable/numbered PNGs of a carousel (e.g. "give
+me a download button" or "export these as images"), do NOT build the
+exporter as client-side JS inside a published Artifact (e.g. `dom-to-image`
++ `JSZip` running in the Artifact's own sandbox). That was tried once and
+confirmed by the user to visibly break fidelity -- `mix-blend-mode` and the
+SVG `feTurbulence` grain filter don't reproduce correctly through a DOM-to-
+canvas JS reimplementation, because it repaints CSS itself instead of using
+the browser's real rasterizer.
+
+The correct approach is to render server-side with a real browser engine,
+bypassing the Artifact sandbox entirely, then hand the files to the user
+directly:
+
+1. Read each artboard's current `.dc.html` source directly from the live
+   canvas (or from this session's cached copies) and copy its inner root
+   `<div style="width:1080px...">...</div>` **verbatim** into a plain local
+   static HTML file -- one `<div id="slide-N">` per artboard, each keeping
+   its own inline styles and its own uniquely-`id`'d SVG grain filter
+   exactly as authored. Do not reimplement the layout with shared CSS
+   classes/a template -- copying the real per-slide markup 1:1 is what
+   guarantees the export matches the live design pixel-for-pixel (this is
+   also why the bottom-row bug above happened: a hand-rolled shared class
+   dropped padding that only exists in the real per-slide markup).
+2. Swap each artboard's `/_blob/<id>` texture image `src` for a local copy
+   of the same photo (fetch it once, e.g. via the canvas's asset URL, into
+   the scratchpad dir).
+3. **Fonts must be embedded as local files, not linked from Google Fonts.**
+   The headless Chromium in this environment does not reliably fetch
+   `fonts.googleapis.com` at page-load time (no proxy config on the
+   browser's own network stack) -- linking the live stylesheet silently
+   fails, `document.fonts` comes back empty, and every slide falls back to
+   a generic system sans-serif with NO error. This is easy to miss because
+   the page still renders "successfully." Always: fetch the Google Fonts
+   CSS once via `curl` (through `$HTTPS_PROXY`, with a real browser
+   User-Agent so it returns woff2 not woff), download the actual `.woff2`
+   files it references, and declare local `@font-face` rules pointing at
+   those files in the static HTML's `<style>`. After generating the page,
+   verify with `page.evaluate(() => [...document.fonts].map(f => ({family:
+   f.family, status: f.status})))` that Bungee/Inter/JetBrains Mono all
+   report `"loaded"` before trusting any screenshot.
+4. Use Playwright with the pre-installed Chromium (do NOT run `playwright
+   install`; the browser lives at
+   `/opt/pw-browsers/chromium-1194/chrome-linux/chrome`,
+   `PLAYWRIGHT_BROWSERS_PATH` is already set). Load the local HTML with
+   `page.goto("file://...")`, await `document.fonts.ready`, then screenshot
+   each `#slide-N` element individually with
+   `page.locator("#slide-N").screenshot({path})` -- element screenshots
+   capture exactly that element's box (1080x1350), so don't wrap slides in
+   an extra sizing/margin div and screenshot the wrapper, screenshot the
+   1080x1350 element itself.
+5. Deliver the resulting PNGs (numbered `01-hook.png`, `02-tip1.png`, ...,
+   `NN-closer.png`) straight to the user with `SendUserFile` -- never try
+   to route them back through the Artifact's `downloads` capability or a
+   client-side zip; the whole point is to skip the sandbox.
+6. Before sending, visually spot-check at least one sibling-bottom-row
+   slide (Hook) and one nested-bottom-row slide (a tip) against this file's
+   bottom-row rules above -- that's the exact bug that shipped once.
 
 ## Triggering this in future sessions
 
