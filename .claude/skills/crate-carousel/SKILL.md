@@ -43,6 +43,16 @@ this file is the frozen spec so future sessions don't have to.
 - Orange titles ALWAYS carry this exact hard drop shadow, no blur:
   `text-shadow: 6px 6px 0 rgba(0,0,0,0.4);`
 - Every artboard is 1080x1350 (IG portrait 4:5).
+- **Swipe cue, every slide EXCEPT the closer**: a `SWIPE` label + right-chevron
+  icon, same size/weight as the handle (30px, matching styling), on the SAME
+  row as the `@crateprep` handle, opposite side (`display:flex;
+  justify-content:space-between;` on that row):
+  ```html
+  <span style="font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 700; font-size: 30px; letter-spacing: 0.04em; text-transform: uppercase; color: #ff6b35;">Swipe</span>
+  <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#ff6b35" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"></polyline></svg>
+  ```
+  Wrap the icon+label in one `display:flex; align-items:center; gap:10px;`
+  div. Omit entirely on the closer slide (nothing left to swipe to).
 
 ## Effect layers (every artboard, in this exact stacking order, bottom to top)
 
@@ -87,8 +97,11 @@ this file is the frozen spec so future sessions don't have to.
 No kicker pill, no drop-shadow-body-copy constraints beyond what's below.
 Left-aligned, vertically centered as a block:
 
-- `<h1>`: ONE short title (1-3 words, e.g. "3 Things"), orange `#ff6b35`,
-  `font-size: 108px; line-height: 1.05;`, the standard drop shadow.
+- `<h1>`: ONE short title (1-4 words, e.g. "3 Things" or "Downloading From
+  4 Sites"), orange `#ff6b35`, `font-size: 108px; line-height: 1.05;`, the
+  standard drop shadow. Fits on 1 line for very short titles, or exactly 2
+  with a manual `<br>` at the natural break for slightly longer ones --
+  never 3+, shorten the wording instead.
 - `<h2>` directly below: ONE white subtitle continuing the sentence (e.g.
   "Ruining Your Rekordbox Library Right Now"), white `#ffffff`,
   `font-size: 60px; line-height: 1.15;`, same drop-shadow treatment
@@ -116,7 +129,19 @@ Same structure as the existing "Crate Tip 0N" cards:
   top/bottom -- that was a real bug once: asymmetric padding visibly
   skews the vertically-centered block off-center).
 
-### 3. Closer slide (always exactly one, always last, text never changes)
+### 3. Soft-CTA slide (optional, 0 or 1, sits right before the closer)
+
+For a relatability/pain-point pillar carousel where the tip slides shouldn't
+end on a hard sell, insert one extra slide between the last tip and the
+closer: no kicker pill (it's not a numbered tip), same layout as a tip slide
+otherwise -- orange `<h1>` title (2 lines max, standard drop shadow) + white
+`<p>` caption (4 lines max) making the actual product pitch, softly. Keep the
+title short and conversational (e.g. "Honestly?", "Real Talk.") rather than
+feature-y. This shifts every following artboard's `x` by +1160 and the
+closer's `x` by +1160 more (see layout mechanics below) -- update `canvas.json`
+accordingly when adding one to an existing carousel.
+
+### 4. Closer slide (always exactly one, always last, text never changes)
 
 Reuse verbatim -- this is frozen copy, do not reword it even if asked to
 "vary" the carousel, unless the user explicitly asks to change the closer
