@@ -1,3 +1,5 @@
+import { Reveal } from "./Reveal"
+
 const FEATURES = [
   {
     icon: "spellcheck",
@@ -47,36 +49,35 @@ export function Features() {
   return (
     <section id="features" className="relative w-full overflow-hidden bg-black px-4 py-16 lg:px-12">
       <div className="relative z-10 mx-auto flex max-w-7xl flex-col gap-12">
-        <div className="flex flex-col gap-1">
+        <Reveal className="flex flex-col gap-1">
           <span className="font-mono text-meta-badge font-bold uppercase tracking-wider text-secondary-container">
             System Capabilities
           </span>
           <h2 className="text-headline-xl tracking-tight text-white lg:whitespace-nowrap">
             Built strictly for selectors with high standards.
           </h2>
-        </div>
+        </Reveal>
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {FEATURES.map((feature) => (
-            <div
-              key={feature.title}
-              className="flex flex-col rounded border border-white/10 bg-white/10 p-8 backdrop-blur-md transition-colors hover:bg-white/15"
-            >
-              <div className="mb-6 flex h-10 w-10 items-center justify-center rounded-full bg-white/10">
-                <span className="material-symbols-outlined text-[22px] text-secondary-container">
-                  {feature.icon}
-                </span>
+          {FEATURES.map((feature, i) => (
+            <Reveal key={feature.title} delay={(i % 3) * 0.08}>
+              <div className="flex h-full flex-col rounded border border-white/10 bg-white/10 p-8 backdrop-blur-md transition-colors hover:bg-white/15">
+                <div className="mb-6 flex h-10 w-10 items-center justify-center rounded-full bg-white/10">
+                  <span className="material-symbols-outlined text-[22px] text-secondary-container">
+                    {feature.icon}
+                  </span>
+                </div>
+                <h3 className="mb-2 text-headline-sm text-white">
+                  {feature.title}
+                </h3>
+                <p className="mb-4 text-body-md text-white/70">
+                  {feature.description}
+                </p>
+                <div className="mt-auto font-mono text-meta-numeric font-semibold text-secondary-container">
+                  &bull; {feature.footnote}
+                </div>
               </div>
-              <h3 className="mb-2 text-headline-sm text-white">
-                {feature.title}
-              </h3>
-              <p className="mb-4 text-body-md text-white/70">
-                {feature.description}
-              </p>
-              <div className="mt-auto font-mono text-meta-numeric font-semibold text-secondary-container">
-                &bull; {feature.footnote}
-              </div>
-            </div>
+            </Reveal>
           ))}
         </div>
       </div>

@@ -1,7 +1,9 @@
+import { AnimatePresence, motion } from "motion/react"
 import { useEffect, useRef, useState } from "react"
 import { Link, useLocation } from "react-router-dom"
 import { AccountMenu } from "./AccountMenu"
 import { AuthModal } from "./AuthModal"
+import { MagneticButton } from "./MagneticButton"
 import { useAuth } from "../hooks/useAuth"
 import { useProfile } from "../hooks/useProfile"
 import { trackEvent } from "../utils/analytics"
@@ -129,16 +131,25 @@ export function Header({ dark = false }: { dark?: boolean }) {
               <a
                 key={link.href}
                 href={link.href}
-                className={`rounded-full px-4 py-2 text-body-md transition-colors ${
+                className={`relative rounded-full px-4 py-2 text-body-md transition-colors ${
                   isActive
                     ? overHero
-                      ? "bg-white/10 text-white"
-                      : "bg-surface-container-low text-on-surface"
+                      ? "text-white"
+                      : "text-on-surface"
                     : overHero
                       ? "text-white/80 hover:text-white"
                       : "text-on-surface-variant hover:text-on-surface"
                 }`}
               >
+                {isActive && (
+                  <motion.span
+                    layoutId="nav-active-pill"
+                    className={`absolute inset-0 -z-10 rounded-full ${
+                      overHero ? "bg-white/10" : "bg-surface-container-low"
+                    }`}
+                    transition={{ type: "spring", stiffness: 400, damping: 35 }}
+                  />
+                )}
                 {link.label}
               </a>
             )
@@ -175,13 +186,14 @@ export function Header({ dark = false }: { dark?: boolean }) {
               )}
               {!isPro && (
                 <div className="relative hidden md:block">
-                  <a
+                  <MagneticButton
                     href="/#pricing"
+                    strength={10}
                     onClick={() => trackEvent("cta_click", { location: "header_go_pro" })}
                     className="hidden items-center justify-center rounded-full bg-secondary-container px-6 py-2 text-body-sm font-semibold text-white shadow-[0_4px_16px_rgba(255,107,53,0.4)] transition-transform hover:scale-[1.03] active:scale-95 md:inline-flex"
                   >
                     Go Pro
-                  </a>
+                  </MagneticButton>
                 </div>
               )}
             </>
@@ -199,9 +211,14 @@ export function Header({ dark = false }: { dark?: boolean }) {
           </button>
         </div>
       </div>
+      <AnimatePresence>
       {menuOpen && (
-        <nav
-          className={`flex flex-col gap-1 border-t px-4 py-4 md:hidden ${
+        <motion.nav
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: "auto" }}
+          exit={{ opacity: 0, height: 0 }}
+          transition={{ duration: 0.25, ease: "easeInOut" }}
+          className={`flex flex-col gap-1 overflow-hidden border-t px-4 py-4 md:hidden ${
             overHero
               ? "border-white/20 bg-black/50 backdrop-blur-xl"
               : "border-outline-variant bg-surface"
@@ -298,8 +315,9 @@ export function Header({ dark = false }: { dark?: boolean }) {
               Sign In
             </button>
           )}
-        </nav>
+        </motion.nav>
       )}
+      </AnimatePresence>
       {authModalOpen && <AuthModal onClose={() => setAuthModalOpen(false)} />}
     </header>
   )

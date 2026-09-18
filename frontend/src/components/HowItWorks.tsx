@@ -1,3 +1,5 @@
+import { Reveal } from "./Reveal"
+
 const STEPS = [
   {
     number: "01",
@@ -29,7 +31,7 @@ export function HowItWorks() {
   return (
     <section id="how-it-works" className="relative w-full overflow-hidden bg-black px-4 py-16 lg:px-12">
       <div className="relative z-10 mx-auto flex max-w-7xl flex-col gap-12">
-        <div className="flex flex-col gap-4">
+        <Reveal className="flex flex-col gap-4">
           <div>
             <span className="font-mono text-meta-badge font-bold uppercase tracking-wider text-secondary-container">
               Workflow Architecture
@@ -42,35 +44,34 @@ export function HowItWorks() {
             Architected for touring DJs who download 80 promo tracks two
             hours before call time.
           </p>
-        </div>
+        </Reveal>
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-          {STEPS.map((step) => (
-            <div
-              key={step.number}
-              className="flex flex-col rounded border border-white/10 bg-white/10 p-8 backdrop-blur-md transition-all hover:bg-white/15"
-            >
-              <div className="mb-8 flex items-center justify-between">
-                <span className="font-mono text-headline-lg font-bold text-secondary-container">
-                  {step.number}
-                </span>
-                <span className="material-symbols-outlined text-[28px] text-white/60">
-                  {step.icon}
-                </span>
+          {STEPS.map((step, i) => (
+            <Reveal key={step.number} delay={i * 0.1}>
+              <div className="flex h-full flex-col rounded border border-white/10 bg-white/10 p-8 backdrop-blur-md transition-all hover:bg-white/15">
+                <div className="mb-8 flex items-center justify-between">
+                  <span className="font-mono text-headline-lg font-bold text-secondary-container">
+                    {step.number}
+                  </span>
+                  <span className="material-symbols-outlined text-[28px] text-white/60">
+                    {step.icon}
+                  </span>
+                </div>
+                <h3 className="mb-2 text-headline-sm text-white">
+                  {step.title}
+                </h3>
+                <p className="mb-6 text-body-md text-white/70">
+                  {step.description}
+                </p>
+                <div className="mt-auto flex items-center gap-1 pt-4 font-mono text-meta-badge text-white/70">
+                  <span className="material-symbols-outlined text-[16px] text-secondary-container">
+                    check_circle
+                  </span>
+                  <span>{step.footnote}</span>
+                </div>
               </div>
-              <h3 className="mb-2 text-headline-sm text-white">
-                {step.title}
-              </h3>
-              <p className="mb-6 text-body-md text-white/70">
-                {step.description}
-              </p>
-              <div className="mt-auto flex items-center gap-1 pt-4 font-mono text-meta-badge text-white/70">
-                <span className="material-symbols-outlined text-[16px] text-secondary-container">
-                  check_circle
-                </span>
-                <span>{step.footnote}</span>
-              </div>
-            </div>
+            </Reveal>
           ))}
         </div>
       </div>

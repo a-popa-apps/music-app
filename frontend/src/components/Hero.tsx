@@ -15,9 +15,11 @@ import {
 import { trackEvent } from "../utils/analytics"
 import { buildPlaylist } from "../utils/buildPlaylist"
 import { suggestSetOrder } from "../utils/suggestSetOrder"
+import { MagneticButton } from "./MagneticButton"
 import { TrackWaveform } from "./TrackWaveform"
 import { UpgradeModal } from "./UpgradeModal"
 import { Waveform } from "./Waveform"
+import { motion } from "motion/react"
 
 interface ManifestEntry {
   bpm?: number | null
@@ -643,22 +645,37 @@ export function Hero() {
       />
 
       <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-col items-center text-center">
-        <div className="mb-6 inline-flex items-center gap-1 rounded-full bg-white/10 px-4 py-1 backdrop-blur-sm">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="mb-6 inline-flex items-center gap-1 rounded-full bg-white/10 px-4 py-1 backdrop-blur-sm"
+        >
           <span className="h-2 w-2 animate-ping rounded-full bg-secondary-container" />
           <span className="font-mono text-meta-badge uppercase tracking-wider text-white/90">
             DJ Utility 1.0 &middot; Rekordbox Ready
           </span>
-        </div>
+        </motion.div>
 
-        <h1 className="mb-4 text-display-hero-mobile tracking-tighter text-white lg:whitespace-nowrap lg:text-display-hero">
+        <motion.h1
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.1, ease: [0.21, 0.47, 0.32, 0.98] }}
+          className="mb-4 text-display-hero-mobile tracking-tighter text-white lg:whitespace-nowrap lg:text-display-hero"
+        >
           Your crate. <span className="text-secondary-container">Ready in seconds.</span>
-        </h1>
+        </motion.h1>
 
-        <p className="mb-10 max-w-2xl text-body-lg text-white/80">
+        <motion.p
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2, ease: [0.21, 0.47, 0.32, 0.98] }}
+          className="mb-10 max-w-2xl text-body-lg text-white/80"
+        >
           Drop your messy downloads. Get back clean filenames and tracks
           tagged with verified BPM and keys, ready to drop straight into
           your playlists.
-        </p>
+        </motion.p>
 
         <div className="w-full text-left">
           {skippedFiles.length > 0 && (
@@ -1056,13 +1073,14 @@ export function Hero() {
                       </span>
                     )}
                   </button>
-                  <button
+                  <MagneticButton
+                    strength={10}
                     onClick={handleDownload}
                     className="inline-flex w-full items-center justify-center gap-1 rounded-full bg-secondary-container px-6 py-2 text-headline-sm font-semibold text-on-primary transition-all hover:opacity-90 sm:w-auto"
                   >
                     <span className="material-symbols-outlined text-[18px]">folder_zip</span>
                     Download processed files
-                  </button>
+                  </MagneticButton>
                 </div>
               </div>
             </div>

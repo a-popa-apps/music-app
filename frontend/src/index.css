@@ -92,6 +92,14 @@ body {
   color: var(--color-on-surface);
 }
 
+/* Native cursor hides only once CustomCursor has actually mounted and
+   started tracking -- never hide it preemptively, or a slow first paint
+   leaves the visitor with no cursor at all for a moment. */
+body.custom-cursor-active,
+body.custom-cursor-active * {
+  cursor: none !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;

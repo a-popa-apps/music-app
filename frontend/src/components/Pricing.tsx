@@ -1,5 +1,8 @@
 import { useState } from "react"
 import { AuthModal } from "./AuthModal"
+import { MagneticButton } from "./MagneticButton"
+import { Reveal } from "./Reveal"
+import { TiltCard } from "./TiltCard"
 import { useAuth } from "../hooks/useAuth"
 import { useProfile } from "../hooks/useProfile"
 import { trackEvent } from "../utils/analytics"
@@ -67,6 +70,7 @@ export function Pricing() {
     <>
       <section id="pricing" className="relative w-full overflow-hidden bg-black px-4 py-16 lg:px-12">
         <div className="relative z-10 mx-auto flex max-w-5xl flex-col items-center text-center">
+          <Reveal className="flex flex-col items-center">
           <span className="mb-1 font-mono text-meta-badge font-bold uppercase tracking-wider text-secondary-container">
             Fair Selector Pricing
           </span>
@@ -77,10 +81,12 @@ export function Pricing() {
             Start free to prep this weekend's gig, upgrade when your download
             folders get wild.
           </p>
+          </Reveal>
 
           <div className="grid w-full grid-cols-1 items-stretch gap-6 text-left md:grid-cols-2">
             {/* Free plan */}
-            <div className="flex h-full flex-col rounded-2xl border border-white/10 bg-white/5 p-10 backdrop-blur-md">
+            <Reveal>
+            <TiltCard className="flex h-full flex-col rounded-2xl border border-white/10 bg-white/5 p-10 backdrop-blur-md">
               <h3 className="text-headline-lg font-bold text-white">Free</h3>
               <span className="text-body-sm text-white/70">
                 A real monthly plan — not a one-time trial
@@ -117,7 +123,8 @@ export function Pricing() {
                       Your Current Plan
                     </div>
                   ) : (
-                    <button
+                    <MagneticButton
+                      strength={10}
                       onClick={() => {
                         trackEvent("cta_click", { location: "pricing_free" })
                         setAuthModalOpen(true)
@@ -125,17 +132,19 @@ export function Pricing() {
                       className="mt-auto w-full rounded-full border border-white/20 bg-white/10 px-6 py-4 text-center text-headline-sm font-semibold text-white transition-colors hover:bg-white/15"
                     >
                       Get Started Free
-                    </button>
+                    </MagneticButton>
                   )}
                   <span className="mt-2 text-center font-mono text-meta-numeric text-white/60">
                     {user && isVerified ? "You're all set" : "No credit card required"}
                   </span>
                 </>
               )}
-            </div>
+            </TiltCard>
+            </Reveal>
 
             {/* Pro plan */}
-            <div className="h-full rounded-[calc(1rem+4px)] bg-gradient-to-r from-secondary-container to-[#ff3d78] p-[2px] shadow-[0_0_70px_rgba(255,107,53,0.3)]">
+            <Reveal delay={0.1}>
+            <TiltCard className="h-full rounded-[calc(1rem+4px)] bg-gradient-to-r from-secondary-container to-[#ff3d78] p-[2px] shadow-[0_0_70px_rgba(255,107,53,0.3)]">
               <div className="flex h-full w-full flex-col rounded-2xl bg-[#12122a]/90 p-10 backdrop-blur-md">
                 <div>
                   <h3 className="text-headline-lg font-bold text-white">CratePrep Pro</h3>
@@ -191,19 +200,21 @@ export function Pricing() {
                 </div>
 
                 <div className="mt-auto pt-8">
-                  <button
+                  <MagneticButton
+                    strength={12}
                     onClick={handleGetPro}
                     disabled={checkoutLoading}
                     className="w-full rounded-full bg-gradient-to-r from-secondary-container to-[#ff3d78] px-6 py-4 text-center text-headline-sm font-semibold text-on-primary shadow-[0_8px_30px_rgba(255,107,53,0.45)] transition-transform hover:scale-[1.02] active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {checkoutLoading ? "Loading..." : isPro ? "Manage Billing" : "Get CratePrep Pro"}
-                  </button>
+                  </MagneticButton>
                   {checkoutError && (
                     <p className="mt-3 text-center text-body-sm text-red-400">{checkoutError}</p>
                   )}
                 </div>
               </div>
-            </div>
+            </TiltCard>
+            </Reveal>
           </div>
         </div>
       </section>

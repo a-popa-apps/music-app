@@ -2,6 +2,7 @@ import { Analytics } from "@vercel/analytics/react"
 import { useEffect } from "react"
 import { Route, Routes, useLocation } from "react-router-dom"
 import { CookieConsentBanner } from "./components/CookieConsentBanner"
+import { CustomCursor } from "./components/CustomCursor"
 import { FAQ } from "./components/FAQ"
 import { Features } from "./components/Features"
 import { FeedbackWidget } from "./components/FeedbackWidget"
@@ -11,6 +12,7 @@ import { Header } from "./components/Header"
 import { Hero } from "./components/Hero"
 import { HowItWorks } from "./components/HowItWorks"
 import { Pricing } from "./components/Pricing"
+import { ScrollProgress } from "./components/ScrollProgress"
 import { AdminPage } from "./pages/AdminPage"
 import { AdminUserDetail } from "./pages/AdminUserDetail"
 import { AuthActionPage } from "./pages/AuthActionPage"
@@ -73,6 +75,8 @@ function App() {
       <FeedbackWidget />
       <CookieConsentBanner />
       <Analytics />
+      <ScrollProgress />
+      <CustomCursor />
     </>
   )
 }
