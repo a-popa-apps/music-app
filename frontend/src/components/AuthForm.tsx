@@ -107,8 +107,8 @@ export function AuthForm({
       if (isNewUser) await redeemInviteIfAny(await user.getIdToken())
       trackEvent(isNewUser ? "sign_up" : "login", { method: "google" })
       onSuccess()
-    } catch {
-      setError("Google sign-in failed. Please try again.")
+    } catch (err) {
+      setError(firebaseErrorMessage(err))
     }
   }
 
