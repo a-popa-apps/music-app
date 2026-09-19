@@ -149,7 +149,9 @@ export function AuthForm({
         >
           Use a different email
         </button>
-        {error && <p className="mt-4 text-body-sm text-red-400">{error}</p>}
+        <div aria-live="polite">
+          {error && <p className="mt-4 text-body-sm text-red-400">{error}</p>}
+        </div>
       </div>
     )
   }
@@ -188,6 +190,9 @@ export function AuthForm({
           <span className="text-body-sm font-semibold text-white">Email</span>
           <input
             type="email"
+            name="email"
+            autoComplete="email"
+            spellCheck={false}
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -199,6 +204,8 @@ export function AuthForm({
           <span className="text-body-sm font-semibold text-white">Password</span>
           <input
             type="password"
+            name="password"
+            autoComplete={mode === "signup" ? "new-password" : "current-password"}
             required
             minLength={6}
             value={password}
@@ -230,7 +237,9 @@ export function AuthForm({
           </label>
         )}
 
-        {error && <p className="text-body-sm text-red-400">{error}</p>}
+        <div aria-live="polite">
+          {error && <p className="text-body-sm text-red-400">{error}</p>}
+        </div>
 
         <button
           type="submit"

@@ -764,7 +764,11 @@ export function Hero() {
           )}
 
           {phase === "error" && (
-            <div className="flex w-full flex-col items-center gap-4 rounded border-2 border-red-400/30 bg-red-500/10 p-12 text-center backdrop-blur-md">
+            <div
+              role="alert"
+              aria-live="polite"
+              className="flex w-full flex-col items-center gap-4 rounded border-2 border-red-400/30 bg-red-500/10 p-12 text-center backdrop-blur-md"
+            >
               <span className="material-symbols-outlined text-[36px] text-red-300" aria-hidden="true">error</span>
               <h3 className="text-headline-sm text-white">
                 {isQuotaError
@@ -978,6 +982,8 @@ export function Hero() {
                       <label className="flex flex-col gap-1">
                         <span className="text-body-sm text-white/60">Artist</span>
                         <input
+                          name="edit-artist"
+                          autoComplete="off"
                           value={editDraft.artist}
                           onChange={(e) => setEditDraft((d) => ({ ...d, artist: e.target.value }))}
                           className="rounded border border-white/20 bg-black/30 px-3 py-1.5 text-body-sm text-white outline-none focus-visible:border-secondary-container"
@@ -986,6 +992,8 @@ export function Hero() {
                       <label className="flex flex-col gap-1">
                         <span className="text-body-sm text-white/60">Title</span>
                         <input
+                          name="edit-title"
+                          autoComplete="off"
                           value={editDraft.title}
                           onChange={(e) => setEditDraft((d) => ({ ...d, title: e.target.value }))}
                           className="rounded border border-white/20 bg-black/30 px-3 py-1.5 text-body-sm text-white outline-none focus-visible:border-secondary-container"
@@ -994,6 +1002,8 @@ export function Hero() {
                       <label className="flex flex-col gap-1">
                         <span className="text-body-sm text-white/60">Genre</span>
                         <input
+                          name="edit-genre"
+                          autoComplete="off"
                           value={editDraft.genre}
                           onChange={(e) => setEditDraft((d) => ({ ...d, genre: e.target.value }))}
                           className="rounded border border-white/20 bg-black/30 px-3 py-1.5 text-body-sm text-white outline-none focus-visible:border-secondary-container"
@@ -1003,6 +1013,8 @@ export function Hero() {
                         <span className="text-body-sm text-white/60">BPM</span>
                         <input
                           type="number"
+                          name="edit-bpm"
+                          autoComplete="off"
                           inputMode="decimal"
                           value={editDraft.bpm}
                           onChange={(e) => setEditDraft((d) => ({ ...d, bpm: e.target.value }))}
@@ -1010,7 +1022,9 @@ export function Hero() {
                         />
                       </label>
                     </div>
-                    {retagError && <p className="mt-2 text-body-sm text-red-400">{retagError}</p>}
+                    <div aria-live="polite">
+                      {retagError && <p className="mt-2 text-body-sm text-red-400">{retagError}</p>}
+                    </div>
                     <div className="mt-3 flex items-center gap-2">
                       <button
                         onClick={() => saveEdit(track)}

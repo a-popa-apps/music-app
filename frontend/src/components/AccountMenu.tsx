@@ -111,6 +111,7 @@ export function AccountMenu({ profile }: { profile: ProfileSettings | null }) {
           </button>
           <button
             onClick={handleChangePassword}
+            aria-live="polite"
             className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-body-md text-inverse-on-surface hover:bg-white/10"
           >
             <span className="material-symbols-outlined text-[18px]" aria-hidden="true">key</span>

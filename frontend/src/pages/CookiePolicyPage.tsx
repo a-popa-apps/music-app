@@ -5,7 +5,7 @@ export function CookiePolicyPage() {
     <LegalPage
       title="Cookie Policy"
       path="/cookie-policy"
-      lastUpdated="September 17, 2026"
+      lastUpdated="2026-09-17"
       sections={[
         {
           heading: "1. What Are Cookies",
@@ -13,7 +13,7 @@ export function CookiePolicyPage() {
         },
         {
           heading: "2. Cookies We Use",
-          body: "Strictly necessary: local storage set by Firebase Authentication to keep you signed in between visits, and fraud-prevention cookies set by Stripe while you're on its checkout or billing-portal pages during an upgrade or billing-management flow — always on, since the app (and taking payment) can't function without them. Optional analytics: if you accept our cookie consent banner, Google Analytics sets cookies to help us understand overall usage (pages visited, features used). It's off by default and only activates if you click \"Accept\" — declining or ignoring the banner keeps it off. We don't use any advertising or ad-tracking cookies, and we don't sell or share data with ad networks.",
+          body: "Strictly necessary: local storage set by Firebase Authentication to keep you signed in between visits, and fraud-prevention cookies set by Stripe while you're on its checkout or billing-portal pages during an upgrade or billing-management flow — always on, since the app (and taking payment) can't function without them. Optional analytics: if you accept our cookie consent banner, Google Analytics sets cookies to help us understand overall usage (pages visited, features used). It's off by default and only activates if you click “Accept” — declining or ignoring the banner keeps it off. We don't use any advertising or ad-tracking cookies, and we don't sell or share data with ad networks.",
         },
         {
           heading: "3. Third-Party Cookies",
@@ -29,7 +29,7 @@ export function CookiePolicyPage() {
         },
         {
           heading: "6. Contact",
-          body: "Questions about this policy? Reach us through the \"Contact Support\" option available from the \"?\" button on any page.",
+          body: "Questions about this policy? Reach us through the “Contact Support” option available from the “?” button on any page.",
         },
       ]}
     />

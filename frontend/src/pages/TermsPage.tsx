@@ -5,7 +5,7 @@ export function TermsPage() {
     <LegalPage
       title="Terms and Conditions"
       path="/terms"
-      lastUpdated="September 17, 2026"
+      lastUpdated="2026-09-17"
       sections={[
         {
           heading: "1. Acceptance of Terms",
@@ -33,7 +33,7 @@ export function TermsPage() {
         },
         {
           heading: "7. Disclaimers and Limitation of Liability",
-          body: "CratePrep is provided \"as is\" and \"as available,\" without warranties of any kind, express or implied, including as to the accuracy of detected BPM, key, genre, or energy metadata. To the fullest extent permitted by law, CratePrep and its operators are not liable for any indirect, incidental, or consequential damages arising from your use of the service, including loss of data or files. Our total liability for any claim relating to the service is limited to the amount you paid us in the 12 months before the claim arose.",
+          body: "CratePrep is provided “as is” and “as available,” without warranties of any kind, express or implied, including as to the accuracy of detected BPM, key, genre, or energy metadata. To the fullest extent permitted by law, CratePrep and its operators are not liable for any indirect, incidental, or consequential damages arising from your use of the service, including loss of data or files. Our total liability for any claim relating to the service is limited to the amount you paid us in the 12 months before the claim arose.",
         },
         {
           heading: "8. Governing Law",
@@ -45,7 +45,7 @@ export function TermsPage() {
         },
         {
           heading: "10. Contact",
-          body: "Questions about these Terms? Reach us through the \"Contact Support\" option available from the \"?\" button on any page.",
+          body: "Questions about these Terms? Reach us through the “Contact Support” option available from the “?” button on any page.",
         },
       ]}
     />

@@ -104,6 +104,8 @@ export function ProfileFieldsForm({
           <span className="text-body-sm font-semibold text-white">Name</span>
           <input
             type="text"
+            name="name"
+            autoComplete="name"
             value={settings.name}
             onChange={(e) => onChange("name", e.target.value)}
             className="rounded border border-white/20 bg-white/5 px-4 py-3 text-body-md text-white outline-none focus-visible:border-secondary-container"
@@ -114,7 +116,7 @@ export function ProfileFieldsForm({
           <label className="flex flex-col gap-1">
             <span className="text-body-sm font-semibold text-white">Email</span>
             <input
-              type="text"
+              type="email"
               value={email}
               disabled
               className="rounded border border-white/10 bg-white/5 px-4 py-3 text-body-md text-white/50"
@@ -127,6 +129,8 @@ export function ProfileFieldsForm({
           <div className="relative" ref={countryContainerRef}>
             <input
               type="text"
+              name="country"
+              autoComplete="off"
               value={countryOpen ? countrySearch : settings.country}
               onChange={(e) => setCountrySearch(e.target.value)}
               onFocus={() => {
@@ -171,7 +175,9 @@ export function ProfileFieldsForm({
           <span className="text-body-sm font-semibold text-white">Artist name</span>
           <input
             type="text"
-            placeholder="How you're credited on your releases"
+            name="artist_name"
+            autoComplete="off"
+            placeholder="e.g. DJ Shadow"
             value={settings.artist_name}
             onChange={(e) => onChange("artist_name", e.target.value)}
             className="rounded border border-white/20 bg-white/5 px-4 py-3 text-body-md text-white outline-none placeholder:text-white/40 focus-visible:border-secondary-container"
@@ -217,6 +223,7 @@ export function ProfileFieldsForm({
                   type="button"
                   key={genre}
                   onClick={() => toggleGenre(genre)}
+                  aria-pressed={selected}
                   className={`rounded-full border px-4 py-2 text-body-sm transition-colors ${
                     selected
                       ? "border-secondary-container bg-secondary-container text-on-primary"
@@ -244,6 +251,9 @@ export function ProfileFieldsForm({
           <input
             ref={templateInputRef}
             type="text"
+            name="filename_template"
+            autoComplete="off"
+            spellCheck={false}
             placeholder="{artist} - {title} [{bpm} - {key}]"
             value={settings.filename_template ?? ""}
             onChange={(e) => onChange("filename_template", e.target.value)}
@@ -319,6 +329,7 @@ export function ProfileFieldsForm({
             type="button"
             role="switch"
             aria-checked={settings.discogs_deep_search}
+            aria-label="Deep catalog search"
             onClick={() => onChange("discogs_deep_search", !settings.discogs_deep_search)}
             className={`h-6 w-11 rounded-full transition-colors ${
               settings.discogs_deep_search ? "bg-secondary-container" : "bg-white/20"
@@ -345,6 +356,7 @@ export function ProfileFieldsForm({
             type="button"
             role="switch"
             aria-checked={settings.enhanced_detection}
+            aria-label="Enhanced BPM & key detection"
             disabled={!isPro && !onRequestUpgrade}
             onClick={() => {
               if (isPro) {
@@ -378,6 +390,7 @@ export function ProfileFieldsForm({
             type="button"
             role="switch"
             aria-checked={settings.ai_filename_cleanup}
+            aria-label="AI filename cleanup"
             disabled={!isPro && !onRequestUpgrade}
             onClick={() => {
               if (isPro) {
@@ -411,6 +424,7 @@ export function ProfileFieldsForm({
             type="button"
             role="switch"
             aria-checked={settings.auto_sort_by_energy}
+            aria-label="Automatically sort by energy"
             disabled={!isPro && !onRequestUpgrade}
             onClick={() => {
               if (isPro) {

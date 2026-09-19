@@ -163,10 +163,15 @@ export function AdminUserDetail() {
               {settings.plan === "free" && (
                 <div className="flex items-center justify-between gap-4 rounded border border-white/10 bg-white/10 p-6 backdrop-blur-md">
                   <div className="flex flex-col gap-1">
-                    <h2 className="text-headline-sm text-white">Monthly usage</h2>
+                    <h2 className="text-headline-sm text-white">Monthly Usage</h2>
                     <span className="text-body-sm text-white/60">
                       {settings.tracks_processed_this_period} / 10 tracks used
-                      {settings.usage_period_start ? ` (${settings.usage_period_start})` : ""}
+                      {settings.usage_period_start
+                        ? ` (${new Intl.DateTimeFormat(undefined, {
+                            month: "short",
+                            day: "numeric",
+                          }).format(new Date(settings.usage_period_start))})`
+                        : ""}
                     </span>
                   </div>
                   <button
@@ -174,13 +179,13 @@ export function AdminUserDetail() {
                     disabled={resettingUsage || settings.tracks_processed_this_period === 0}
                     className="whitespace-nowrap rounded-full border border-white/20 px-4 py-2 text-body-sm font-semibold text-white transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    {resettingUsage ? "Resetting…" : usageResetDone ? "Reset!" : "Reset usage"}
+                    {resettingUsage ? "Resetting…" : usageResetDone ? "Reset!" : "Reset Usage"}
                   </button>
                 </div>
               )}
 
               <div className="rounded border border-white/10 bg-white/10 p-6 backdrop-blur-md">
-                <h2 className="mb-3 text-headline-sm text-white">Processing history</h2>
+                <h2 className="mb-3 text-headline-sm text-white">Processing History</h2>
                 {!history ? (
                   <p className="text-body-sm text-white/60">Loading…</p>
                 ) : history.length === 0 ? (
@@ -227,7 +232,9 @@ export function AdminUserDetail() {
 
               <ProfileFieldsForm settings={settings} onChange={update} email={email} />
 
-              {error && <p className="text-body-sm text-red-400">{error}</p>}
+              <div aria-live="polite">
+                {error && <p className="text-body-sm text-red-400">{error}</p>}
+              </div>
 
               <button
                 onClick={handleSave}

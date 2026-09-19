@@ -5,7 +5,7 @@ export function PrivacyPage() {
     <LegalPage
       title="Privacy Policy"
       path="/privacy"
-      lastUpdated="September 17, 2026"
+      lastUpdated="2026-09-17"
       sections={[
         {
           heading: "1. Information We Collect",
@@ -41,7 +41,7 @@ export function PrivacyPage() {
         },
         {
           heading: "9. Contact",
-          body: "Questions about this policy? Reach us through the \"Contact Support\" option available from the \"?\" button on any page.",
+          body: "Questions about this policy? Reach us through the “Contact Support” option available from the “?” button on any page.",
         },
       ]}
     />

@@ -15,7 +15,7 @@ const PRODUCT_LINKS = [
 
 const RESOURCE_LINKS = [
   { label: "FAQ", href: "/#faq" },
-  { label: "How it works", href: "/#how-it-works" },
+  { label: "How It Works", href: "/#how-it-works" },
 ]
 
 const LEGAL_LINKS = [
@@ -128,7 +128,7 @@ export function Footer() {
             ))}
           </div>
           <div className="text-body-sm text-on-tertiary-container">
-            &copy; 2026 CratePrep. All rights reserved.
+            &copy; 2026 <span translate="no">CratePrep</span>. All rights reserved.
           </div>
         </div>
       </div>

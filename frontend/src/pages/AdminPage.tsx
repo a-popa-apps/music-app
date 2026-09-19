@@ -101,7 +101,7 @@ function UsersTab({
     }
   }
 
-  if (error) return <p className="text-body-sm text-red-400">{error}</p>
+  if (error) return <p role="alert" className="text-body-sm text-red-400">{error}</p>
   if (!users) return <p className="text-body-md text-white/60">Loading…</p>
 
   const query = search.trim().toLowerCase()
@@ -115,6 +115,9 @@ function UsersTab({
     <Card>
       <input
         type="text"
+        name="user-search"
+        autoComplete="off"
+        aria-label="Search users by name or email"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         placeholder="Search by name or email…"
@@ -142,6 +145,7 @@ function UsersTab({
                 <td className="py-2 pr-4 text-white/60">{u.email}</td>
                 <td className="py-2 pr-4" onClick={(e) => e.stopPropagation()}>
                   <select
+                    aria-label={`Plan for ${u.email ?? u.uid}`}
                     value={u.plan}
                     disabled={busyUid === u.uid}
                     onChange={(e) => handlePlanChange(u.uid, e.target.value as "free" | "pro")}
@@ -156,6 +160,7 @@ function UsersTab({
                     type="button"
                     role="switch"
                     aria-checked={u.is_admin}
+                    aria-label={`Admin access for ${u.email ?? u.uid}`}
                     disabled={busyUid === u.uid}
                     onClick={() => handleAdminToggle(u.uid, !u.is_admin)}
                     className={`h-6 w-11 rounded-full transition-colors ${
@@ -203,7 +208,7 @@ function AiUsageCard({ callsToday, dailyLimit }: { callsToday: number; dailyLimi
   return (
     <Card>
       <div className="flex items-center justify-between">
-        <h3 className="text-headline-sm text-white">AI calls today</h3>
+        <h3 className="text-headline-sm text-white">AI Calls Today</h3>
         <span className={`text-body-sm font-semibold ${textColor}`}>
           {exhausted ? "Budget exhausted" : nearLimit ? "Approaching limit" : "Healthy"}
         </span>
@@ -231,7 +236,7 @@ function AiUsageCard({ callsToday, dailyLimit }: { callsToday: number; dailyLimi
 }
 
 function StatsTab({ stats, error }: { stats: AdminStats | null; error: string | null }) {
-  if (error) return <p className="text-body-sm text-red-400">{error}</p>
+  if (error) return <p role="alert" className="text-body-sm text-red-400">{error}</p>
   if (!stats) return <p className="text-body-md text-white/60">Loading…</p>
 
   return (
@@ -258,7 +263,7 @@ function StatsTab({ stats, error }: { stats: AdminStats | null; error: string | 
       <AiUsageCard callsToday={stats.ai_calls_today} dailyLimit={stats.ai_daily_limit} />
 
       <Card>
-        <h3 className="text-headline-sm text-white">Recent signups</h3>
+        <h3 className="text-headline-sm text-white">Recent Signups</h3>
         <ul className="flex flex-col gap-2">
           {stats.recent_signups.map((u) => (
             <li key={u.uid} className="flex justify-between text-body-sm text-white/60">
@@ -313,7 +318,7 @@ function DiscountCodesTab({
   return (
     <div className="flex flex-col gap-6">
       <Card>
-        <h3 className="text-headline-sm text-white">Generate a code</h3>
+        <h3 className="text-headline-sm text-white">Generate a Code</h3>
         <div className="flex flex-wrap items-end gap-4">
           <label className="flex flex-col gap-1">
             <span className="text-body-sm font-semibold text-white">% off</span>
@@ -347,13 +352,15 @@ function DiscountCodesTab({
             {creating ? "Creating…" : "Generate code"}
           </button>
         </div>
-        {(createError || error) && (
-          <p className="text-body-sm text-red-400">{createError ?? error}</p>
-        )}
+        <div aria-live="polite">
+          {(createError || error) && (
+            <p className="text-body-sm text-red-400">{createError ?? error}</p>
+          )}
+        </div>
       </Card>
 
       <Card>
-        <h3 className="text-headline-sm text-white">Existing codes</h3>
+        <h3 className="text-headline-sm text-white">Existing Codes</h3>
         {!codes ? (
           <p className="text-body-md text-white/60">Loading…</p>
         ) : codes.length === 0 ? (
@@ -382,6 +389,7 @@ function DiscountCodesTab({
                         type="button"
                         role="switch"
                         aria-checked={c.active}
+                        aria-label={`Active status for code ${c.code}`}
                         onClick={() => handleToggleActive(c)}
                         className={`h-6 w-11 rounded-full transition-colors ${
                           c.active ? "bg-secondary-container" : "bg-white/20"
@@ -475,7 +483,7 @@ function InvitesTab({
   return (
     <div className="flex flex-col gap-6">
       <Card>
-        <h3 className="text-headline-sm text-white">Send an invite</h3>
+        <h3 className="text-headline-sm text-white">Send an Invite</h3>
         <div className="flex flex-wrap items-end gap-4">
           <label className="flex flex-col gap-1">
             <span className="text-body-sm font-semibold text-white">Name (optional)</span>
@@ -515,11 +523,13 @@ function InvitesTab({
             className="w-full rounded border border-white/20 bg-white/5 px-3 py-2 text-body-md text-white placeholder:text-white/30"
           />
         </label>
-        {sendError && <p className="text-body-sm text-red-400">{sendError}</p>}
+        <div aria-live="polite">
+          {sendError && <p className="text-body-sm text-red-400">{sendError}</p>}
+        </div>
       </Card>
 
       <Card>
-        <h3 className="text-headline-sm text-white">All invites</h3>
+        <h3 className="text-headline-sm text-white">All Invites</h3>
         {error && !invites ? (
           <p className="text-body-md text-red-400">
             {error}{" "}
@@ -588,8 +598,13 @@ function InvitesTab({
   )
 }
 
+const CURRENCY_FORMATTER = new Intl.NumberFormat(undefined, {
+  style: "currency",
+  currency: "USD",
+})
+
 function formatCents(cents: number): string {
-  return `$${(cents / 100).toFixed(2)}`
+  return CURRENCY_FORMATTER.format(cents / 100)
 }
 
 function BillingTab({
@@ -645,7 +660,7 @@ function BillingTab({
 
       {stats && (
         <Card>
-          <h3 className="text-headline-sm text-white">Signups by plan</h3>
+          <h3 className="text-headline-sm text-white">Signups by Plan</h3>
           <div className="flex gap-6 text-body-md text-white">
             <span>Free: {stats.by_plan.free ?? 0}</span>
             <span>Pro: {stats.by_plan.pro ?? 0}</span>
@@ -654,7 +669,7 @@ function BillingTab({
       )}
 
       <Card>
-        <h3 className="text-headline-sm text-white">Discount code usage</h3>
+        <h3 className="text-headline-sm text-white">Discount Code Usage</h3>
         {!codes ? (
           <p className="text-body-md text-white/60">Loading…</p>
         ) : codes.length === 0 ? (
@@ -789,7 +804,7 @@ function FeedbackTab({
     }
   }
 
-  if (error) return <p className="text-body-sm text-red-400">{error}</p>
+  if (error) return <p role="alert" className="text-body-sm text-red-400">{error}</p>
   if (!feedback) return <p className="text-body-md text-white/60">Loading…</p>
 
   const unreadCount = feedback.filter((f) => !f.read).length
@@ -824,11 +839,15 @@ function FeedbackTab({
               {summarizing ? "Summarizing…" : aiSummary ? "Re-summarize" : "Summarize unread"}
             </button>
           </div>
-          {summaryError && <p className="mt-2 text-body-sm text-red-400">{summaryError}</p>}
+          <div aria-live="polite">
+            {summaryError && <p className="mt-2 text-body-sm text-red-400">{summaryError}</p>}
+          </div>
         </Card>
       )}
 
-      {deleteError && <p className="text-body-sm text-red-400">{deleteError}</p>}
+      <div aria-live="polite">
+        {deleteError && <p className="text-body-sm text-red-400">{deleteError}</p>}
+      </div>
 
       {selected.size > 0 && (
         <div className="flex items-center justify-between rounded border border-red-400/40 bg-red-500/10 px-4 py-3">
@@ -902,6 +921,7 @@ function FeedbackTab({
                       type="button"
                       role="switch"
                       aria-checked={f.read}
+                      aria-label={`Read status for feedback from ${f.email || "anonymous"}`}
                       disabled={busyId === f.feedback_id}
                       onClick={() => handleToggleRead(f)}
                       className={`h-6 w-11 rounded-full transition-colors ${

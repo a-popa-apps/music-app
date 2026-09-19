@@ -343,7 +343,9 @@ export function ProfileDetails() {
             </div>
           </Section>
 
-          {error && <p className="text-body-sm text-red-400">{error}</p>}
+          <div aria-live="polite">
+            {error && <p className="text-body-sm text-red-400">{error}</p>}
+          </div>
 
           <div className="rounded border border-white/10 p-3">
             <button
@@ -384,6 +386,9 @@ export function ProfileDetails() {
                       </span>
                       <input
                         type="text"
+                        name="delete-confirm"
+                        autoComplete="off"
+                        spellCheck={false}
                         value={deleteConfirmText}
                         onChange={(e) => setDeleteConfirmText(e.target.value)}
                         autoFocus

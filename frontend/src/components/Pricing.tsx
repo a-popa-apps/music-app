@@ -15,6 +15,12 @@ const FREE_INCLUDED = [
 
 const FREE_EXCLUDED = ["Custom filename syntax templating"]
 
+const PRICE_FORMATTER = new Intl.NumberFormat(undefined, {
+  style: "currency",
+  currency: "USD",
+  maximumFractionDigits: 0,
+})
+
 const PRO_CHECKLIST = [
   "Everything in Free, plus:",
   "Unlimited tracks per month",
@@ -35,6 +41,7 @@ export function Pricing() {
   const [checkoutError, setCheckoutError] = useState<string | null>(null)
   const [authModalOpen, setAuthModalOpen] = useState(false)
   const price = billing === "annual" ? 5 : 8
+  const formattedPrice = PRICE_FORMATTER.format(price)
   const cadence =
     billing === "annual" ? "/ month (billed annually)" : "/ month"
 
@@ -138,15 +145,17 @@ export function Pricing() {
             <div className="h-full rounded-[calc(1rem+4px)] bg-gradient-to-r from-secondary-container to-[#ff3d78] p-[2px] shadow-[0_0_70px_rgba(255,107,53,0.3)]">
               <div className="flex h-full w-full flex-col rounded-2xl bg-[#12122a]/90 p-10 backdrop-blur-md">
                 <div>
-                  <h3 className="text-headline-lg font-bold text-white">CratePrep Pro</h3>
+                  <h3 className="text-headline-lg font-bold text-white">
+                    <span translate="no">CratePrep</span> Pro
+                  </h3>
                   <span className="text-body-sm text-white/70">
-                    Detection, cleanup, and set-ordering — the whole pre-gig prep pipeline — for ${price}/mo
+                    Detection, cleanup, and set-ordering — the whole pre-gig prep pipeline — for {formattedPrice}/mo
                   </span>
                 </div>
 
                 <div className="flex items-baseline gap-1 pt-6">
                   <span className="text-display-hero tracking-tight text-white">
-                    ${price}
+                    {formattedPrice}
                   </span>
                   <span className="text-body-md text-white/70">{cadence}</span>
                 </div>
@@ -198,9 +207,11 @@ export function Pricing() {
                   >
                     {checkoutLoading ? "Loading…" : isPro ? "Manage Billing" : "Get CratePrep Pro"}
                   </button>
-                  {checkoutError && (
-                    <p className="mt-3 text-center text-body-sm text-red-400">{checkoutError}</p>
-                  )}
+                  <div aria-live="polite">
+                    {checkoutError && (
+                      <p className="mt-3 text-center text-body-sm text-red-400">{checkoutError}</p>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

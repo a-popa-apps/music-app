@@ -79,6 +79,8 @@ function FeedbackForm({
           <span className="text-body-sm font-semibold text-on-surface">Subject</span>
           <input
             type="text"
+            name="subject"
+            autoComplete="off"
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
             className="rounded border border-outline-variant bg-surface-container-lowest px-4 py-3 text-body-md text-on-surface outline-none focus-visible:border-secondary-container"
@@ -103,13 +105,18 @@ function FeedbackForm({
         </span>
         <input
           type="email"
+          name="email"
+          autoComplete="email"
+          spellCheck={false}
           required={category === "support"}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           className="rounded border border-outline-variant bg-surface-container-lowest px-4 py-3 text-body-md text-on-surface outline-none focus-visible:border-secondary-container"
         />
       </label>
-      {error && <p className="text-body-sm text-red-600">{error}</p>}
+      <div aria-live="polite">
+        {error && <p className="text-body-sm text-red-600">{error}</p>}
+      </div>
       <button
         type="submit"
         disabled={submitting}

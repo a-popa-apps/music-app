@@ -51,7 +51,8 @@ export function InviteModal({ onClose }: { onClose: () => void }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  async function handleSend() {
+  async function handleSend(e: React.FormEvent) {
+    e.preventDefault()
     if (!user || !email.trim()) return
     setSending(true)
     setError(null)
@@ -94,11 +95,13 @@ export function InviteModal({ onClose }: { onClose: () => void }) {
           the same free trial as anyone else who signs up.
         </p>
 
-        <div className="flex flex-col gap-4">
+        <form onSubmit={handleSend} className="flex flex-col gap-4">
           <label className="flex flex-col gap-1">
             <span className="text-body-sm font-semibold text-white">Name (optional)</span>
             <input
               type="text"
+              name="name"
+              autoComplete="off"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Their name"
@@ -109,30 +112,35 @@ export function InviteModal({ onClose }: { onClose: () => void }) {
             <span className="text-body-sm font-semibold text-white">Email</span>
             <input
               type="email"
+              name="email"
+              autoComplete="off"
+              spellCheck={false}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="friend@example.com"
               className="rounded border border-white/20 bg-white/5 px-4 py-3 text-body-md text-white outline-none placeholder:text-white/30 focus-visible:border-secondary-container"
             />
           </label>
-          {error && <p className="text-body-sm text-red-400">{error}</p>}
-          {justSent && !error && <p className="text-body-sm text-green-400">Invite sent!</p>}
+          <div aria-live="polite">
+            {error && <p className="text-body-sm text-red-400">{error}</p>}
+            {justSent && !error && <p className="text-body-sm text-green-400">Invite sent!</p>}
+          </div>
           <button
-            onClick={handleSend}
+            type="submit"
             disabled={sending || !email.trim()}
             className="rounded-full bg-secondary-container px-6 py-3 text-headline-sm font-semibold text-on-primary transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
           >
             {sending ? "Sending…" : "Send invite"}
           </button>
-        </div>
+        </form>
 
         {invites && invites.length > 0 && (
           <div className="mt-6 border-t border-white/10 pt-4">
             <h3 className="mb-2 text-body-sm font-semibold text-white">Invites you've sent</h3>
             <div className="flex max-h-40 flex-col gap-2 overflow-y-auto">
               {invites.map((invite) => (
-                <div key={invite.invite_id} className="flex items-center justify-between text-body-sm">
-                  <span className="truncate text-white/70">{invite.name || invite.email}</span>
+                <div key={invite.invite_id} className="flex min-w-0 items-center justify-between text-body-sm">
+                  <span className="min-w-0 truncate text-white/70">{invite.name || invite.email}</span>
                   <span className="shrink-0 pl-2 text-white/50">{STATUS_LABELS[invite.status]}</span>
                 </div>
               ))}

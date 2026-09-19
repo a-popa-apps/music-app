@@ -136,7 +136,9 @@ export function HistoryPage() {
             )}
           </div>
 
-          {error && <p className="mb-4 text-body-sm text-red-400">{error}</p>}
+          <div aria-live="polite">
+            {error && <p className="mb-4 text-body-sm text-red-400">{error}</p>}
+          </div>
 
           {!history ? (
             <p className="text-body-md text-white/60">Loading…</p>
@@ -152,12 +154,16 @@ export function HistoryPage() {
               <div className="flex flex-wrap items-center gap-3">
                 <input
                   type="text"
+                  name="history-search"
+                  autoComplete="off"
+                  aria-label="Search history by filename"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search by filename…"
                   className="flex-1 rounded border border-white/20 bg-white/5 px-4 py-2 text-body-md text-white outline-none placeholder:text-white/40 focus-visible:border-secondary-container"
                 />
                 <select
+                  aria-label="Filter by genre"
                   value={genreFilter}
                   onChange={(e) => setGenreFilter(e.target.value)}
                   className="rounded border border-white/20 bg-white/5 px-3 py-2 text-body-sm text-white"
@@ -170,6 +176,7 @@ export function HistoryPage() {
                   ))}
                 </select>
                 <select
+                  aria-label="Filter by status"
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
                   className="rounded border border-white/20 bg-white/5 px-3 py-2 text-body-sm text-white"

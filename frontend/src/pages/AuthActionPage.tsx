@@ -141,7 +141,7 @@ export function AuthActionPage() {
               </span>
               <h1 className="mt-4 text-headline-lg text-white">Email verified!</h1>
               <p className="mt-2 text-body-md text-white/70">
-                Taking you to CratePrep in {secondsLeft}s…
+                Taking you to <span translate="no">CratePrep</span> in {secondsLeft}s…
               </p>
               <button
                 onClick={() => navigate("/")}
@@ -169,6 +169,8 @@ export function AuthActionPage() {
                   </span>
                   <input
                     type="password"
+                    name="new-password"
+                    autoComplete="new-password"
                     required
                     minLength={6}
                     autoFocus
@@ -183,6 +185,8 @@ export function AuthActionPage() {
                   </span>
                   <input
                     type="password"
+                    name="confirm-password"
+                    autoComplete="new-password"
                     required
                     minLength={6}
                     value={confirmPassword}
@@ -190,7 +194,9 @@ export function AuthActionPage() {
                     className="rounded border border-white/20 bg-white/5 px-4 py-3 text-body-md text-white outline-none focus-visible:border-secondary-container"
                   />
                 </label>
-                {resetError && <p className="text-body-sm text-red-400">{resetError}</p>}
+                <div aria-live="polite">
+                  {resetError && <p className="text-body-sm text-red-400">{resetError}</p>}
+                </div>
                 <button
                   type="submit"
                   disabled={submitting}
