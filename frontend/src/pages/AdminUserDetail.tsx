@@ -73,7 +73,7 @@ export function AdminUserDetail() {
       <>
         <Header dark />
         <div className="flex min-h-screen items-center justify-center bg-black pt-16">
-          <p className="text-body-md text-white/60">Loading...</p>
+          <p className="text-body-md text-white/60">Loading…</p>
         </div>
       </>
     )
@@ -156,7 +156,7 @@ export function AdminUserDetail() {
 
           {loading || !settings ? (
             <p className="text-body-md text-white/60">
-              {error ?? "Loading..."}
+              {error ?? "Loading…"}
             </p>
           ) : (
             <div className="flex flex-col gap-6">
@@ -174,7 +174,7 @@ export function AdminUserDetail() {
                     disabled={resettingUsage || settings.tracks_processed_this_period === 0}
                     className="whitespace-nowrap rounded-full border border-white/20 px-4 py-2 text-body-sm font-semibold text-white transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    {resettingUsage ? "Resetting..." : usageResetDone ? "Reset!" : "Reset usage"}
+                    {resettingUsage ? "Resetting…" : usageResetDone ? "Reset!" : "Reset usage"}
                   </button>
                 </div>
               )}
@@ -182,7 +182,7 @@ export function AdminUserDetail() {
               <div className="rounded border border-white/10 bg-white/10 p-6 backdrop-blur-md">
                 <h2 className="mb-3 text-headline-sm text-white">Processing history</h2>
                 {!history ? (
-                  <p className="text-body-sm text-white/60">Loading...</p>
+                  <p className="text-body-sm text-white/60">Loading…</p>
                 ) : history.length === 0 ? (
                   <p className="text-body-sm text-white/60">
                     Hasn't processed any tracks yet.
@@ -234,7 +234,7 @@ export function AdminUserDetail() {
                 disabled={saving || !isDirty}
                 className="rounded-full bg-secondary-container px-6 py-3 text-headline-sm font-semibold text-on-primary transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
               >
-                {saving ? "Saving..." : saved ? "Saved!" : "Save"}
+                {saving ? "Saving…" : saved ? "Saved!" : "Save"}
               </button>
             </div>
           )}

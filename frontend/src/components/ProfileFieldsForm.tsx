@@ -106,7 +106,7 @@ export function ProfileFieldsForm({
             type="text"
             value={settings.name}
             onChange={(e) => onChange("name", e.target.value)}
-            className="rounded border border-white/20 bg-white/5 px-4 py-3 text-body-md text-white outline-none focus:border-secondary-container"
+            className="rounded border border-white/20 bg-white/5 px-4 py-3 text-body-md text-white outline-none focus-visible:border-secondary-container"
           />
         </label>
 
@@ -133,8 +133,8 @@ export function ProfileFieldsForm({
                 setCountrySearch("")
                 setCountryOpen(true)
               }}
-              placeholder="Select country..."
-              className="w-full rounded border border-white/20 bg-white/5 px-4 py-3 text-body-md text-white outline-none placeholder:text-white/40 focus:border-secondary-container"
+              placeholder="Select country…"
+              className="w-full rounded border border-white/20 bg-white/5 px-4 py-3 text-body-md text-white outline-none placeholder:text-white/40 focus-visible:border-secondary-container"
             />
             {countryOpen && (
               <div className="absolute z-10 mt-1 max-h-56 w-full overflow-y-auto rounded border border-white/20 bg-[#111] shadow-md">
@@ -174,7 +174,7 @@ export function ProfileFieldsForm({
             placeholder="How you're credited on your releases"
             value={settings.artist_name}
             onChange={(e) => onChange("artist_name", e.target.value)}
-            className="rounded border border-white/20 bg-white/5 px-4 py-3 text-body-md text-white outline-none placeholder:text-white/40 focus:border-secondary-container"
+            className="rounded border border-white/20 bg-white/5 px-4 py-3 text-body-md text-white outline-none placeholder:text-white/40 focus-visible:border-secondary-container"
           />
         </label>
 
@@ -248,7 +248,7 @@ export function ProfileFieldsForm({
             value={settings.filename_template ?? ""}
             onChange={(e) => onChange("filename_template", e.target.value)}
             disabled={!isPro}
-            className="rounded border border-white/20 bg-white/5 px-4 py-3 font-mono text-body-md text-white outline-none placeholder:text-white/40 focus:border-secondary-container disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded border border-white/20 bg-white/5 px-4 py-3 font-mono text-body-md text-white outline-none placeholder:text-white/40 focus-visible:border-secondary-container disabled:cursor-not-allowed disabled:opacity-50"
           />
           <div className="mt-2 flex flex-wrap items-center gap-1.5">
             <span className="text-body-sm text-white/60">Click to insert:</span>

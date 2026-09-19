@@ -102,7 +102,7 @@ function UsersTab({
   }
 
   if (error) return <p className="text-body-sm text-red-400">{error}</p>
-  if (!users) return <p className="text-body-md text-white/60">Loading...</p>
+  if (!users) return <p className="text-body-md text-white/60">Loading…</p>
 
   const query = search.trim().toLowerCase()
   const visible = query
@@ -117,8 +117,8 @@ function UsersTab({
         type="text"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        placeholder="Search by name or email..."
-        className="rounded border border-white/20 bg-white/5 px-4 py-2 text-body-md text-white outline-none placeholder:text-white/40 focus:border-secondary-container"
+        placeholder="Search by name or email…"
+        className="rounded border border-white/20 bg-white/5 px-4 py-2 text-body-md text-white outline-none placeholder:text-white/40 focus-visible:border-secondary-container"
       />
       <div className="overflow-x-auto">
         <table className="w-full text-left text-body-sm">
@@ -232,7 +232,7 @@ function AiUsageCard({ callsToday, dailyLimit }: { callsToday: number; dailyLimi
 
 function StatsTab({ stats, error }: { stats: AdminStats | null; error: string | null }) {
   if (error) return <p className="text-body-sm text-red-400">{error}</p>
-  if (!stats) return <p className="text-body-md text-white/60">Loading...</p>
+  if (!stats) return <p className="text-body-md text-white/60">Loading…</p>
 
   return (
     <div className="flex flex-col gap-6">
@@ -344,7 +344,7 @@ function DiscountCodesTab({
             disabled={creating}
             className="rounded-full bg-secondary-container px-6 py-2 text-body-md font-semibold text-on-primary disabled:opacity-50"
           >
-            {creating ? "Creating..." : "Generate code"}
+            {creating ? "Creating…" : "Generate code"}
           </button>
         </div>
         {(createError || error) && (
@@ -355,7 +355,7 @@ function DiscountCodesTab({
       <Card>
         <h3 className="text-headline-sm text-white">Existing codes</h3>
         {!codes ? (
-          <p className="text-body-md text-white/60">Loading...</p>
+          <p className="text-body-md text-white/60">Loading…</p>
         ) : codes.length === 0 ? (
           <p className="text-body-md text-white/60">No discount codes yet.</p>
         ) : (
@@ -502,7 +502,7 @@ function InvitesTab({
             disabled={sending || !email.trim()}
             className="rounded-full bg-secondary-container px-6 py-2 text-body-md font-semibold text-on-primary disabled:opacity-50"
           >
-            {sending ? "Sending..." : "Send invite"}
+            {sending ? "Sending…" : "Send invite"}
           </button>
         </div>
         <label className="flex flex-col gap-1">
@@ -528,7 +528,7 @@ function InvitesTab({
             </button>
           </p>
         ) : !invites ? (
-          <p className="text-body-md text-white/60">Loading...</p>
+          <p className="text-body-md text-white/60">Loading…</p>
         ) : invites.length === 0 ? (
           <p className="text-body-md text-white/60">No invites sent yet.</p>
         ) : (
@@ -656,7 +656,7 @@ function BillingTab({
       <Card>
         <h3 className="text-headline-sm text-white">Discount code usage</h3>
         {!codes ? (
-          <p className="text-body-md text-white/60">Loading...</p>
+          <p className="text-body-md text-white/60">Loading…</p>
         ) : codes.length === 0 ? (
           <p className="text-body-md text-white/60">No discount codes yet.</p>
         ) : (
@@ -790,7 +790,7 @@ function FeedbackTab({
   }
 
   if (error) return <p className="text-body-sm text-red-400">{error}</p>
-  if (!feedback) return <p className="text-body-md text-white/60">Loading...</p>
+  if (!feedback) return <p className="text-body-md text-white/60">Loading…</p>
 
   const unreadCount = feedback.filter((f) => !f.read).length
   const allSelected = feedback.length > 0 && selected.size === feedback.length
@@ -801,7 +801,7 @@ function FeedbackTab({
         <Card>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-2 text-body-sm text-white/70">
-              <span className="material-symbols-outlined text-[18px] text-secondary-container">
+              <span className="material-symbols-outlined text-[18px] text-secondary-container" aria-hidden="true">
                 auto_awesome
               </span>
               {aiSummary === undefined && (
@@ -821,7 +821,7 @@ function FeedbackTab({
               disabled={summarizing}
               className="whitespace-nowrap rounded-full border border-white/20 bg-white/10 px-4 py-2 text-body-sm font-semibold text-white transition-colors hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {summarizing ? "Summarizing..." : aiSummary ? "Re-summarize" : "Summarize unread"}
+              {summarizing ? "Summarizing…" : aiSummary ? "Re-summarize" : "Summarize unread"}
             </button>
           </div>
           {summaryError && <p className="mt-2 text-body-sm text-red-400">{summaryError}</p>}
@@ -841,7 +841,7 @@ function FeedbackTab({
             disabled={bulkDeleting}
             className="rounded-full border border-red-400 px-4 py-1.5 text-body-sm font-semibold text-red-300 hover:bg-red-500/10 disabled:opacity-50"
           >
-            {bulkDeleting ? "Deleting..." : `Delete selected (${selected.size})`}
+            {bulkDeleting ? "Deleting…" : `Delete selected (${selected.size})`}
           </button>
         </div>
       )}
@@ -1046,7 +1046,7 @@ export function AdminPage() {
       <>
         <Header dark />
         <div className="flex min-h-screen items-center justify-center bg-black pt-16">
-          <p className="text-body-md text-white/60">Loading...</p>
+          <p className="text-body-md text-white/60">Loading…</p>
         </div>
       </>
     )

@@ -2,6 +2,7 @@ import { useRef, useState } from "react"
 import { Link } from "react-router-dom"
 import { useAuth } from "../hooks/useAuth"
 import { useClickOutside } from "../hooks/useClickOutside"
+import { useEscapeKey } from "../hooks/useEscapeKey"
 import type { ProfileSettings } from "../services/api"
 import { InviteModal } from "./InviteModal"
 
@@ -12,6 +13,7 @@ export function AccountMenu({ profile }: { profile: ProfileSettings | null }) {
   const [inviteOpen, setInviteOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   useClickOutside(containerRef, () => setOpen(false), open)
+  useEscapeKey(() => setOpen(false), open)
 
   if (!user) return null
 
@@ -35,7 +37,7 @@ export function AccountMenu({ profile }: { profile: ProfileSettings | null }) {
         aria-label="Account menu"
         className="flex h-9 w-9 items-center justify-center rounded-full bg-surface-container text-on-surface transition-colors hover:bg-surface-container-high"
       >
-        <span className="material-symbols-outlined text-[20px]">person</span>
+        <span className="material-symbols-outlined text-[20px]" aria-hidden="true">person</span>
       </button>
 
       {open && (
@@ -45,7 +47,11 @@ export function AccountMenu({ profile }: { profile: ProfileSettings | null }) {
               <div className="flex items-center gap-1 text-body-md font-semibold text-inverse-on-surface">
                 <span>{displayName}</span>
                 {profile?.plan === "pro" && (
-                  <span className="material-symbols-outlined text-[15px] text-blue-500">
+                  <span
+                    className="material-symbols-outlined text-[15px] text-blue-500"
+                    role="img"
+                    aria-label="Pro"
+                  >
                     verified
                   </span>
                 )}
@@ -58,7 +64,7 @@ export function AccountMenu({ profile }: { profile: ProfileSettings | null }) {
                 onClick={() => setOpen(false)}
                 className="mt-1 inline-flex w-fit items-center gap-1 rounded-full bg-gradient-to-r from-secondary-container to-[#ff3d78] px-3 py-1.5 text-body-sm font-semibold text-on-primary shadow-[0_4px_16px_rgba(255,61,120,0.4)] transition-transform hover:scale-[1.03] active:scale-95"
               >
-                <span className="material-symbols-outlined text-[16px]">bolt</span>
+                <span className="material-symbols-outlined text-[16px]" aria-hidden="true">bolt</span>
                 Upgrade
               </a>
             )}
@@ -69,7 +75,7 @@ export function AccountMenu({ profile }: { profile: ProfileSettings | null }) {
               onClick={() => setOpen(false)}
               className="flex items-center gap-2 rounded px-3 py-2 text-body-md text-inverse-on-surface hover:bg-white/10"
             >
-              <span className="material-symbols-outlined text-[18px]">
+              <span className="material-symbols-outlined text-[18px]" aria-hidden="true">
                 shield_person
               </span>
               Admin
@@ -80,7 +86,7 @@ export function AccountMenu({ profile }: { profile: ProfileSettings | null }) {
             onClick={() => setOpen(false)}
             className="flex items-center gap-2 rounded px-3 py-2 text-body-md text-inverse-on-surface hover:bg-white/10"
           >
-            <span className="material-symbols-outlined text-[18px]">
+            <span className="material-symbols-outlined text-[18px]" aria-hidden="true">
               manage_accounts
             </span>
             Profile
@@ -90,7 +96,7 @@ export function AccountMenu({ profile }: { profile: ProfileSettings | null }) {
             onClick={() => setOpen(false)}
             className="flex items-center gap-2 rounded px-3 py-2 text-body-md text-inverse-on-surface hover:bg-white/10"
           >
-            <span className="material-symbols-outlined text-[18px]">history</span>
+            <span className="material-symbols-outlined text-[18px]" aria-hidden="true">history</span>
             History
           </Link>
           <button
@@ -100,21 +106,21 @@ export function AccountMenu({ profile }: { profile: ProfileSettings | null }) {
             }}
             className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-body-md text-inverse-on-surface hover:bg-white/10"
           >
-            <span className="material-symbols-outlined text-[18px]">person_add</span>
+            <span className="material-symbols-outlined text-[18px]" aria-hidden="true">person_add</span>
             Invite a friend
           </button>
           <button
             onClick={handleChangePassword}
             className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-body-md text-inverse-on-surface hover:bg-white/10"
           >
-            <span className="material-symbols-outlined text-[18px]">key</span>
+            <span className="material-symbols-outlined text-[18px]" aria-hidden="true">key</span>
             {resetSent ? "Email sent!" : "Change password"}
           </button>
           <button
             onClick={() => logOut()}
             className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-body-md text-inverse-on-surface hover:bg-white/10"
           >
-            <span className="material-symbols-outlined text-[18px]">logout</span>
+            <span className="material-symbols-outlined text-[18px]" aria-hidden="true">logout</span>
             Log out
           </button>
         </div>

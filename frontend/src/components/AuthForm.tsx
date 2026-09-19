@@ -158,7 +158,7 @@ export function AuthForm({
     <>
       {inviteBanner && (
         <div className="mb-6 flex items-center gap-2 rounded border border-secondary-container/30 bg-secondary-container/10 px-4 py-3 text-body-sm text-white">
-          <span className="material-symbols-outlined text-[18px] text-secondary-container">
+          <span className="material-symbols-outlined text-[18px] text-secondary-container" aria-hidden="true">
             celebration
           </span>
           {inviteBanner}
@@ -191,7 +191,7 @@ export function AuthForm({
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="rounded border border-white/20 bg-white/5 px-4 py-3 text-body-md text-white outline-none focus:border-secondary-container"
+            className="rounded border border-white/20 bg-white/5 px-4 py-3 text-body-md text-white outline-none focus-visible:border-secondary-container"
           />
         </label>
 
@@ -203,7 +203,7 @@ export function AuthForm({
             minLength={6}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="rounded border border-white/20 bg-white/5 px-4 py-3 text-body-md text-white outline-none focus:border-secondary-container"
+            className="rounded border border-white/20 bg-white/5 px-4 py-3 text-body-md text-white outline-none focus-visible:border-secondary-container"
           />
         </label>
 

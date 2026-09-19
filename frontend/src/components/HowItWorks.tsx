@@ -54,7 +54,7 @@ export function HowItWorks() {
                 <span className="font-mono text-headline-lg font-bold text-secondary-container">
                   {step.number}
                 </span>
-                <span className="material-symbols-outlined text-[28px] text-white/60">
+                <span className="material-symbols-outlined text-[28px] text-white/60" aria-hidden="true">
                   {step.icon}
                 </span>
               </div>
@@ -65,7 +65,7 @@ export function HowItWorks() {
                 {step.description}
               </p>
               <div className="mt-auto flex items-center gap-1 pt-4 font-mono text-meta-badge text-white/70">
-                <span className="material-symbols-outlined text-[16px] text-secondary-container">
+                <span className="material-symbols-outlined text-[16px] text-secondary-container" aria-hidden="true">
                   check_circle
                 </span>
                 <span>{step.footnote}</span>

@@ -193,7 +193,7 @@ export function Header({ dark = false }: { dark?: boolean }) {
               overHero ? "text-white" : "text-on-surface"
             }`}
           >
-            <span className="material-symbols-outlined">
+            <span className="material-symbols-outlined" aria-hidden="true">
               {menuOpen ? "close" : "menu"}
             </span>
           </button>
@@ -231,7 +231,11 @@ export function Header({ dark = false }: { dark?: boolean }) {
                 >
                   {profile.name}
                   {profile.plan === "pro" && (
-                    <span className="material-symbols-outlined text-[15px] text-blue-500">
+                    <span
+                      className="material-symbols-outlined text-[15px] text-blue-500"
+                      role="img"
+                      aria-label="Pro"
+                    >
                       verified
                     </span>
                   )}
@@ -246,7 +250,7 @@ export function Header({ dark = false }: { dark?: boolean }) {
                   onClick={() => setMenuOpen(false)}
                   className="mt-2 inline-flex w-fit items-center gap-1 rounded-full bg-gradient-to-r from-secondary-container to-[#ff3d78] px-3 py-1.5 text-body-sm font-semibold text-on-primary shadow-[0_4px_16px_rgba(255,61,120,0.4)] transition-transform hover:scale-[1.03] active:scale-95"
                 >
-                  <span className="material-symbols-outlined text-[16px]">bolt</span>
+                  <span className="material-symbols-outlined text-[16px]" aria-hidden="true">bolt</span>
                   Upgrade
                 </a>
               )}

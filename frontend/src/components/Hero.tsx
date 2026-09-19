@@ -103,12 +103,12 @@ const ANON_TRIAL_LIMIT = 5
 // happening under the hood (real pipeline steps, in roughly the order
 // _analyze_and_tag runs them) instead of one static line.
 const PROCESSING_STATUSES = [
-  "Stripping junk from filenames...",
-  "Reading the beat grid for BPM...",
-  "Detecting musical key...",
-  "Matching against Spotify & Discogs for genre...",
-  "Scoring loudness for the Energy rating...",
-  "Tagging files for your DJ software...",
+  "Stripping junk from filenames…",
+  "Reading the beat grid for BPM…",
+  "Detecting musical key…",
+  "Matching against Spotify & Discogs for genre…",
+  "Scoring loudness for the Energy rating…",
+  "Tagging files for your DJ software…",
 ]
 const PROCESSING_STATUS_INTERVAL_MS = 2000
 
@@ -663,7 +663,7 @@ export function Hero() {
         <div className="w-full text-left">
           {skippedFiles.length > 0 && (
             <div className="mb-4 flex items-start gap-2 rounded border border-yellow-400/30 bg-yellow-400/10 p-4 text-body-sm text-white/80">
-              <span className="material-symbols-outlined text-[18px] text-yellow-300">warning</span>
+              <span className="material-symbols-outlined text-[18px] text-yellow-300" aria-hidden="true">warning</span>
               <span>
                 Skipped {skippedFiles.length} file{skippedFiles.length === 1 ? "" : "s"} your browser
                 didn't recognize as audio: {skippedFiles.join(", ")}
@@ -679,7 +679,7 @@ export function Hero() {
             >
               <input {...getInputProps()} />
               <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-secondary-container">
-                <span className="material-symbols-outlined text-[36px] text-on-secondary">
+                <span className="material-symbols-outlined text-[36px] text-on-secondary" aria-hidden="true">
                   graphic_eq
                 </span>
               </div>
@@ -704,7 +704,7 @@ export function Hero() {
             <div className="flex w-full flex-col items-center gap-4 rounded border-2 border-white/20 bg-white/10 p-12 text-center backdrop-blur-md">
               <Waveform className="h-9" />
               <h3 className="text-headline-sm text-white">
-                Uploading {fileCount} file{fileCount === 1 ? "" : "s"}...{" "}
+                Uploading {fileCount} file{fileCount === 1 ? "" : "s"}…{" "}
                 {Math.round(uploadFraction * 100)}%
               </h3>
               <p className="text-body-md text-white/70">
@@ -723,7 +723,7 @@ export function Hero() {
             <div className="flex w-full flex-col items-center gap-4 rounded border-2 border-white/20 bg-white/10 p-12 text-center backdrop-blur-md">
               <Waveform className="h-9" />
               <h3 className="text-headline-sm text-white">
-                Processing {fileCount} file{fileCount === 1 ? "" : "s"}...
+                Processing {fileCount} file{fileCount === 1 ? "" : "s"}…
               </h3>
               <p className="text-body-md text-white/70">
                 {PROCESSING_STATUSES[statusIndex]}
@@ -736,7 +736,7 @@ export function Hero() {
 
           {phase === "auth-required" && (
             <div className="flex w-full flex-col items-center gap-4 rounded border-2 border-white/20 bg-white/10 p-12 text-center backdrop-blur-md">
-              <span className="material-symbols-outlined text-[36px] text-secondary-container">
+              <span className="material-symbols-outlined text-[36px] text-secondary-container" aria-hidden="true">
                 lock
               </span>
               <h3 className="text-headline-sm text-white">
@@ -765,7 +765,7 @@ export function Hero() {
 
           {phase === "error" && (
             <div className="flex w-full flex-col items-center gap-4 rounded border-2 border-red-400/30 bg-red-500/10 p-12 text-center backdrop-blur-md">
-              <span className="material-symbols-outlined text-[36px] text-red-300">error</span>
+              <span className="material-symbols-outlined text-[36px] text-red-300" aria-hidden="true">error</span>
               <h3 className="text-headline-sm text-white">
                 {isQuotaError
                   ? user
@@ -824,7 +824,7 @@ export function Hero() {
               )}
               {aiSummary && (
                 <div className="flex items-center gap-2 border-b border-white/10 px-6 py-3 text-body-sm text-white/70">
-                  <span className="material-symbols-outlined text-[18px] text-secondary-container">
+                  <span className="material-symbols-outlined text-[18px] text-secondary-container" aria-hidden="true">
                     auto_awesome
                   </span>
                   {aiSummary}
@@ -832,7 +832,7 @@ export function Hero() {
               )}
               {qualitySummary && (
                 <div className="flex items-center gap-2 border-b border-white/10 px-6 py-3 text-body-sm text-white/70">
-                  <span className="material-symbols-outlined text-[18px] text-secondary-container">
+                  <span className="material-symbols-outlined text-[18px] text-secondary-container" aria-hidden="true">
                     fact_check
                   </span>
                   {qualitySummary}
@@ -846,16 +846,23 @@ export function Hero() {
                 <div className="col-span-1 text-center">
                   <button
                     onClick={toggleEnergySort}
+                    aria-label={
+                      !isPro
+                        ? "Energy (Pro feature)"
+                        : energySort
+                          ? `Energy, sorted ${energySort === "asc" ? "ascending" : "descending"}`
+                          : "Energy"
+                    }
                     className="flex w-full items-center justify-center gap-0.5 hover:text-white"
                   >
                     Energy
                     {!isPro && (
-                      <span className="material-symbols-outlined text-[13px] text-secondary-container">
+                      <span className="material-symbols-outlined text-[13px] text-secondary-container" aria-hidden="true">
                         lock
                       </span>
                     )}
                     {energySort && (
-                      <span className="material-symbols-outlined text-[14px]">
+                      <span className="material-symbols-outlined text-[14px]" aria-hidden="true">
                         {energySort === "asc" ? "arrow_upward" : "arrow_downward"}
                       </span>
                     )}
@@ -877,7 +884,7 @@ export function Hero() {
                   }`}
                 >
                   <div className="col-span-1 flex items-center justify-center gap-1 text-center font-mono text-meta-numeric text-white/60">
-                    <span className="material-symbols-outlined cursor-grab text-[16px] text-white/40">
+                    <span className="material-symbols-outlined cursor-grab text-[16px] text-white/40" aria-hidden="true">
                       drag_indicator
                     </span>
                     {String(i + 1).padStart(2, "0")}
@@ -889,7 +896,7 @@ export function Hero() {
                         aria-label={playingTrack === track.originalIndex && isPlaying ? "Pause" : "Play"}
                         className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
                       >
-                        <span className="material-symbols-outlined text-[16px]">
+                        <span className="material-symbols-outlined text-[16px]" aria-hidden="true">
                           {playingTrack === track.originalIndex && isPlaying ? "pause" : "play_arrow"}
                         </span>
                       </button>
@@ -959,7 +966,7 @@ export function Hero() {
                         aria-label="Correct this track's tags"
                         className="flex h-6 w-6 items-center justify-center rounded-full text-white/50 transition-colors hover:bg-white/10 hover:text-white"
                       >
-                        <span className="material-symbols-outlined text-[15px]">edit</span>
+                        <span className="material-symbols-outlined text-[15px]" aria-hidden="true">edit</span>
                       </button>
                     )}
                   </div>
@@ -973,7 +980,7 @@ export function Hero() {
                         <input
                           value={editDraft.artist}
                           onChange={(e) => setEditDraft((d) => ({ ...d, artist: e.target.value }))}
-                          className="rounded border border-white/20 bg-black/30 px-3 py-1.5 text-body-sm text-white outline-none focus:border-secondary-container"
+                          className="rounded border border-white/20 bg-black/30 px-3 py-1.5 text-body-sm text-white outline-none focus-visible:border-secondary-container"
                         />
                       </label>
                       <label className="flex flex-col gap-1">
@@ -981,7 +988,7 @@ export function Hero() {
                         <input
                           value={editDraft.title}
                           onChange={(e) => setEditDraft((d) => ({ ...d, title: e.target.value }))}
-                          className="rounded border border-white/20 bg-black/30 px-3 py-1.5 text-body-sm text-white outline-none focus:border-secondary-container"
+                          className="rounded border border-white/20 bg-black/30 px-3 py-1.5 text-body-sm text-white outline-none focus-visible:border-secondary-container"
                         />
                       </label>
                       <label className="flex flex-col gap-1">
@@ -989,7 +996,7 @@ export function Hero() {
                         <input
                           value={editDraft.genre}
                           onChange={(e) => setEditDraft((d) => ({ ...d, genre: e.target.value }))}
-                          className="rounded border border-white/20 bg-black/30 px-3 py-1.5 text-body-sm text-white outline-none focus:border-secondary-container"
+                          className="rounded border border-white/20 bg-black/30 px-3 py-1.5 text-body-sm text-white outline-none focus-visible:border-secondary-container"
                         />
                       </label>
                       <label className="flex flex-col gap-1">
@@ -999,7 +1006,7 @@ export function Hero() {
                           inputMode="decimal"
                           value={editDraft.bpm}
                           onChange={(e) => setEditDraft((d) => ({ ...d, bpm: e.target.value }))}
-                          className="rounded border border-white/20 bg-black/30 px-3 py-1.5 text-body-sm text-white outline-none focus:border-secondary-container"
+                          className="rounded border border-white/20 bg-black/30 px-3 py-1.5 text-body-sm text-white outline-none focus-visible:border-secondary-container"
                         />
                       </label>
                     </div>
@@ -1010,7 +1017,7 @@ export function Hero() {
                         disabled={retagging}
                         className="rounded-full bg-secondary-container px-4 py-1.5 text-body-sm font-semibold text-on-primary transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                       >
-                        {retagging ? "Saving..." : "Save"}
+                        {retagging ? "Saving…" : "Save"}
                       </button>
                       <button
                         onClick={cancelEdit}
@@ -1028,7 +1035,7 @@ export function Hero() {
               <div className="flex flex-col items-center justify-between gap-4 border-t border-white/10 bg-white/5 p-6 sm:flex-row">
                 <div className="flex items-center gap-4 font-mono text-meta-numeric text-white/70">
                   <span className="flex items-center gap-1 text-white">
-                    <span className="material-symbols-outlined text-[18px] text-secondary-container">
+                    <span className="material-symbols-outlined text-[18px] text-secondary-container" aria-hidden="true">
                       verified
                     </span>
                     {results.length} track{results.length === 1 ? "" : "s"} processed
@@ -1046,7 +1053,7 @@ export function Hero() {
                     disabled={!canSuggestSetOrder}
                     className="inline-flex items-center justify-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-5 py-2 text-body-sm font-semibold text-white transition-colors hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-40"
                   >
-                    <span className="material-symbols-outlined text-[18px] text-secondary-container">
+                    <span className="material-symbols-outlined text-[18px] text-secondary-container" aria-hidden="true">
                       shuffle
                     </span>
                     Suggest Set Order
@@ -1060,7 +1067,7 @@ export function Hero() {
                     onClick={handleDownload}
                     className="inline-flex w-full items-center justify-center gap-1 rounded-full bg-secondary-container px-6 py-2 text-headline-sm font-semibold text-on-primary transition-all hover:opacity-90 sm:w-auto"
                   >
-                    <span className="material-symbols-outlined text-[18px]">folder_zip</span>
+                    <span className="material-symbols-outlined text-[18px]" aria-hidden="true">folder_zip</span>
                     Download processed files
                   </button>
                 </div>

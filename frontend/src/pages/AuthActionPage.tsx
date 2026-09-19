@@ -127,21 +127,21 @@ export function AuthActionPage() {
         <div className="w-full max-w-md rounded border border-white/10 bg-white/10 p-8 text-center backdrop-blur-md">
           {status === "checking" && (
             <>
-              <span className="material-symbols-outlined animate-spin text-[40px] text-secondary-container">
+              <span className="material-symbols-outlined animate-spin text-[40px] text-secondary-container" aria-hidden="true">
                 progress_activity
               </span>
-              <h1 className="mt-4 text-headline-lg text-white">One moment...</h1>
+              <h1 className="mt-4 text-headline-lg text-white">One moment…</h1>
             </>
           )}
 
           {status === "verified" && (
             <>
-              <span className="material-symbols-outlined text-[48px] text-green-400">
+              <span className="material-symbols-outlined text-[48px] text-green-400" aria-hidden="true">
                 check_circle
               </span>
               <h1 className="mt-4 text-headline-lg text-white">Email verified!</h1>
               <p className="mt-2 text-body-md text-white/70">
-                Taking you to CratePrep in {secondsLeft}s...
+                Taking you to CratePrep in {secondsLeft}s…
               </p>
               <button
                 onClick={() => navigate("/")}
@@ -174,7 +174,7 @@ export function AuthActionPage() {
                     autoFocus
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    className="rounded border border-white/20 bg-white/5 px-4 py-3 text-body-md text-white outline-none focus:border-secondary-container"
+                    className="rounded border border-white/20 bg-white/5 px-4 py-3 text-body-md text-white outline-none focus-visible:border-secondary-container"
                   />
                 </label>
                 <label className="flex flex-col gap-1">
@@ -187,7 +187,7 @@ export function AuthActionPage() {
                     minLength={6}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="rounded border border-white/20 bg-white/5 px-4 py-3 text-body-md text-white outline-none focus:border-secondary-container"
+                    className="rounded border border-white/20 bg-white/5 px-4 py-3 text-body-md text-white outline-none focus-visible:border-secondary-container"
                   />
                 </label>
                 {resetError && <p className="text-body-sm text-red-400">{resetError}</p>}
@@ -196,7 +196,7 @@ export function AuthActionPage() {
                   disabled={submitting}
                   className="rounded-full bg-secondary-container px-6 py-3 text-headline-sm font-semibold text-on-primary transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  {submitting ? "Saving..." : "Save new password"}
+                  {submitting ? "Saving…" : "Save new password"}
                 </button>
               </form>
             </div>
@@ -204,12 +204,12 @@ export function AuthActionPage() {
 
           {status === "reset-success" && (
             <>
-              <span className="material-symbols-outlined text-[48px] text-green-400">
+              <span className="material-symbols-outlined text-[48px] text-green-400" aria-hidden="true">
                 check_circle
               </span>
               <h1 className="mt-4 text-headline-lg text-white">Password updated!</h1>
               <p className="mt-2 text-body-md text-white/70">
-                Taking you to sign in in {secondsLeft}s...
+                Taking you to sign in in {secondsLeft}s…
               </p>
               <button
                 onClick={() => navigate("/auth")}
@@ -222,7 +222,7 @@ export function AuthActionPage() {
 
           {status === "error" && (
             <>
-              <span className="material-symbols-outlined text-[48px] text-red-400">error</span>
+              <span className="material-symbols-outlined text-[48px] text-red-400" aria-hidden="true">error</span>
               <h1 className="mt-4 text-headline-lg text-white">
                 This link is invalid or has expired
               </h1>

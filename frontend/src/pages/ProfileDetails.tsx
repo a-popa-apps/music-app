@@ -109,7 +109,7 @@ export function ProfileDetails() {
       <>
         <Header dark />
         <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-black pt-16">
-          <span className="material-symbols-outlined animate-spin text-[40px] text-secondary-container">
+          <span className="material-symbols-outlined animate-spin text-[40px] text-secondary-container" aria-hidden="true">
             progress_activity
           </span>
           <p className="text-headline-sm text-white">Loading your profile...</p>
@@ -242,7 +242,7 @@ export function ProfileDetails() {
           {settings.plan === "free" && (
             <div className="flex flex-col items-start gap-4 rounded-2xl bg-gradient-to-r from-secondary-container to-[#ff3d78] p-6 text-on-primary shadow-[0_8px_30px_rgba(255,61,120,0.35)] sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-3">
-                <span className="material-symbols-outlined text-[32px]">bolt</span>
+                <span className="material-symbols-outlined text-[32px]" aria-hidden="true">bolt</span>
                 <div className="flex flex-col">
                   <span className="text-headline-sm font-bold">
                     Go Pro for more tracks &amp; priority detection
@@ -259,7 +259,7 @@ export function ProfileDetails() {
                 disabled={billingLoading}
                 className="whitespace-nowrap rounded-full bg-white px-5 py-2 text-body-sm font-semibold text-[#ff3d78] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {billingLoading ? "Loading..." : "Upgrade to Pro"}
+                {billingLoading ? "Loading…" : "Upgrade to Pro"}
               </button>
             </div>
           )}
@@ -297,7 +297,11 @@ export function ProfileDetails() {
                   <strong className="inline-flex items-center gap-1">
                     {settings.plan === "pro" ? "Pro" : "Free"}
                     {settings.plan === "pro" && (
-                      <span className="material-symbols-outlined text-[15px] text-blue-500">
+                      <span
+                        className="material-symbols-outlined text-[15px] text-blue-500"
+                        role="img"
+                        aria-label="Pro"
+                      >
                         verified
                       </span>
                     )}
@@ -331,7 +335,7 @@ export function ProfileDetails() {
                 className="whitespace-nowrap rounded-full bg-secondary-container px-4 py-2 text-body-sm font-semibold text-on-primary transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {billingLoading
-                  ? "Loading..."
+                  ? "Loading…"
                   : settings.plan === "pro"
                     ? "Manage billing"
                     : "Upgrade to Pro"}
@@ -351,6 +355,7 @@ export function ProfileDetails() {
                 Danger Zone
               </span>
               <span
+                aria-hidden="true"
                 className={`material-symbols-outlined text-[18px] text-white/70 transition-transform ${
                   dangerZoneOpen ? "rotate-180" : ""
                 }`}
@@ -382,7 +387,7 @@ export function ProfileDetails() {
                         value={deleteConfirmText}
                         onChange={(e) => setDeleteConfirmText(e.target.value)}
                         autoFocus
-                        className="rounded border border-red-400/40 bg-black/40 px-3 py-2 text-body-md text-white outline-none focus:border-red-400"
+                        className="rounded border border-red-400/40 bg-black/40 px-3 py-2 text-body-md text-white outline-none focus-visible:border-red-400"
                       />
                     </label>
                     <div className="flex gap-2">
@@ -391,7 +396,7 @@ export function ProfileDetails() {
                         disabled={deleting || deleteConfirmText.trim().toLowerCase() !== "delete"}
                         className="rounded-full bg-red-600 px-6 py-2 text-body-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
                       >
-                        {deleting ? "Deleting..." : "Confirm Delete"}
+                        {deleting ? "Deleting…" : "Confirm Delete"}
                       </button>
                       <button
                         onClick={() => {
@@ -433,7 +438,7 @@ export function ProfileDetails() {
                 disabled={saving || !isDirty}
                 className="whitespace-nowrap rounded-full bg-secondary-container px-6 py-2 text-body-sm font-semibold text-on-primary transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
               >
-                {saving ? "Saving..." : saved ? "Saved!" : "Save"}
+                {saving ? "Saving…" : saved ? "Saved!" : "Save"}
               </button>
             </div>
           </div>

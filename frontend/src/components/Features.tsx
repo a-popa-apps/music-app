@@ -63,7 +63,7 @@ export function Features() {
               className="flex flex-col rounded border border-white/10 bg-white/10 p-8 backdrop-blur-md transition-colors hover:bg-white/15"
             >
               <div className="mb-6 flex h-10 w-10 items-center justify-center rounded-full bg-white/10">
-                <span className="material-symbols-outlined text-[22px] text-secondary-container">
+                <span className="material-symbols-outlined text-[22px] text-secondary-container" aria-hidden="true">
                   {feature.icon}
                 </span>
               </div>

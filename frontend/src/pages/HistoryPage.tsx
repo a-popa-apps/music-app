@@ -131,7 +131,7 @@ export function HistoryPage() {
                 disabled={clearing}
                 className="whitespace-nowrap rounded-full border border-red-400 px-4 py-2 text-body-sm font-semibold text-red-300 transition-colors hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {clearing ? "Clearing..." : "Clear History"}
+                {clearing ? "Clearing…" : "Clear History"}
               </button>
             )}
           </div>
@@ -139,7 +139,7 @@ export function HistoryPage() {
           {error && <p className="mb-4 text-body-sm text-red-400">{error}</p>}
 
           {!history ? (
-            <p className="text-body-md text-white/60">Loading...</p>
+            <p className="text-body-md text-white/60">Loading…</p>
           ) : history.length === 0 ? (
             <Card>
               <p className="text-body-md text-white/60">
@@ -154,8 +154,8 @@ export function HistoryPage() {
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search by filename..."
-                  className="flex-1 rounded border border-white/20 bg-white/5 px-4 py-2 text-body-md text-white outline-none placeholder:text-white/40 focus:border-secondary-container"
+                  placeholder="Search by filename…"
+                  className="flex-1 rounded border border-white/20 bg-white/5 px-4 py-2 text-body-md text-white outline-none placeholder:text-white/40 focus-visible:border-secondary-container"
                 />
                 <select
                   value={genreFilter}
@@ -189,11 +189,16 @@ export function HistoryPage() {
                         <th key={key} className="py-2 pr-4">
                           <button
                             onClick={() => toggleSort(key)}
+                            aria-label={
+                              sortKey === key
+                                ? `${label}, sorted ${sortDir === "asc" ? "ascending" : "descending"}`
+                                : label
+                            }
                             className="flex items-center gap-1 font-semibold hover:text-white"
                           >
                             {label}
                             {sortKey === key && (
-                              <span className="material-symbols-outlined text-[16px]">
+                              <span className="material-symbols-outlined text-[16px]" aria-hidden="true">
                                 {sortDir === "asc" ? "arrow_upward" : "arrow_downward"}
                               </span>
                             )}

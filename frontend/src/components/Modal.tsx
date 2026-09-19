@@ -1,3 +1,5 @@
+import { useEscapeKey } from "../hooks/useEscapeKey"
+
 export function Modal({
   title,
   onClose,
@@ -7,6 +9,8 @@ export function Modal({
   onClose: () => void
   children: React.ReactNode
 }) {
+  useEscapeKey(onClose, true)
+
   return (
     <div
       className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4"
@@ -23,7 +27,7 @@ export function Modal({
             aria-label="Close"
             className="flex h-7 w-7 items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-container-low"
           >
-            <span className="material-symbols-outlined text-[18px]">close</span>
+            <span className="material-symbols-outlined text-[18px]" aria-hidden="true">close</span>
           </button>
         </div>
         {children}

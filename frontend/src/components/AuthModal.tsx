@@ -1,5 +1,6 @@
 import { createPortal } from "react-dom"
 import { AuthForm } from "./AuthForm"
+import { useEscapeKey } from "../hooks/useEscapeKey"
 
 // A modal alternative to the /auth route -- opened from the landing page's
 // Header (Sign In / Go Pro) so signing in doesn't feel like leaving the
@@ -17,6 +18,8 @@ export function AuthModal({
   onClose: () => void
   initialMode?: "login" | "signup"
 }) {
+  useEscapeKey(onClose, true)
+
   return createPortal(
     <div
       className="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
@@ -31,7 +34,7 @@ export function AuthModal({
           aria-label="Close"
           className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full text-white/60 transition-colors hover:bg-white/10 hover:text-white"
         >
-          <span className="material-symbols-outlined text-[20px]">close</span>
+          <span className="material-symbols-outlined text-[20px]" aria-hidden="true">close</span>
         </button>
 
         <div className="mb-6 text-center">

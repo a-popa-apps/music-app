@@ -91,6 +91,7 @@ export function FAQ() {
                 >
                   <span>{faq.question}</span>
                   <span
+                    aria-hidden="true"
                     className={`material-symbols-outlined text-white/60 transition-transform ${
                       isOpen ? "rotate-180" : ""
                     }`}

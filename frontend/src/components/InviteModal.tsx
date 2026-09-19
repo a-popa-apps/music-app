@@ -3,6 +3,7 @@ import { createPortal } from "react-dom"
 import { useAuth } from "../hooks/useAuth"
 import { ApiError, getMyInvites, sendInvite, type Invite } from "../services/api"
 import { trackEvent } from "../utils/analytics"
+import { useEscapeKey } from "../hooks/useEscapeKey"
 
 // Deliberately collapses "existing_user" into the same "Sent" label as
 // "pending" -- the whole point of that status server-side is to avoid
@@ -32,6 +33,8 @@ export function InviteModal({ onClose }: { onClose: () => void }) {
   const [error, setError] = useState<string | null>(null)
   const [justSent, setJustSent] = useState(false)
   const [invites, setInvites] = useState<Invite[] | null>(null)
+
+  useEscapeKey(onClose, true)
 
   async function loadInvites() {
     if (!user) return
@@ -82,7 +85,7 @@ export function InviteModal({ onClose }: { onClose: () => void }) {
           aria-label="Close"
           className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full text-white/60 transition-colors hover:bg-white/10 hover:text-white"
         >
-          <span className="material-symbols-outlined text-[20px]">close</span>
+          <span className="material-symbols-outlined text-[20px]" aria-hidden="true">close</span>
         </button>
 
         <h2 className="mb-2 text-headline-sm font-bold text-white">Invite a friend</h2>
@@ -99,7 +102,7 @@ export function InviteModal({ onClose }: { onClose: () => void }) {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Their name"
-              className="rounded border border-white/20 bg-white/5 px-4 py-3 text-body-md text-white outline-none placeholder:text-white/30 focus:border-secondary-container"
+              className="rounded border border-white/20 bg-white/5 px-4 py-3 text-body-md text-white outline-none placeholder:text-white/30 focus-visible:border-secondary-container"
             />
           </label>
           <label className="flex flex-col gap-1">
@@ -109,7 +112,7 @@ export function InviteModal({ onClose }: { onClose: () => void }) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="friend@example.com"
-              className="rounded border border-white/20 bg-white/5 px-4 py-3 text-body-md text-white outline-none placeholder:text-white/30 focus:border-secondary-container"
+              className="rounded border border-white/20 bg-white/5 px-4 py-3 text-body-md text-white outline-none placeholder:text-white/30 focus-visible:border-secondary-container"
             />
           </label>
           {error && <p className="text-body-sm text-red-400">{error}</p>}
@@ -119,7 +122,7 @@ export function InviteModal({ onClose }: { onClose: () => void }) {
             disabled={sending || !email.trim()}
             className="rounded-full bg-secondary-container px-6 py-3 text-headline-sm font-semibold text-on-primary transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
           >
-            {sending ? "Sending..." : "Send invite"}
+            {sending ? "Sending…" : "Send invite"}
           </button>
         </div>
 

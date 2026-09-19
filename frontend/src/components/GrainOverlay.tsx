@@ -8,6 +8,7 @@ export function GrainOverlay() {
     <div
       className="pointer-events-none absolute inset-0 opacity-[0.15] mix-blend-screen"
       style={{ backgroundImage: NOISE_BG }}
+      aria-hidden="true"
     />
   )
 }

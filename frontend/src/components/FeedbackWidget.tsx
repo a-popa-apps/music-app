@@ -1,6 +1,7 @@
 import { useRef, useState } from "react"
 import { useAuth } from "../hooks/useAuth"
 import { useClickOutside } from "../hooks/useClickOutside"
+import { useEscapeKey } from "../hooks/useEscapeKey"
 import { Modal } from "./Modal"
 import { submitFeedback } from "../services/api"
 
@@ -48,7 +49,7 @@ function FeedbackForm({
   if (done) {
     return (
       <div className="flex flex-col items-center gap-2 py-4 text-center">
-        <span className="material-symbols-outlined text-[40px] text-green-600">check_circle</span>
+        <span className="material-symbols-outlined text-[40px] text-green-600" aria-hidden="true">check_circle</span>
         <p className="text-body-md text-on-surface">Thanks! We'll be in touch.</p>
       </div>
     )
@@ -80,7 +81,7 @@ function FeedbackForm({
             type="text"
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
-            className="rounded border border-outline-variant bg-surface-container-lowest px-4 py-3 text-body-md text-on-surface outline-none focus:border-secondary-container"
+            className="rounded border border-outline-variant bg-surface-container-lowest px-4 py-3 text-body-md text-on-surface outline-none focus-visible:border-secondary-container"
           />
         </label>
       )}
@@ -93,7 +94,7 @@ function FeedbackForm({
           rows={4}
           value={message}
           onChange={(e) => setMessage(e.target.value)}
-          className="rounded border border-outline-variant bg-surface-container-lowest px-4 py-3 text-body-md text-on-surface outline-none focus:border-secondary-container"
+          className="rounded border border-outline-variant bg-surface-container-lowest px-4 py-3 text-body-md text-on-surface outline-none focus-visible:border-secondary-container"
         />
       </label>
       <label className="flex flex-col gap-1">
@@ -105,7 +106,7 @@ function FeedbackForm({
           required={category === "support"}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="rounded border border-outline-variant bg-surface-container-lowest px-4 py-3 text-body-md text-on-surface outline-none focus:border-secondary-container"
+          className="rounded border border-outline-variant bg-surface-container-lowest px-4 py-3 text-body-md text-on-surface outline-none focus-visible:border-secondary-container"
         />
       </label>
       {error && <p className="text-body-sm text-red-600">{error}</p>}
@@ -114,7 +115,7 @@ function FeedbackForm({
         disabled={submitting}
         className="rounded-full bg-secondary-container px-6 py-3 text-headline-sm font-semibold text-on-primary transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
       >
-        {submitting ? "Sending..." : "Send"}
+        {submitting ? "Sending…" : "Send"}
       </button>
     </form>
   )
@@ -125,6 +126,7 @@ export function FeedbackWidget() {
   const [activeModal, setActiveModal] = useState<ActiveModal>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   useClickOutside(containerRef, () => setMenuOpen(false), menuOpen)
+  useEscapeKey(() => setMenuOpen(false), menuOpen)
 
   return (
     <>
@@ -138,7 +140,7 @@ export function FeedbackWidget() {
               }}
               className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-body-md text-inverse-on-surface hover:bg-white/10"
             >
-              <span className="material-symbols-outlined text-[18px]">support_agent</span>
+              <span className="material-symbols-outlined text-[18px]" aria-hidden="true">support_agent</span>
               Contact Support
             </button>
             <button
@@ -148,7 +150,7 @@ export function FeedbackWidget() {
               }}
               className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-body-md text-inverse-on-surface hover:bg-white/10"
             >
-              <span className="material-symbols-outlined text-[18px]">chat_bubble</span>
+              <span className="material-symbols-outlined text-[18px]" aria-hidden="true">chat_bubble</span>
               Give Feedback
             </button>
           </div>
@@ -158,7 +160,7 @@ export function FeedbackWidget() {
           aria-label="Help and feedback"
           className="flex h-12 w-12 items-center justify-center rounded-full bg-secondary-container text-on-primary shadow-[0_4px_16px_rgba(0,0,0,0.3)] transition-transform hover:scale-105"
         >
-          <span className="material-symbols-outlined text-[24px]">
+          <span className="material-symbols-outlined text-[24px]" aria-hidden="true">
             {menuOpen ? "close" : "help"}
           </span>
         </button>

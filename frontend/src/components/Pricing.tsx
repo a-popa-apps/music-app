@@ -94,7 +94,7 @@ export function Pricing() {
               <div className="flex flex-col gap-2">
                 {FREE_INCLUDED.map((item) => (
                   <div key={item} className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-[20px] text-secondary-container">
+                    <span className="material-symbols-outlined text-[20px] text-secondary-container" aria-hidden="true">
                       check_circle
                     </span>
                     <span className="text-body-md text-white">{item}</span>
@@ -102,7 +102,7 @@ export function Pricing() {
                 ))}
                 {FREE_EXCLUDED.map((item) => (
                   <div key={item} className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-[20px] text-white/30">
+                    <span className="material-symbols-outlined text-[20px] text-white/30" aria-hidden="true">
                       cancel
                     </span>
                     <span className="text-body-md text-white/40 line-through">{item}</span>
@@ -181,7 +181,7 @@ export function Pricing() {
                       </span>
                     ) : (
                       <div key={item} className="flex items-center gap-2">
-                        <span className="material-symbols-outlined text-[20px] text-secondary-container">
+                        <span className="material-symbols-outlined text-[20px] text-secondary-container" aria-hidden="true">
                           check_circle
                         </span>
                         <span className="text-body-md text-white">{item}</span>
@@ -196,7 +196,7 @@ export function Pricing() {
                     disabled={checkoutLoading}
                     className="w-full rounded-full bg-gradient-to-r from-secondary-container to-[#ff3d78] px-6 py-4 text-center text-headline-sm font-semibold text-on-primary shadow-[0_8px_30px_rgba(255,107,53,0.45)] transition-transform hover:scale-[1.02] active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    {checkoutLoading ? "Loading..." : isPro ? "Manage Billing" : "Get CratePrep Pro"}
+                    {checkoutLoading ? "Loading…" : isPro ? "Manage Billing" : "Get CratePrep Pro"}
                   </button>
                   {checkoutError && (
                     <p className="mt-3 text-center text-body-sm text-red-400">{checkoutError}</p>
