@@ -12,7 +12,7 @@ export function FinalCta() {
           </p>
           <a
             href="/#demo"
-            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-secondary-container to-[#ff3d78] px-8 py-4 text-headline-sm font-semibold text-on-primary shadow-[0_8px_30px_rgba(255,107,53,0.45)] transition-transform hover:scale-[1.02] active:scale-95"
+            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-secondary-container to-[#ff3d78] px-8 py-4 text-headline-sm font-semibold text-on-secondary-container shadow-[0_8px_30px_rgba(255,107,53,0.45)] transition-transform hover:scale-[1.02] active:scale-95"
           >
             Open CratePrep
             <span className="material-symbols-outlined text-[20px]" aria-hidden="true">

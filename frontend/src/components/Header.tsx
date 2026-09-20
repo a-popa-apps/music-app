@@ -178,7 +178,7 @@ export function Header({ dark = false }: { dark?: boolean }) {
                   <a
                     href="/#pricing"
                     onClick={() => trackEvent("cta_click", { location: "header_go_pro" })}
-                    className="hidden items-center justify-center rounded-full bg-secondary-container px-6 py-2 text-body-sm font-semibold text-white shadow-[0_4px_16px_rgba(255,107,53,0.4)] transition-transform hover:scale-[1.03] active:scale-95 md:inline-flex"
+                    className="hidden items-center justify-center rounded-full bg-secondary-container px-6 py-2 text-body-sm font-semibold text-on-secondary-container shadow-[0_4px_16px_rgba(255,107,53,0.4)] transition-transform hover:scale-[1.03] active:scale-95 md:inline-flex"
                   >
                     Go Pro
                   </a>

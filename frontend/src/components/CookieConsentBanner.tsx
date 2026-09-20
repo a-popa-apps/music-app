@@ -41,7 +41,7 @@ export function CookieConsentBanner() {
         </button>
         <button
           onClick={() => respond("granted")}
-          className="rounded-full bg-secondary-container px-4 py-2 text-body-sm font-semibold text-on-primary hover:opacity-90"
+          className="rounded-full bg-secondary-container px-4 py-2 text-body-sm font-semibold text-on-secondary-container hover:opacity-90"
         >
           Accept
         </button>
