@@ -298,6 +298,7 @@ export interface BillingStats {
   mrr_cents: number
   active_subscribers: number
   trialing_subscribers: number
+  canceling_subscribers: number
   canceled_last_30_days: number
   revenue_last_30_days_cents: number
 }
@@ -305,6 +306,24 @@ export interface BillingStats {
 export async function getBillingStats(idToken: string): Promise<BillingStats> {
   const res = await fetch(`${BACKEND_URL}/admin/billing-stats`, { headers: adminHeaders(idToken) })
   if (!res.ok) throw new Error(`Failed to load billing stats: ${res.status}`)
+  return res.json()
+}
+
+export interface Transaction {
+  id: string
+  amount_cents: number
+  currency: string
+  customer_email: string | null
+  status: string
+  created: number
+  stripe_url: string
+}
+
+export async function getRecentTransactions(idToken: string): Promise<Transaction[]> {
+  const res = await fetch(`${BACKEND_URL}/admin/recent-transactions`, {
+    headers: adminHeaders(idToken),
+  })
+  if (!res.ok) throw new Error(`Failed to load recent transactions: ${res.status}`)
   return res.json()
 }
 

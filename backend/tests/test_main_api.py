@@ -459,6 +459,39 @@ def test_admin_billing_stats_returns_503_when_stripe_unconfigured(client, monkey
     assert res.status_code == 503
 
 
+def test_admin_recent_transactions_requires_auth(client):
+    assert client.get("/admin/recent-transactions").status_code == 401
+
+
+def test_admin_recent_transactions_forbidden_for_non_admin(client, monkeypatch):
+    monkeypatch.setattr(main, "get_current_user", lambda request: "uid-1")
+    monkeypatch.setattr(main, "get_settings", lambda uid: {"is_admin": False})
+    assert client.get("/admin/recent-transactions").status_code == 403
+
+
+def test_admin_recent_transactions_allowed_for_admin(client, monkeypatch):
+    monkeypatch.setattr(main, "get_current_user", lambda request: "admin-uid")
+    monkeypatch.setattr(main, "get_settings", lambda uid: {"is_admin": True})
+    monkeypatch.setattr(
+        main, "get_recent_transactions", lambda limit: [{"id": "in_123", "amount_cents": 800}]
+    )
+    res = client.get("/admin/recent-transactions")
+    assert res.status_code == 200
+    assert res.json() == [{"id": "in_123", "amount_cents": 800}]
+
+
+def test_admin_recent_transactions_returns_503_when_stripe_unconfigured(client, monkeypatch):
+    monkeypatch.setattr(main, "get_current_user", lambda request: "admin-uid")
+    monkeypatch.setattr(main, "get_settings", lambda uid: {"is_admin": True})
+
+    def _raise(limit):
+        raise RuntimeError("Stripe is not configured")
+
+    monkeypatch.setattr(main, "get_recent_transactions", _raise)
+    res = client.get("/admin/recent-transactions")
+    assert res.status_code == 503
+
+
 def test_process_requires_files_field(client):
     res = client.post("/process")
     assert res.status_code == 422

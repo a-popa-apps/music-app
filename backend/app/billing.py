@@ -169,6 +169,7 @@ def get_billing_stats() -> dict:
     mrr_cents = 0
     active_subscribers = 0
     trialing_subscribers = 0
+    canceling_subscribers = 0
     canceled_last_30_days = 0
     cutoff = time.time() - REVENUE_WINDOW_DAYS * 86400
 
@@ -184,6 +185,14 @@ def get_billing_stats() -> dict:
                 active_subscribers += 1
             else:
                 trialing_subscribers += 1
+            # Canceling from the Stripe-hosted billing portal (what
+            # create_billing_portal_session sends users to) schedules the
+            # cancellation for the end of the current period by default --
+            # the subscription's status stays "active"/"trialing" the whole
+            # time, so without this it looks identical to a healthy,
+            # renewing subscriber right up until it actually ends.
+            if sub_data.get("cancel_at_period_end"):
+                canceling_subscribers += 1
         elif status == "canceled":
             canceled_at = sub_data.get("canceled_at")
             if canceled_at and canceled_at >= cutoff:
@@ -198,12 +207,46 @@ def get_billing_stats() -> dict:
         "mrr_cents": mrr_cents,
         "active_subscribers": active_subscribers,
         "trialing_subscribers": trialing_subscribers,
+        "canceling_subscribers": canceling_subscribers,
         "canceled_last_30_days": canceled_last_30_days,
         "revenue_last_30_days_cents": revenue_last_30_days_cents,
     }
     _billing_stats_cache = stats
     _billing_stats_cache_time = now
     return stats
+
+
+def _stripe_dashboard_url(kind: str, object_id: str, livemode: bool) -> str:
+    prefix = "https://dashboard.stripe.com/" if livemode else "https://dashboard.stripe.com/test/"
+    return f"{prefix}{kind}/{object_id}"
+
+
+def get_recent_transactions(limit: int = 10) -> list[dict]:
+    """Latest paid-or-attempted invoices, newest first (Stripe's default
+    list order), for the admin dashboard's "recent transactions" table --
+    each links back to the real record in the Stripe dashboard rather than
+    duplicating Stripe's own UI for anything beyond a quick glance."""
+    client = get_stripe()
+    if client is None:
+        raise RuntimeError("Stripe is not configured")
+
+    transactions = []
+    for invoice in client.Invoice.list(limit=limit).auto_paging_iter():
+        inv = invoice.to_dict()
+        transactions.append(
+            {
+                "id": inv.get("id"),
+                "amount_cents": inv.get("amount_paid") or inv.get("amount_due") or 0,
+                "currency": inv.get("currency"),
+                "customer_email": inv.get("customer_email"),
+                "status": inv.get("status"),
+                "created": inv.get("created"),
+                "stripe_url": _stripe_dashboard_url("invoices", inv["id"], inv.get("livemode", False)),
+            }
+        )
+        if len(transactions) >= limit:
+            break
+    return transactions
 
 
 def _safe_get(obj, key: str, default=None):

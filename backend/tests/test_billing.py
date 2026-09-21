@@ -426,6 +426,7 @@ def test_get_billing_stats_sums_mrr_and_counts(fake_stripe):
         _stripe_obj(
             {
                 "status": "active",
+                "cancel_at_period_end": True,
                 "items": {
                     "data": [
                         {
@@ -454,8 +455,55 @@ def test_get_billing_stats_sums_mrr_and_counts(fake_stripe):
     assert stats["mrr_cents"] == 800 + 500  # $8/mo as-is, $60/yr -> $5/mo equivalent
     assert stats["active_subscribers"] == 2
     assert stats["trialing_subscribers"] == 1
+    assert stats["canceling_subscribers"] == 1  # the $60/yr sub has cancel_at_period_end
     assert stats["canceled_last_30_days"] == 1
     assert stats["revenue_last_30_days_cents"] == 1300
+
+
+def test_get_recent_transactions_requires_stripe_configured(monkeypatch):
+    monkeypatch.setattr(billing, "get_stripe", lambda: None)
+    with pytest.raises(RuntimeError):
+        billing.get_recent_transactions()
+
+
+def test_get_recent_transactions_returns_dashboard_links(fake_stripe):
+    invoices = [
+        _stripe_obj(
+            {
+                "id": "in_live1",
+                "amount_paid": 800,
+                "currency": "usd",
+                "customer_email": "dj@example.com",
+                "status": "paid",
+                "created": 1_700_000_000,
+                "livemode": True,
+            }
+        ),
+        _stripe_obj(
+            {
+                "id": "in_test1",
+                "amount_paid": 0,
+                "amount_due": 800,
+                "currency": "usd",
+                "customer_email": "test@example.com",
+                "status": "open",
+                "created": 1_700_000_100,
+                "livemode": False,
+            }
+        ),
+    ]
+    fake_stripe.Invoice.list.return_value.auto_paging_iter.return_value = invoices
+
+    transactions = billing.get_recent_transactions(limit=10)
+
+    assert transactions[0]["id"] == "in_live1"
+    assert transactions[0]["amount_cents"] == 800
+    assert transactions[0]["stripe_url"] == "https://dashboard.stripe.com/invoices/in_live1"
+
+    # amount_paid is 0 on an unpaid invoice -- falls back to amount_due
+    # rather than reporting a $0 transaction that was never actually $0.
+    assert transactions[1]["amount_cents"] == 800
+    assert transactions[1]["stripe_url"] == "https://dashboard.stripe.com/test/invoices/in_test1"
 
 
 def test_get_billing_stats_is_cached_across_calls(fake_stripe, monkeypatch):

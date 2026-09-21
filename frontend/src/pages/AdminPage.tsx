@@ -15,6 +15,7 @@ import {
   getBillingStats,
   getDiscountCodes,
   getFeedback,
+  getRecentTransactions,
   revokeInvite,
   setDiscountCodeActive,
   setFeedbackRead,
@@ -27,6 +28,7 @@ import {
   type DiscountCode,
   type FeedbackSubmission,
   type Invite,
+  type Transaction,
 } from "../services/api"
 
 const TABS = ["Stats", "Users", "Discounts", "Billing", "Feedback", "Invites"] as const
@@ -607,16 +609,34 @@ function formatCents(cents: number): string {
   return CURRENCY_FORMATTER.format(cents / 100)
 }
 
+const TRANSACTION_DATE_FORMATTER = new Intl.DateTimeFormat(undefined, {
+  month: "short",
+  day: "numeric",
+  hour: "numeric",
+  minute: "2-digit",
+})
+
+function formatTransactionAmount(cents: number, currency: string): string {
+  return new Intl.NumberFormat(undefined, {
+    style: "currency",
+    currency: currency.toUpperCase(),
+  }).format(cents / 100)
+}
+
 function BillingTab({
   stats,
   billing,
   codes,
   error,
+  transactions,
+  transactionsError,
 }: {
   stats: AdminStats | null
   billing: BillingStats | null
   codes: DiscountCode[] | null
   error: string | null
+  transactions: Transaction[] | null
+  transactionsError: string | null
 }) {
   return (
     <div className="flex flex-col gap-6">
@@ -632,6 +652,11 @@ function BillingTab({
           <span className="text-headline-lg text-white">
             {billing?.active_subscribers ?? "—"}
           </span>
+          {!!billing?.canceling_subscribers && (
+            <span className="text-body-sm text-amber-400">
+              {billing.canceling_subscribers} ending this period
+            </span>
+          )}
         </Card>
         <Card>
           <span className="text-body-sm text-white/60">Trialing</span>
@@ -657,6 +682,60 @@ function BillingTab({
       </Card>
 
       {error && <p className="text-body-sm text-red-400">{error}</p>}
+
+      <Card>
+        <h3 className="text-headline-sm text-white">Recent Transactions</h3>
+        {transactionsError && (
+          <p className="text-body-sm text-red-400">{transactionsError}</p>
+        )}
+        {!transactions ? (
+          <p className="text-body-md text-white/60">Loading…</p>
+        ) : transactions.length === 0 ? (
+          <p className="text-body-md text-white/60">No transactions yet.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-body-sm">
+              <thead>
+                <tr className="border-b border-white/10 text-white/60">
+                  <th className="py-2 pr-4">Date</th>
+                  <th className="py-2 pr-4">Customer</th>
+                  <th className="py-2 pr-4">Amount</th>
+                  <th className="py-2 pr-4">Status</th>
+                  <th className="py-2 pr-4"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {transactions.map((t) => (
+                  <tr key={t.id} className="border-b border-white/10">
+                    <td className="py-2 pr-4 font-mono text-meta-numeric text-white/60">
+                      {TRANSACTION_DATE_FORMATTER.format(new Date(t.created * 1000))}
+                    </td>
+                    <td className="py-2 pr-4 text-white">
+                      {t.customer_email || "—"}
+                    </td>
+                    <td className="py-2 pr-4 font-mono text-meta-numeric text-white">
+                      {formatTransactionAmount(t.amount_cents, t.currency)}
+                    </td>
+                    <td className="py-2 pr-4 text-white/60">
+                      {t.status.charAt(0).toUpperCase() + t.status.slice(1)}
+                    </td>
+                    <td className="py-2 pr-4">
+                      <a
+                        href={t.stripe_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-semibold text-secondary-container hover:underline"
+                      >
+                        View in Stripe <span aria-hidden="true">↗</span>
+                      </a>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
 
       {stats && (
         <Card>
@@ -973,6 +1052,8 @@ export function AdminPage() {
   const [statsError, setStatsError] = useState<string | null>(null)
   const [billing, setBilling] = useState<BillingStats | null>(null)
   const [billingError, setBillingError] = useState<string | null>(null)
+  const [transactions, setTransactions] = useState<Transaction[] | null>(null)
+  const [transactionsError, setTransactionsError] = useState<string | null>(null)
   const [codes, setCodes] = useState<DiscountCode[] | null>(null)
   const [codesError, setCodesError] = useState<string | null>(null)
   const [feedback, setFeedback] = useState<FeedbackSubmission[] | null>(null)
@@ -1007,6 +1088,16 @@ export function AdminPage() {
       setBillingError(null)
     } catch {
       setBillingError("Couldn't load billing stats. Is Stripe configured?")
+    }
+  }, [token])
+
+  const reloadTransactions = useCallback(async () => {
+    if (!token) return
+    try {
+      setTransactions(await getRecentTransactions(token))
+      setTransactionsError(null)
+    } catch {
+      setTransactionsError("Couldn't load recent transactions.")
     }
   }, [token])
 
@@ -1049,6 +1140,7 @@ export function AdminPage() {
     reloadUsers()
     reloadStats()
     reloadBilling()
+    reloadTransactions()
     reloadCodes()
     reloadFeedback()
     reloadInvites()
@@ -1128,7 +1220,14 @@ export function AdminPage() {
             <DiscountCodesTab token={token} codes={codes} error={codesError} onReload={reloadCodes} />
           )}
           {tab === "Billing" && (
-            <BillingTab stats={stats} billing={billing} codes={codes} error={billingError} />
+            <BillingTab
+              stats={stats}
+              billing={billing}
+              codes={codes}
+              error={billingError}
+              transactions={transactions}
+              transactionsError={transactionsError}
+            />
           )}
           {tab === "Feedback" && (
             <FeedbackTab

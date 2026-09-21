@@ -40,6 +40,7 @@ from .billing import (
     create_billing_portal_session,
     create_checkout_session,
     get_billing_stats,
+    get_recent_transactions,
     handle_webhook_event,
 )
 from .email_service import notify_admins, send_email
@@ -269,6 +270,15 @@ def admin_billing_stats(request: Request):
     _require_admin(request)
     try:
         return get_billing_stats()
+    except RuntimeError as e:
+        raise HTTPException(503, str(e))
+
+
+@app.get("/admin/recent-transactions")
+def admin_recent_transactions(request: Request):
+    _require_admin(request)
+    try:
+        return get_recent_transactions(limit=10)
     except RuntimeError as e:
         raise HTTPException(503, str(e))
 
