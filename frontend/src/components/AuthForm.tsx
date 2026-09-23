@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { useAuth } from "../hooks/useAuth"
 import { redeemInvite } from "../services/api"
-import { trackEvent } from "../utils/analytics"
+import { trackEvent, trackSignUp } from "../utils/analytics"
 import { checkPwnedPassword } from "../utils/checkPwnedPassword"
 
 type Mode = "login" | "signup"
@@ -82,7 +82,7 @@ export function AuthForm({
         }
         const user = await signUp(email, password)
         await redeemInviteIfAny(await user.getIdToken())
-        trackEvent("sign_up", { method: "email" })
+        trackSignUp("email")
         setView("check-inbox")
       } else {
         const user = await logIn(email, password)
@@ -105,7 +105,11 @@ export function AuthForm({
     try {
       const { user, isNewUser } = await signInWithGoogle()
       if (isNewUser) await redeemInviteIfAny(await user.getIdToken())
-      trackEvent(isNewUser ? "sign_up" : "login", { method: "google" })
+      if (isNewUser) {
+        trackSignUp("google")
+      } else {
+        trackEvent("login", { method: "google" })
+      }
       onSuccess()
     } catch (err) {
       setError(firebaseErrorMessage(err))

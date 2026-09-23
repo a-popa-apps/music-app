@@ -4,7 +4,7 @@ import { Header } from "../components/Header"
 import { ProfileFieldsForm, Section } from "../components/ProfileFieldsForm"
 import { UpgradeModal } from "../components/UpgradeModal"
 import { useAuth } from "../hooks/useAuth"
-import { trackEvent } from "../utils/analytics"
+import { trackPurchase } from "../utils/analytics"
 import {
   createBillingPortalSession,
   deleteAccount,
@@ -60,7 +60,7 @@ export function ProfileDetails() {
       // itself doesn't hand anything back to success_url beyond what
       // /billing/checkout explicitly appended (see main.py).
       const value = billingCycle === "annual" ? 60 : billingCycle === "monthly" ? 8 : undefined
-      trackEvent("purchase", { value, currency: "usd", billing_cycle: billingCycle ?? undefined })
+      trackPurchase(value, "usd", billingCycle ?? undefined)
     }
   }, [checkoutResult, searchParams])
 

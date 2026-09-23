@@ -31,6 +31,54 @@
       })();
       gtag("config", "%VITE_GA_MEASUREMENT_ID%", { send_page_view: false });
     </script>
+
+    <!-- Meta Pixel -- same static-placement pattern as the gtag.js block
+    above, for the same reason (see that comment): loaded here rather than
+    injected by the React bundle. fbq('consent', 'revoke') is called before
+    init so the pixel queues but sends nothing until consent is granted;
+    analytics.ts flips it to 'grant' the moment the cookie-consent banner is
+    accepted (or immediately on load for a returning visitor who already
+    granted it). Same as GA's config() with send_page_view:false, this file
+    never sends the PageView event itself -- analytics.ts's trackPageView()
+    is the one place that does, so there's a single source of page views
+    and no double-count. Empty/unset VITE_META_PIXEL_ID just makes fbq a
+    harmless no-op, same as gtag.js. -->
+    <script>
+      !function (f, b, e, v, n, t, s) {
+        if (f.fbq) return;
+        n = f.fbq = function () {
+          n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments);
+        };
+        if (!f._fbq) f._fbq = n;
+        n.push = n;
+        n.loaded = true;
+        n.version = "2.0";
+        n.queue = [];
+        t = b.createElement(e);
+        t.async = true;
+        t.src = v;
+        s = b.getElementsByTagName(e)[0];
+        s.parentNode.insertBefore(t, s);
+      }(window, document, "script", "https://connect.facebook.net/en_US/fbevents.js");
+      fbq("consent", "revoke");
+      fbq("init", "%VITE_META_PIXEL_ID%");
+      (function () {
+        try {
+          if (localStorage.getItem("crateprep-analytics-consent") === "granted") {
+            fbq("consent", "grant");
+          }
+        } catch (e) {}
+      })();
+    </script>
+    <noscript
+      ><img
+        height="1"
+        width="1"
+        style="display: none"
+        src="https://www.facebook.com/tr?id=%VITE_META_PIXEL_ID%&ev=PageView&noscript=1"
+    /></noscript>
+    <!-- End Meta Pixel -->
+
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 

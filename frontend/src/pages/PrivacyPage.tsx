@@ -5,7 +5,7 @@ export function PrivacyPage() {
     <LegalPage
       title="Privacy Policy"
       path="/privacy"
-      lastUpdated="2026-09-17"
+      lastUpdated="2026-09-23"
       sections={[
         {
           heading: "1. Information We Collect",
@@ -17,7 +17,7 @@ export function PrivacyPage() {
         },
         {
           heading: "3. Third-Party Services",
-          body: "We use Firebase (Google) for account authentication and to store your profile settings. To help detect a track's genre, we send the cleaned artist/title text (never the audio file itself) to several public music catalogs and databases — Spotify, Discogs, iTunes, Deezer, MusicBrainz, TheAudioDB, and Last.fm — trying each in turn until one returns a usable result. If you opt in via our cookie consent banner, we use Google Analytics to understand overall usage (pages visited, features used, and product actions like processing a batch or upgrading) — it doesn't run unless you accept, and never sees your audio files or filenames. If you enable AI-assisted features (filename cleanup, batch summaries, feedback triage), the relevant text is sent to Google's Gemini API to generate that feature's output. Stripe processes payments for Pro subscriptions and never sees your audio files. We use Resend to deliver transactional emails (verification, password reset, receipts, and similar account notices) and Sentry to capture error reports if something breaks, which can include technical request details but never your audio files.",
+          body: "We use Firebase (Google) for account authentication and to store your profile settings. To help detect a track's genre, we send the cleaned artist/title text (never the audio file itself) to several public music catalogs and databases — Spotify, Discogs, iTunes, Deezer, MusicBrainz, TheAudioDB, and Last.fm — trying each in turn until one returns a usable result. If you opt in via our cookie consent banner, we use Google Analytics to understand overall usage (pages visited, features used, and product actions like processing a batch or upgrading), and the Meta (Facebook/Instagram) Pixel to measure and improve our ad campaigns, sending Meta only page views and the fact that a signup or purchase happened (with its plan and price, never your email or any audio/filename data) — neither runs unless you accept the banner. If you enable AI-assisted features (filename cleanup, batch summaries, feedback triage), the relevant text is sent to Google's Gemini API to generate that feature's output. Stripe processes payments for Pro subscriptions and never sees your audio files. We use Resend to deliver transactional emails (verification, password reset, receipts, and similar account notices) and Sentry to capture error reports if something breaks, which can include technical request details but never your audio files.",
         },
         {
           heading: "4. Data Retention",
@@ -29,7 +29,7 @@ export function PrivacyPage() {
         },
         {
           heading: "6. Cookies and Local Storage",
-          body: "We use strictly necessary cookies and local storage to keep you signed in, via Firebase Authentication. If you accept our cookie consent banner, we also use Google Analytics cookies to understand overall usage — this is entirely optional and off by default until you accept. We don't use any advertising or ad-tracking cookies, and we don't sell or share data with ad networks. See our Cookie Policy for details.",
+          body: "We use strictly necessary cookies and local storage to keep you signed in, via Firebase Authentication. If you accept our cookie consent banner, we also use Google Analytics cookies to understand overall usage, and the Meta Pixel to measure our ad campaigns — both are entirely optional and off by default until you accept. We don't sell your data; the Meta Pixel shares the events described in Section 3 with Meta so it can measure and optimize our ads, which is the one form of ad-related sharing this site does. See our Cookie Policy for details.",
         },
         {
           heading: "7. Children's Privacy",
